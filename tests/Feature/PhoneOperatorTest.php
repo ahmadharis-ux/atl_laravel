@@ -1,0 +1,83 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Brand;
+use App\Models\Category;
+use App\Models\Product;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class PhoneOperatorTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_guest_cannot_detect_operator(): void
+    {
+        $this->getJson(route('products.detect-operator', ['number' => '081234567890']))
+            ->assertUnauthorized();
+    }
+
+    public function test_detects_telkomsel_operator(): void
+    {
+        Brand::factory()->create(['slug' => 'telkomsel', 'name' => 'Telkomsel']);
+
+        $this->actingAs(User::factory()->create())
+            ->getJson(route('products.detect-operator', ['number' => '081234567890']))
+            ->assertOk()
+            ->assertJson([
+                'status' => true,
+                'operator' => 'Telkomsel',
+                'brand_slug' => 'telkomsel',
+            ]);
+    }
+
+    public function test_detects_byu_operator_with_sub_prefix(): void
+    {
+        Brand::factory()->create(['slug' => 'byu', 'name' => 'by.U']);
+
+        $this->actingAs(User::factory()->create())
+            ->getJson(route('products.detect-operator', ['number' => '085156789012']))
+            ->assertOk()
+            ->assertJson([
+                'status' => true,
+                'brand_slug' => 'byu',
+            ]);
+    }
+
+    public function test_returns_error_for_unknown_operator(): void
+    {
+        $this->actingAs(User::factory()->create())
+            ->getJson(route('products.detect-operator', ['number' => '07900000000']))
+            ->assertOk()
+            ->assertJson([
+                'status' => false,
+            ]);
+    }
+
+    public function test_pulsa_category_requires_number_before_showing_products(): void
+    {
+        $user = User::factory()->create();
+        $pulsa = Category::factory()->create(['slug' => 'pulsa', 'name' => 'Pulsa']);
+        $telkomsel = Brand::factory()->create(['slug' => 'telkomsel']);
+        Product::factory()->create([
+            'category_id' => $pulsa->getKey(),
+            'brand_id' => $telkomsel->getKey(),
+            'status' => true,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('products.index', ['category' => $pulsa->getKey()]))
+            ->assertOk()
+            ->assertSee('Masukkan nomor HP dulu', false);
+
+        $this->actingAs($user)
+            ->get(route('products.index', [
+                'category' => $pulsa->getKey(),
+                'brand' => $telkomsel->getKey(),
+            ]))
+            ->assertOk()
+            ->assertDontSee('Masukkan nomor HP dulu', false);
+    }
+}
