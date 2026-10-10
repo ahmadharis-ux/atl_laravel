@@ -1,0 +1,70 @@
+name: Laravel CD (atl_laravel)
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install cloudflared
+        run: |
+          curl -L --output cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+          sudo dpkg -i cloudflared.deb
+          cloudflared --version
+
+      - name: Setup SSH & Deploy via Rsync
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          SSH_HOST: ssh.serversandgen.web.id
+          SSH_USER: ${{ secrets.USERNAME }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+          echo "Starting deployment to /var/www/atl_laravel..."
+
+          rsync -avz --delete \
+            --exclude='.env' \
+            --exclude='.git' \
+            --exclude='/vendor' \
+            --exclude='/node_modules' \
+            --exclude='database/*.sqlite*' \
+            --exclude='/storage/*.key' \
+            --exclude='/storage/logs/*.log' \
+            --exclude='/storage/framework/cache/data' \
+            --exclude='/storage/framework/sessions' \
+            --exclude='/storage/framework/views' \
+            -e "ssh -i ~/.ssh/id_rsa -o ProxyCommand='cloudflared access ssh --hostname $SSH_HOST' -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
+            ./ $SSH_USER@$SSH_HOST:/var/www/atl_laravel/
+
+          echo "Files synced successfully!"
+
+      - name: Execute Remote Post-Deployment Commands
+        env:
+          SSH_HOST: ssh.serversandgen.web.id
+          SSH_USER: ${{ secrets.USERNAME }}
+        run: |
+          ssh -i ~/.ssh/id_rsa -o ProxyCommand="cloudflared access ssh --hostname $SSH_HOST" -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << 'EOF'
+            cd /var/www/atl_laravel
+
+            echo "Installing composer dependencies on server..."
+            php8.4 /usr/local/bin/composer install --no-interaction --prefer-dist --optimize-autoloader
+
+            echo "Running database migrations..."
+            php8.4 artisan migrate --force
+
+            echo "Optimizing Laravel Cache..."
+            php8.4 artisan optimize:clear
+            php8.4 artisan config:cache
+            php8.4 artisan route:cache
+            php8.4 artisan view:cache
+
+            echo "All post-deploy steps completed!"
+          EOF
