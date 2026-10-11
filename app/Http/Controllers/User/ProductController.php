@@ -9,6 +9,8 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\SearchHistory;
 use App\Support\GameNickname;
+use App\Support\OrderTarget;
+use App\Support\ProductFilters;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -32,20 +34,15 @@ class ProductController extends Controller
         $categoryId = $request->filled('category') ? $request->integer('category') : null;
         $brandId = $request->filled('brand') ? $request->integer('brand') : null;
 
-        $categorySlug = $categoryId !== null
-            ? Category::query()->whereKey($categoryId)->value('slug')
-            : null;
+        $minPrice = ProductFilters::priceBound($request, 'min_price');
+        $maxPrice = ProductFilters::priceBound($request, 'max_price');
 
-        // Kategori pulsa & data mengharuskan nomor HP dideteksi dulu supaya
-        // paket yang tampil hanya milik operator dari nomor tersebut.
-        $requiresOperator = in_array($categorySlug, ['pulsa', 'data'], true);
-        $awaitingOperator = $requiresOperator && $brandId === null;
-
-        // Saat mencari, tab prabayar/pascabayar dilewati supaya produk jenis apa
-        // pun langsung muncul tanpa perlu memilih tab lebih dulu.
+        // Pulsa & paket data punya alur sendiri di /pulsa (deteksi nomor),
+        // jadi tidak ikut tampil di katalog produk umum ini.
         $products = Product::query()
             ->with(['brand', 'category'])
             ->where('status', true)
+            ->forCatalog()
             ->when(! $searching, fn ($query) => $query->where('payment_type', $type))
             ->when($searching, function ($query) use ($term): void {
                 $like = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $term).'%';
@@ -56,11 +53,10 @@ class ProductController extends Controller
             })
             ->when($categoryId !== null, fn ($query) => $query->where('category_id', $categoryId))
             ->when($brandId !== null, fn ($query) => $query->where('brand_id', $brandId))
-            // Belum ada operator terdeteksi: jangan tampilkan paket apa pun.
-            ->when($awaitingOperator, fn ($query) => $query->whereRaw('0 = 1'))
+            ->priceBetween($minPrice, $maxPrice)
             ->orderBy('sort_order')
             ->orderBy('name')
-            ->paginate(12)
+            ->paginate(16)
             ->withQueryString();
 
         $data = [
@@ -69,10 +65,6 @@ class ProductController extends Controller
             'searching' => $searching,
             'term' => $term,
             'searchHistory' => SearchHistory::topQueries((int) $request->user()->getKey(), 3),
-            'requiresOperator' => $requiresOperator,
-            'awaitingOperator' => $awaitingOperator,
-            'categorySlug' => $categorySlug,
-            'operatorCategoryIds' => Category::query()->whereIn('slug', ['pulsa', 'data'])->pluck('id')->all(),
         ];
 
         if ($request->ajax()) {
@@ -105,6 +97,7 @@ class ProductController extends Controller
             'product' => $product,
             'canValidateNickname' => GameNickname::supports($brandSlug),
             'requiresZone' => GameNickname::requiresZone($brandSlug),
+            'canCheckout' => OrderTarget::supportsCheckout($product->category?->slug),
         ]);
     }
 }

@@ -2,38 +2,106 @@
 
 namespace App\Http\Controllers\Admin\CustomerTopup;
 
+use App\Enums\DepositStatus;
+use App\Enums\PaymentMethod;
 use App\Http\Controllers\Controller;
-use Illuminate\View\View;
+use App\Models\Deposit;
+use App\Support\DepositSettler;
+use App\Support\TransactionLogger;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class TopupController extends Controller
 {
     /**
-     * Daftar transaksi topup (data hardcode sementara).
+     * Daftar permintaan top up saldo dari seluruh pengguna.
      */
-    public function index(): View
+    public function index(Request $request): View|JsonResponse
     {
-        $topups = [
-            ['date' => '07 Okt 2026 09:12', 'trx' => 'TRX-20261007-0001', 'ref' => 'PAY-88910231', 'product' => 'Mobile Legends 86 Diamonds', 'game_id' => '183920144', 'amount' => 21500, 'status' => 'Success', 'sn' => 'SN-7712-9901-AAAA', 'provider' => 'DiamondStore'],
-            ['date' => '07 Okt 2026 09:20', 'trx' => 'TRX-20261007-0002', 'ref' => 'PAY-88910242', 'product' => 'Free Fire 140 Diamonds', 'game_id' => '556120988', 'amount' => 19500, 'status' => 'Success', 'sn' => 'SN-7712-9902-BBBB', 'provider' => 'GarenaAPI'],
-            ['date' => '07 Okt 2026 09:31', 'trx' => 'TRX-20261007-0003', 'ref' => 'PAY-88910255', 'product' => 'PUBG Mobile 60 UC', 'game_id' => '778901233', 'amount' => 15000, 'status' => 'Pending', 'sn' => '—', 'provider' => 'UniPin'],
-            ['date' => '07 Okt 2026 09:45', 'trx' => 'TRX-20261007-0004', 'ref' => 'PAY-88910266', 'product' => 'Genshin Impact 300 Genesis', 'game_id' => '900112744', 'amount' => 75000, 'status' => 'Success', 'sn' => 'SN-7712-9904-CCCC', 'provider' => 'Moogold'],
-            ['date' => '07 Okt 2026 10:02', 'trx' => 'TRX-20261007-0005', 'ref' => 'PAY-88910277', 'product' => 'Valorant 420 Points', 'game_id' => 'Atlantic#8891', 'amount' => 45000, 'status' => 'Failed', 'sn' => '—', 'provider' => 'SmileOne'],
-            ['date' => '07 Okt 2026 10:15', 'trx' => 'TRX-20261007-0006', 'ref' => 'PAY-88910288', 'product' => 'Mobile Legends 172 Diamonds', 'game_id' => '183920155', 'amount' => 43500, 'status' => 'Processing', 'sn' => '—', 'provider' => 'DiamondStore'],
-            ['date' => '07 Okt 2026 10:28', 'trx' => 'TRX-20261007-0007', 'ref' => 'PAY-88910299', 'product' => 'Free Fire 70 Diamonds', 'game_id' => '556120977', 'amount' => 10000, 'status' => 'Success', 'sn' => 'SN-7712-9907-DDDD', 'provider' => 'GarenaAPI'],
-            ['date' => '07 Okt 2026 10:41', 'trx' => 'TRX-20261007-0008', 'ref' => 'PAY-88910310', 'product' => 'Honkai Star Rail 60 Oneiric', 'game_id' => '700221144', 'amount' => 21000, 'status' => 'Expired', 'sn' => '—', 'provider' => 'Moogold'],
-            ['date' => '07 Okt 2026 11:03', 'trx' => 'TRX-20261007-0009', 'ref' => 'PAY-88910321', 'product' => 'PUBG Mobile 325 UC', 'game_id' => '778901244', 'amount' => 72000, 'status' => 'Success', 'sn' => 'SN-7712-9909-EEEE', 'provider' => 'UniPin'],
-            ['date' => '07 Okt 2026 11:24', 'trx' => 'TRX-20261007-0010', 'ref' => 'PAY-88910332', 'product' => 'Clash of Clans 500 Gems', 'game_id' => 'Atlantic#7712', 'amount' => 65000, 'status' => 'Pending', 'sn' => '—', 'provider' => 'Codashop'],
+        $deposits = Deposit::query()
+            ->with('user')
+            ->when($request->filled('status'), fn ($query) => $query->where('status', $request->query('status')))
+            ->when($request->filled('payment_method'), fn ($query) => $query->where('payment_method', $request->query('payment_method')))
+            ->when($request->filled('q'), function ($query) use ($request): void {
+                $term = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], (string) $request->input('q')).'%';
+
+                $query->where(function ($query) use ($term): void {
+                    $query->where('reference', 'like', $term)
+                        ->orWhereHas('user', fn ($user) => $user
+                            ->where('name', 'like', $term)
+                            ->orWhere('email', 'like', $term));
+                });
+            })
+            ->latest('id')
+            ->paginate(15)
+            ->withQueryString();
+
+        $data = [
+            'deposits' => $deposits,
+            'listRoute' => route('admin.topup.index'),
+            'statusOptions' => collect(DepositStatus::cases())->mapWithKeys(fn (DepositStatus $s) => [$s->value => $s->label()])->all(),
+            'methodOptions' => collect(PaymentMethod::cases())->mapWithKeys(fn (PaymentMethod $m) => [$m->value => $m->label()])->all(),
         ];
 
-        return view('admin.customer-topup.topup', [
-            'topups' => $topups,
-            'statusTones' => [
-                'Success' => 'bg-mint-l tx-mintt',
-                'Pending' => 'bg-gold tx-gold',
-                'Processing' => 'bg-sky-l tx-navy',
-                'Failed' => 'bg-errc-l tx-err',
-                'Expired' => 'bg-tealc-m tx-tealt',
-            ],
+        if ($request->ajax()) {
+            return response()->json([
+                'rows' => view('admin.customer-topup._rows', $data)->render(),
+                'footer' => view('admin.customer-topup._footer', $data)->render(),
+            ]);
+        }
+
+        return view('admin.customer-topup.topup', $data);
+    }
+
+    public function show(Deposit $deposit): View
+    {
+        $deposit->load('user');
+
+        return view('admin.customer-topup.show', [
+            'deposit' => $deposit,
+            'ledger' => $deposit->walletTransaction,
         ]);
+    }
+
+    /**
+     * Menandai top up lunas dan menambah saldo pengguna (idempoten).
+     */
+    public function settle(Request $request, Deposit $deposit): RedirectResponse
+    {
+        $settled = DepositSettler::settle($deposit, $request->user());
+
+        return redirect()
+            ->route('admin.topup.index')
+            ->with('status', $settled
+                ? 'Top up '.$deposit->reference.' ditandai lunas dan saldo pengguna ditambahkan.'
+                : 'Top up '.$deposit->reference.' sudah lunas atau tidak dapat diproses.');
+    }
+
+    /**
+     * Membatalkan top up yang masih menunggu pembayaran.
+     */
+    public function expire(Request $request, Deposit $deposit): RedirectResponse
+    {
+        DB::transaction(function () use ($request, $deposit): void {
+            $locked = Deposit::query()->whereKey($deposit->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($locked->status !== DepositStatus::Pending) {
+                return;
+            }
+
+            $locked->update(['status' => DepositStatus::Expired]);
+
+            TransactionLogger::warning('deposit.expired', 'Top up dibatalkan oleh admin.', [
+                'reference' => $locked->reference,
+                'by' => $request->user()->getKey(),
+            ], null, $locked->user);
+        });
+
+        return redirect()
+            ->route('admin.topup.index')
+            ->with('status', 'Top up '.$deposit->reference.' dibatalkan.');
     }
 }

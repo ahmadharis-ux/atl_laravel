@@ -3,15 +3,23 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
+use App\Models\Order;
 use App\Support\Wallet;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class SaldoController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
+        $orders = $request->user()->orders()
+            ->with(['product.category'])
+            ->latest('id')
+            ->limit(5)
+            ->get();
+
         return view('user.saldo.index', [
-            'balance' => Wallet::BALANCE,
+            'balance' => (int) $request->user()->balance,
             'points' => Wallet::POINTS,
             'adminFee' => Wallet::ADMIN_FEE,
             'shortcuts' => [
@@ -20,12 +28,39 @@ class SaldoController extends Controller
                 ['label' => 'Kontak',   'icon' => 'support_agent', 'tone' => 'bg-sky-l tx-navy'],
                 ['label' => 'Riwayat',  'icon' => 'history',       'tone' => 'bg-mint-l tx-mintt'],
             ],
-            'transactions' => [
-                ['icon' => 'phone_android',  'title' => 'Pulsa Telkomsel 25.000',    'detail' => '081234567801 • 04 Okt 10:42', 'amount' => 26500,  'status' => 'Sukses'],
-                ['icon' => 'wifi',           'title' => 'Paket Data XL 15GB',        'detail' => '087788990011 • 04 Okt 09:15', 'amount' => 58000,  'status' => 'Sukses'],
-                ['icon' => 'electric_bolt',  'title' => 'Token PLN 100.000',         'detail' => '541233008821 • 03 Okt 19:03', 'amount' => 102500, 'status' => 'Proses'],
-                ['icon' => 'sports_esports', 'title' => 'Diamond Mobile Legends 86', 'detail' => 'ID 4412876 • 03 Okt 14:27',   'amount' => 24300,  'status' => 'Sukses'],
-            ],
+            'transactions' => $orders->map(fn (Order $order): array => [
+                'icon' => $this->iconFor($order->product?->category?->slug),
+                'title' => $order->product?->name ?? 'Produk tidak tersedia',
+                'detail' => $order->order_number.' • '.$order->created_at->locale('id')->translatedFormat('d M H:i'),
+                'amount' => $order->amount,
+                'status' => $order->status->label(),
+            ])->all(),
         ]);
+    }
+
+    /**
+     * Riwayat mutasi saldo dari ledger (top up &amp; pembelian).
+     */
+    public function mutations(Request $request): View
+    {
+        $entries = $request->user()->walletTransactions()
+            ->latest('id')
+            ->paginate(15);
+
+        return view('user.saldo.mutations', [
+            'balance' => (int) $request->user()->balance,
+            'entries' => $entries,
+        ]);
+    }
+
+    private function iconFor(?string $slug): string
+    {
+        return match ($slug) {
+            'pulsa' => 'phone_android',
+            'data' => 'wifi',
+            'pln', 'tagihan', 'gas' => 'electric_bolt',
+            'games' => 'sports_esports',
+            default => 'shopping_bag',
+        };
     }
 }

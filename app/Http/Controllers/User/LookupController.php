@@ -38,7 +38,9 @@ class LookupController extends Controller
         $query = $model::query();
 
         if ($type === 'products') {
-            $query->where('status', true)
+            // Pulsa & paket data dipesan lewat /pulsa, bukan katalog produk.
+            $query->forCatalog()
+                ->where('status', true)
                 ->when($term !== '', function ($query) use ($escaped): void {
                     $query->where(function ($q) use ($escaped): void {
                         $q->where('name', 'like', '%'.$escaped.'%')
@@ -48,6 +50,19 @@ class LookupController extends Controller
                 ->orderByDesc('sold_count');
         } elseif ($term !== '') {
             $query->where('name', 'like', '%'.$escaped.'%');
+        }
+
+        if ($type === 'categories') {
+            // Kategori pulsa/data tidak muncul sebagai filter di /produk.
+            $query->whereNotIn('slug', Product::OPERATOR_CATEGORY_SLUGS);
+        }
+
+        if ($type === 'brands' && $request->filled('category')) {
+            // Brand menyesuaikan kategori terpilih: hanya yang punya produk aktif di sana.
+            $categoryId = $request->integer('category');
+            $query->whereHas('products', function ($query) use ($categoryId): void {
+                $query->where('category_id', $categoryId)->where('status', true);
+            });
         }
 
         $rows = $query->orderBy('name')

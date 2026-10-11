@@ -3,7 +3,7 @@
     $menu = [
         ['label' => 'Beranda',    'icon' => 'grid_view',              'url' => route('dashboard'), 'active' => request()->routeIs('dashboard')],
         ['label' => 'Produk',     'icon' => 'storefront',            'url' => route('products.index'), 'active' => request()->routeIs('products.*')],
-        ['label' => 'Riwayat',    'icon' => 'receipt_long',           'url' => '#', 'active' => false],
+        ['label' => 'Riwayat',    'icon' => 'receipt_long',           'url' => route('orders.index'), 'active' => request()->routeIs('orders.*')],
         ['label' => 'Kontak',     'icon' => 'contact_phone',          'url' => '#', 'active' => false],
         ['label' => 'Deposit',    'icon' => 'account_balance_wallet', 'url' => route('saldo.index'), 'active' => request()->routeIs('saldo.*')],
         ['label' => 'Pengaturan', 'icon' => 'settings',               'url' => '#', 'active' => false],

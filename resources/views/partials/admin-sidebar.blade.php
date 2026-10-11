@@ -14,7 +14,7 @@
         ],
         ['label' => 'Pengguna',          'icon' => 'group',              'url' => route('admin.users.index'), 'active' => request()->routeIs('admin.users.*'),   'show' => $auth?->can('users.view') ?? false],
         ['label' => 'Role & Permission', 'icon' => 'admin_panel_settings','url' => route('admin.roles.index'), 'active' => request()->routeIs('admin.roles.*'),   'show' => $auth?->can('roles.view') ?? false],
-[
+        [
             'label' => 'Produk',
             'icon' => 'inventory_2',
             'active' => request()->routeIs('admin.products.*'),
@@ -24,7 +24,15 @@
                 ['label' => 'Pascabayar', 'url' => route('admin.products.postpaid.index'), 'active' => request()->routeIs('admin.products.postpaid.*'), 'show' => $auth?->can('products.view') ?? false],
             ],
         ],
-        ['label' => 'Transaksi',         'icon' => 'receipt_long',       'url' => '#',                        'active' => false,                                'show' => true],
+        [
+            'label' => 'Transaksi',
+            'icon' => 'receipt_long',
+            'active' => request()->routeIs('admin.transactions.*'),
+            'show' => $auth?->can('transactions.view') ?? false,
+            'children' => [
+                ['label' => 'Semua Transaksi', 'url' => route('admin.transactions.index'), 'active' => request()->routeIs('admin.transactions.*'), 'show' => $auth?->can('transactions.view') ?? false],
+            ],
+        ],
         ['label' => 'Laporan',           'icon' => 'bar_chart',          'url' => '#',                        'active' => false,                                'show' => true],
         ['label' => 'Komponen',          'icon' => 'widgets',            'url' => route('admin.components'),  'active' => request()->routeIs('admin.components'),'show' => true],
         ['label' => 'Pengaturan',        'icon' => 'settings',           'url' => '#',                        'active' => false,                                'show' => true],

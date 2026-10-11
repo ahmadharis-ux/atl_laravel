@@ -9,6 +9,7 @@
     'remoteUrl' => null,
     'selectedLabel' => null,
     'minChars' => 1,
+    'dependsOn' => null,
 ])
 
 @php($selected = $value ?? old($name))
@@ -24,6 +25,7 @@
             data-remote-url="{{ $remoteUrl }}"
             data-min-chars="{{ $minChars }}"
             data-hint-limit="5"
+            @if ($dependsOn) data-depends-on="{{ $dependsOn }}" @endif
         @endif
     >
         <option value="">{{ $placeholder }}</option>

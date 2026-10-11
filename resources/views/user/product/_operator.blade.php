@@ -1,4 +1,4 @@
-<div class="card-ap r-card p-3 d-flex flex-column gap-2 {{ $requiresOperator ? '' : 'd-none' }}"
+<div class="card-ap r-card p-3 d-flex flex-column gap-2"
      data-operator-check
      data-endpoint="{{ route('products.detect-operator') }}">
     <div class="d-flex align-items-center gap-2">

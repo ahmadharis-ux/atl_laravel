@@ -56,28 +56,22 @@ class PhoneOperatorTest extends TestCase
             ]);
     }
 
-    public function test_pulsa_category_requires_number_before_showing_products(): void
+    public function test_pulsa_products_are_not_listed_in_the_general_catalog(): void
     {
-        $user = User::factory()->create();
         $pulsa = Category::factory()->create(['slug' => 'pulsa', 'name' => 'Pulsa']);
-        $telkomsel = Brand::factory()->create(['slug' => 'telkomsel']);
+        $telkomsel = Brand::factory()->create(['slug' => 'telkomsel', 'name' => 'Telkomsel']);
+
         Product::factory()->create([
+            'name' => 'Telkomsel Pulsa 50K',
             'category_id' => $pulsa->getKey(),
             'brand_id' => $telkomsel->getKey(),
             'status' => true,
         ]);
 
-        $this->actingAs($user)
+        $this->actingAs(User::factory()->create())
             ->get(route('products.index', ['category' => $pulsa->getKey()]))
             ->assertOk()
-            ->assertSee('Masukkan nomor HP dulu', false);
-
-        $this->actingAs($user)
-            ->get(route('products.index', [
-                'category' => $pulsa->getKey(),
-                'brand' => $telkomsel->getKey(),
-            ]))
-            ->assertOk()
-            ->assertDontSee('Masukkan nomor HP dulu', false);
+            ->assertDontSee('Telkomsel Pulsa 50K')
+            ->assertSee('Produk tidak ditemukan');
     }
 }

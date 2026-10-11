@@ -100,6 +100,7 @@ Bila satu halaman punya beberapa blok, tandai dengan pola berikut (lihat `/admin
 <x-ui.select name="kategori" label="Kategori" placeholder="Pilih..."
     :options="['pulsa' => 'Pulsa', 'data' => 'Paket Data']" />
 <x-ui.textarea name="deskripsi" label="Deskripsi" :rows="3" />
+<x-ui.currency-input name="harga" label="Harga" hint="Format ribuan otomatis." />
 <x-ui.radio-card name="jenis" value="prabayar" label="Prabayar" :checked="true" />
 <x-ui.check-card name="notif" label="Kirim notifikasi" :checked="true" />
 <x-ui.switch name="aktif" label="Aktifkan" :checked="true" />
@@ -124,6 +125,7 @@ Bila satu halaman punya beberapa blok, tandai dengan pola berikut (lihat `/admin
   - **Aturan:** pencarian dari beranda hanya mencari produk — bukan transaksi, ID, atau pengguna — lalu diarahkan ke halaman `Produk` dengan `?q=`. Di halaman Produk, kotak ini bisa dikaitkan ke filter AJAX dengan menambahkan `data-ajax-maybe` pada pemakaiannya: ketikan dan Enter ikut memuat ulang grid tanpa pindah URL (tidak tercatat ke riwayat, sesuai prinsip filter tanpa ganti URL). Selama ada kata kunci `q`, tab prabayar/pascabayar dilewati sehingga produk jenis apa pun langsung tampil; blok `data-ajax-tabs` diganti keterangan "Semua jenis" dan tab kembali begitu pencarian dikosongkan.
 - `select`: `name`, `label`, `options` (array value=>text), `value`, `placeholder`, `hint`.
 - `textarea`: `name`, `label`, `rows`, `value`, `hint`.
+- `currency-input`: `name`, `label`, `value`, `hint`, `prefix` (default `Rp`) — input mata uang, otomatis format ribuan (`.`) dan rata kanan. Nilai yang dikirim ke server adalah angka mentah (tanpa titik), jadi tetap aman untuk validasi `integer`/`min`/`max`.
 - `search-select` (select yang bisa dicari, berbasis Tom Select — tanpa jQuery):
 
 ```blade
@@ -141,6 +143,7 @@ Bila satu halaman punya beberapa blok, tandai dengan pola berikut (lihat `/admin
 
   - Lokal: cukup beri `:options` seperti `select`.
   - Remote: `:remote="true"` + `:remote-url` (endpoint JSON `{ "results": [{ "value", "text" }] }`) + `:selected-label` agar nilai yang sedang terpilih tetap tampil **tanpa** memuat seluruh opsi. `min-chars` (default 1) mengatur jumlah huruf minimal sebelum pencarian dijalankan. Saat dropdown dibuka tanpa kata kunci, komponen memuat **5 opsi pertama** sebagai hint (`data-hint-limit`) agar tidak tampil kosong.
+  - Select bertingkat (dependent): `depends-on="category"` membuat nilai field lain (mis. `category`) ikut dikirim sebagai parameter query ke `:remote-url` (contoh: `?type=brands&category=3`), dan opsi/pilihan select ini dikosongkan otomatis saat field induk berubah. Contoh: brand pada filter Produk hanya menampilkan brand yang punya produk di kategori terpilih.
   - Endpoint lookup admin: `route('admin.lookup', ['type' => '...'])` dengan whitelist `brands`, `categories`, `types`, `sellers`, `products`. Halaman publik memakai `route('products.lookup', ['type' => '...'])` (hanya `brands` & `categories`). Hasil dibatasi `limit` (default 20, maks 50) supaya tetap ringan.
   - **Aturan:** jika opsi suatu select berpotensi banyak (> ~50), pakai `search-select` remote, bukan `select` biasa.
 
@@ -193,6 +196,7 @@ Aturan penting data table:
 - `bulkActions` default: `delete`. Contoh nilai: `['value' => 'activate', 'label' => 'Aktifkan', 'icon' => 'toggle_on', 'tone' => 'btn-soft']`.
 - Aksi baris **selalu** pakai `x-ui.actions`, bukan deretan `<button>` manual.
 - Pagination: gunakan `{{ $payload->links() }}` untuk data server-side.
+- **Muat lebih banyak** (alternatif pagination): tandai tombol dengan `data-ajax-more` + `data-page="{{ $p->currentPage() + 1 }}"`. Klik akan memuat halaman berikut dan **menambahkan** kartu ke bawah grid, bukan mengganti. Dipakai di daftar Produk (`resources/views/user/product/_footer.blade.php`).
 
 #### Filter AJAX (tanpa reload / tanpa ubah URL)
 
@@ -493,6 +497,11 @@ Overlay loading global yang **otomatis muncul saat form disubmit** (kecuali meth
 <form method="GET">...</form>            {{-- otomatis dilewati --}}
 <form data-no-loader>...</form>          {{-- dilewati manual --}}
 <form data-loader="off">...</form>       {{-- dilewati manual --}}
+```
+
+**Durasi minimum** — untuk aksi yang prosesnya terasa instan (mis. checkout), tambahkan `data-min-loader="2000"` agar loader tampil **minimal 2 detik**. Form dikirim via `fetch` sehingga bila backend butuh lebih lama, loader otomatis ikut selama proses backend (durasi = maksimum dari keduanya), lalu halaman diarahkan ke hasilnya (redirect sukses maupun error validasi tetap bekerja). Dipakai di halaman Checkout (`resources/views/user/checkout/show.blade.php`).
+```blade
+<form method="POST" action="..." data-min-loader="2000">...</form>
 ```
 
 **Kontrol manual via JS:**

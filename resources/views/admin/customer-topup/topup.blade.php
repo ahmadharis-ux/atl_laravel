@@ -4,66 +4,53 @@
 @section('page-title', 'Customer Topup')
 
 @section('content')
-<div class="d-flex flex-column gap-4">
+<div class="d-flex flex-column gap-4" data-ajax
+     data-ajax-url="{{ $listRoute }}"
+     data-persist-key="admin.topup">
 
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
             <h1 class="fw-bold fs-4 m-0">Transaksi Topup</h1>
-            <p class="tx-mute fs-12 m-0">Daftar transaksi topup pelanggan. Data sementara (hardcode).</p>
+            <p class="tx-mute fs-12 m-0">Permintaan top up saldo pelanggan &amp; status pembayarannya.</p>
         </div>
     </div>
+
+    <x-ui.card>
+        <form method="GET" action="{{ $listRoute }}" class="row g-3 align-items-end" data-ajax-form>
+            <div class="col-6 col-md-4 col-lg-3">
+                <x-ui.select name="status" label="Status" :options="$statusOptions" :value="request('status')" placeholder="Semua Status" />
+            </div>
+            <div class="col-6 col-md-4 col-lg-3">
+                <x-ui.select name="payment_method" label="Metode" :options="$methodOptions" :value="request('payment_method')" placeholder="Semua Metode" />
+            </div>
+            <div class="col-12 col-md-4 col-lg-4">
+                <x-ui.input name="q" label="Pencarian" :value="request('q')" placeholder="Referensi / nama / email pengguna" />
+            </div>
+            <div class="col-12 col-lg-2 d-flex align-items-end gap-2">
+                <button type="submit" class="btn-navy flex-fill"><span class="ms ms-sm align-middle me-1">search</span>Cari</button>
+                <button type="button" class="btn-soft" data-ajax-reset><span class="ms ms-sm">restart_alt</span></button>
+            </div>
+        </form>
+    </x-ui.card>
 
     <x-ui.data-table
         id="tblTopup"
         title="Daftar Topup"
-        search-placeholder="Cari transaksi, game ID, atau produk..."
         :columns="[
             ['label' => 'Tanggal'],
-            ['label' => 'TransID'],
-            ['label' => 'Payment Reference'],
-            ['label' => 'Products'],
-            ['label' => 'Game ID'],
-            ['label' => 'Amount', 'class' => 'text-end'],
+            ['label' => 'Referensi'],
+            ['label' => 'Pengguna'],
+            ['label' => 'Metode'],
+            ['label' => 'Nominal', 'class' => 'text-end'],
             ['label' => 'Status'],
-            ['label' => 'Sn'],
-            ['label' => 'Provider'],
-            ['label' => 'Action', 'class' => 'text-end'],
+            ['label' => 'Dibayar'],
+            ['label' => 'Aksi', 'class' => 'text-end'],
         ]"
     >
-        @foreach ($topups as $i => $t)
-            @php
-                $actions = [['label' => 'Detail', 'icon' => 'visibility', 'href' => '#']];
-                if (auth()->user()->can('topups.update')) {
-                    $actions[] = [
-                        'label' => 'Kirim Ulang',
-                        'icon' => 'refresh',
-                        'href' => '#',
-                        'confirm' => 'Kirim ulang transaksi '.$t['trx'].'?',
-                    ];
-                }
-            @endphp
-            <tr data-status="{{ $t['status'] }}">
-                <td class="tx-mute fs-12 text-nowrap">{{ $t['date'] }}</td>
-                <td><x-ui.tooltip :text="$t['trx']" class="fw-semibold fs-12">{{ $t['trx'] }}</x-ui.tooltip></td>
-                <td><x-ui.tooltip :text="$t['ref']" class="tx-mute fs-12">{{ $t['ref'] }}</x-ui.tooltip></td>
-                <td>{{ $t['product'] }}</td>
-                <td class="fw-semibold fs-12">{{ $t['game_id'] }}</td>
-                <td class="text-end fw-semibold">Rp {{ number_format($t['amount'], 0, ',', '.') }}</td>
-                <td><span class="pill {{ $statusTones[$t['status']] ?? 'bg-tealc-m tx-tealt' }}">{{ $t['status'] }}</span></td>
-                <td>
-                    @if ($t['sn'] === '—')
-                        <span class="tx-mute">—</span>
-                    @else
-                        <x-ui.tooltip :text="$t['sn']" truncate="8rem" class="fs-12 tx-mute">{{ $t['sn'] }}</x-ui.tooltip>
-                    @endif
-                </td>
-                <td><span class="pill bg-tealc-m tx-tealt">{{ $t['provider'] }}</span></td>
-                <td class="text-end"><x-ui.actions :actions="$actions" /></td>
-            </tr>
-        @endforeach
+        @include('admin.customer-topup._rows')
 
         <x-slot:footer>
-            <span class="fs-12 tx-mute">Menampilkan 1–{{ count($topups) }} dari {{ count($topups) }} transaksi</span>
+            @include('admin.customer-topup._footer')
         </x-slot:footer>
     </x-ui.data-table>
 </div>

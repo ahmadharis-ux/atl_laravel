@@ -39,7 +39,7 @@ class DashboardController extends Controller
             ],
             'dateLong' => $now->translatedFormat('l, d F Y'),
             'dateShort' => $now->translatedFormat('l, d F'),
-            'balance' => Wallet::BALANCE,
+            'balance' => (int) $authUser->balance,
             'points' => Wallet::POINTS,
             'searchHistory' => $history,
             'topQueries' => $topQueries,
@@ -48,6 +48,7 @@ class DashboardController extends Controller
             'bestSellers' => Product::query()
                 ->with(['brand', 'category'])
                 ->where('status', true)
+                ->forCatalog()
                 ->bestSeller()
                 ->limit(6)
                 ->get(),
@@ -69,6 +70,7 @@ class DashboardController extends Controller
         return Product::query()
             ->with(['brand', 'category'])
             ->where('status', true)
+            ->forCatalog()
             ->where(function (Builder $query) use ($terms): void {
                 foreach ($terms as $term) {
                     $like = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $term).'%';
@@ -108,6 +110,16 @@ class DashboardController extends Controller
         ];
 
         return array_map(function (array $item) use ($categoryId, $typeByCategory): array {
+            // Pulsa & paket data punya alur sendiri (deteksi operator dulu),
+            // jadi diarahkan ke halaman khusus, bukan daftar produk umum.
+            if (in_array($item['slug'], ['pulsa', 'data'], true)) {
+                return [
+                    'label' => $item['label'],
+                    'icon' => $item['icon'],
+                    'url' => route('pulsa.index', ['tab' => $item['slug']]),
+                ];
+            }
+
             $id = (int) $categoryId($item['slug']);
 
             $params = [];

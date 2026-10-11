@@ -219,12 +219,19 @@
       els.forEach(function (el) {
         if (el.tomselect) return;
         var remote = el.dataset.remoteUrl;
+        var dependsOn = el.dataset.dependsOn || null;
         var cfg = {
           create: false,
           allowEmptyOption: true,
           placeholder: el.dataset.placeholder || '',
           maxOptions: null,
         };
+
+        // Nilai field induk (mis. kategori untuk pilihan brand).
+        function parentValue() {
+          if (!dependsOn || !el.form || !el.form.elements[dependsOn]) return '';
+          return el.form.elements[dependsOn].value || '';
+        }
 
         if (remote) {
           cfg.valueField = 'value';
@@ -240,6 +247,10 @@
             var limit = empty ? hintLimit : 20;
             var url = remote + (remote.indexOf('?') === -1 ? '?' : '&')
               + 'q=' + encodeURIComponent(query) + '&limit=' + limit;
+            var parent = parentValue();
+            if (parent) {
+              url += '&' + encodeURIComponent(dependsOn) + '=' + encodeURIComponent(parent);
+            }
             fetch(url, {
               headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
             })
@@ -250,6 +261,17 @@
         }
 
         el.tomselect = new TomSelect(el, cfg);
+
+        // Select turunan: saat field induk berubah, buang opsi lawas lalu muat ulang.
+        if (dependsOn && el.form && el.form.elements[dependsOn]) {
+          el.form.elements[dependsOn].addEventListener('change', function () {
+            var ts = el.tomselect;
+            if (!ts) return;
+            ts.clear(true);
+            ts.clearOptions();
+            ts.load('');
+          });
+        }
       });
     });
   }
@@ -335,6 +357,14 @@
             el.tomselect.setValue(val, true);
           } else {
             el.value = val;
+            // Sinkronkan tampilan ber-titik untuk input mata uang.
+            var currencyWrap = el.closest ? el.closest('[data-currency]') : null;
+            if (currencyWrap) {
+              var currencyDisplay = currencyWrap.querySelector('[data-currency-display]');
+              if (currencyDisplay) {
+                currencyDisplay.value = val ? String(val).replace(/\B(?=(\d{3})+(?!\d))/g, '.') : '';
+              }
+            }
           }
           if (val !== '' && val != null) hasValue = true;
         });
@@ -375,7 +405,7 @@
         return found ? data : null;
       }
 
-      var load = root._load = function (page) {
+      var load = root._load = function (page, append) {
         if (page == null) page = 1;
         var params = new URLSearchParams(collectFields());
         params.set('page', page);
@@ -389,7 +419,15 @@
           .then(function (r) { return r.ok ? r.json() : null; })
           .then(function (data) {
             if (!data) return;
-            if (typeof data.rows === 'string') rowsEl.innerHTML = data.rows;
+            if (typeof data.rows === 'string') {
+              if (append) {
+                var tmp = document.createElement('div');
+                tmp.innerHTML = data.rows;
+                while (tmp.firstChild) rowsEl.appendChild(tmp.firstChild);
+              } else {
+                rowsEl.innerHTML = data.rows;
+              }
+            }
             if (tabsEl && typeof data.tabs === 'string') tabsEl.innerHTML = data.tabs;
             if (footEl && typeof data.footer === 'string') footEl.innerHTML = data.footer;
             root.classList.remove('is-loading');
@@ -405,15 +443,29 @@
 
       var debounced = function () { persist(); load(1); };
 
+      // Tutup modal filter yang sedang dipakai. Modal berada DI DALAM form,
+      // jadi tidak bisa dicari lewat form.closest('.ap-modal').
+      function closeFormModal(target) {
+        var modal = (target && target.closest) ? target.closest('.ap-modal') : null;
+        if (!modal && form) modal = form.querySelector('.ap-modal');
+        if (modal) closeModal(modal);
+      }
+
       if (form) {
         form.addEventListener('submit', function (e) {
           e.preventDefault();
           persist();
           load(1);
+          closeFormModal(e.submitter || e.target);
         });
-        form.addEventListener('change', function () { clearTimeout(timer); timer = setTimeout(debounced, 250); });
+        form.addEventListener('change', function (e) {
+          if (e.target && e.target.closest && e.target.closest('[data-currency]')) return;
+          clearTimeout(timer);
+          timer = setTimeout(debounced, 250);
+        });
         form.addEventListener('input', function (e) {
           if (e.target && e.target.tagName === 'SELECT') return;
+          if (e.target && e.target.closest && e.target.closest('[data-currency]')) return;
           clearTimeout(timer);
           timer = setTimeout(debounced, 400);
         });
@@ -439,13 +491,21 @@
 
       var reset = root.querySelector('[data-ajax-reset]');
       if (reset && form) {
-        reset.addEventListener('click', function () {
+        reset.addEventListener('click', function (e) {
           form.reset();
           form.querySelectorAll('select[data-remote-url]').forEach(function (el) {
             if (el.tomselect) el.tomselect.clear(true);
           });
+          // form.reset() mengembalikan input mata uang ke nilai server, bukan kosong.
+          form.querySelectorAll('[data-currency]').forEach(function (wrap) {
+            var display = wrap.querySelector('[data-currency-display]');
+            var hidden = wrap.querySelector('[data-currency-value]');
+            if (display) display.value = '';
+            if (hidden) hidden.value = '';
+          });
           persist();
           load(1);
+          closeFormModal(e.target);
         });
       }
 
@@ -462,31 +522,13 @@
         load(1);
       });
 
-      // Panel filter di < xl disembunyikan; tombol "Filter" membukanya.
-      var filterPanel = root.querySelector('[data-ajax-filter]');
-      var filterToggles = [...root.querySelectorAll('[data-ajax-filter-toggle]')];
-      if (filterPanel && filterToggles.length) {
-        filterToggles.forEach(function (btn) {
-          btn.addEventListener('click', function () {
-            var open = filterPanel.classList.toggle('is-open');
-            filterToggles.forEach(function (b) { b.setAttribute('aria-expanded', open ? 'true' : 'false'); });
-            if (open) {
-              var first = filterPanel.querySelector('select, input, button');
-              if (first && first.focus) setTimeout(function () { first.focus(); }, 60);
-            }
-          });
-        });
-      }
-
       if (footEl) {
         footEl.addEventListener('click', function (e) {
-          var a = e.target.closest('a[href]');
-          if (!a) return;
-          var page = null;
-          try { page = new URL(a.href, window.location.origin).searchParams.get('page'); } catch (err) {}
-          if (!page) return;
+          var more = e.target.closest('[data-ajax-more]');
+          if (!more || !root.contains(more)) return;
           e.preventDefault();
-          load(page);
+          if (root.classList.contains('is-loading')) return;
+          load(more.dataset.page, true);
         });
       }
 
@@ -716,6 +758,7 @@
       var suggestList = pop.querySelector('[data-role="suggest-list"]');
       var historyList = pop.querySelector('[data-role="history-list"]');
       var clearBtn = pop.querySelector('[data-role="clear-history"]');
+      var clearInput = form.querySelector('[data-search-clear]');
       var timer = null, fetchSeq = 0, activeRow = null;
 
       function escHtml(s) {
@@ -748,6 +791,9 @@
       function closePop() {
         pop.hidden = true;
         if (activeRow) { activeRow.classList.remove('is-active'); activeRow = null; }
+      }
+      function syncClear() {
+        if (clearInput) clearInput.hidden = input.value.trim() === '';
       }
       function openPop() { pop.hidden = false; }
       function showEmptyHistory() {
@@ -825,9 +871,19 @@
 
       input.addEventListener('focus', openPop);
 
+      if (clearInput) {
+        clearInput.addEventListener('click', function () {
+          input.value = '';
+          syncClear();
+          input.focus();
+        });
+      }
+      syncClear();
+
       input.addEventListener('input', function () {
         clearTimeout(timer);
         var term = input.value.trim();
+        syncClear();
         openPop();
         if (term) {
           filterHistory(term);
@@ -1000,6 +1056,7 @@
       function setSelectValue(el, value, text) {
         if (!el || value == null || value === '') return;
         value = String(value);
+        if (el.tagName !== 'SELECT') { el.value = value; return; }
         if (el.tomselect) {
           if (!el.tomselect.options[value]) {
             var opt = el.querySelector('option[value="' + value + '"]');
@@ -1146,7 +1203,7 @@
       var form = e.target;
       if (!(form instanceof HTMLFormElement)) return;
       if ((form.getAttribute('method') || 'get').toLowerCase() === 'get') return;
-      if (form.hasAttribute('data-no-loader') || form.dataset.loader === 'off') return;
+      if (form.hasAttribute('data-no-loader') || form.dataset.loader === 'off' || form.hasAttribute('data-min-loader')) return;
       if (form.target && form.target !== '' && form.target !== '_self') return;
       show();
       setTimeout(function () { if (e.defaultPrevented) hide(); }, 0);
@@ -1161,6 +1218,132 @@
     confirm: confirmAction,
   };
 
+  // ---------------- Payment methods (checkout) ----------------
+  // Markup: <div data-payment-methods>
+  //   <input type="radio" name="payment_method" ...>
+  //   <div data-payment-channel="va ewallet">...</div>
+  // </div>
+  function initPaymentMethods() {
+    document.querySelectorAll('[data-payment-methods]').forEach(function (root) {
+      var inputs = root.querySelectorAll('input[name="payment_method"]');
+      var blocks = root.querySelectorAll('[data-payment-channel]');
+      if (!inputs.length) return;
+
+      function sync() {
+        var checked = root.querySelector('input[name="payment_method"]:checked');
+        var value = checked ? checked.value : '';
+        blocks.forEach(function (block) {
+          var allowed = (block.dataset.paymentChannel || '').split(/\s+/);
+          var on = value !== '' && allowed.indexOf(value) > -1;
+          block.classList.toggle('d-none', !on);
+          var field = block.querySelector('select, input, textarea');
+          if (field) field.disabled = !on;
+        });
+      }
+
+      inputs.forEach(function (input) { input.addEventListener('change', sync); });
+      sync();
+    });
+  }
+
+  // Form ber-atribut data-min-loader="2000" dikirim lewat fetch supaya overlay
+  // loader tampil minimal sekian ms — atau lebih lama bila proses backend lebih
+  // lambat — baru halaman diarahkan ke hasilnya. Redirect sukses maupun error
+  // validasi tetap ditangani (halaman tujuan dimuat via location.assign).
+  function initMinLoaderForms() {
+    document.querySelectorAll('form[data-min-loader]').forEach(function (form) {
+      form.addEventListener('submit', function (e) {
+        if (form.dataset.submitting === '1') return;
+        e.preventDefault();
+        form.dataset.submitting = '1';
+
+        var min = parseInt(form.dataset.minLoader, 10);
+        if (isNaN(min) || min < 0) min = 2000;
+        var started = Date.now();
+        var data = new FormData(form);
+
+        var buttons = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+        buttons.forEach(function (b) { b.disabled = true; });
+
+        if (window.AP && AP.showLoader) AP.showLoader();
+
+        fetch(form.action, {
+          method: (form.getAttribute('method') || 'post').toUpperCase(),
+          body: data,
+          credentials: 'same-origin',
+          headers: { 'Accept': 'text/html' },
+        }).then(function (response) {
+          var wait = Math.max(0, min - (Date.now() - started));
+          setTimeout(function () {
+            if (response.redirected && response.url) {
+              window.location.assign(response.url);
+            } else {
+              window.location.reload();
+            }
+          }, wait);
+        }).catch(function () {
+          if (window.AP && AP.hideLoader) AP.hideLoader();
+          form.dataset.submitting = '';
+          buttons.forEach(function (b) { b.disabled = false; });
+          form.submit();
+        });
+      });
+    });
+  }
+
+  // ---------------- Preset nominal ----------------
+  // Tombol <button data-amount-set="20000" data-amount-target="input[name=amount]">
+  // mengisi field nominal terkait saat diklik.
+  function initAmountPresets() {
+    document.querySelectorAll('[data-amount-set]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        var selector = btn.dataset.amountTarget || 'input[name="amount"]';
+        var field = document.querySelector(selector);
+        if (!field) return;
+        field.value = btn.dataset.amountSet;
+        field.dispatchEvent(new Event('input', { bubbles: true }));
+        field.focus();
+      });
+    });
+  }
+
+  // ---------------- Currency input ----------------
+  // <div data-currency> berisi [data-currency-display] (tampilan ber-titik)
+  // dan [data-currency-value] (nilai mentah yang dikirim ke server).
+  function initCurrencyInputs() {
+    document.querySelectorAll('[data-currency]').forEach(function (wrap) {
+      var display = wrap.querySelector('[data-currency-display]');
+      var hidden = wrap.querySelector('[data-currency-value]');
+      if (!display) return;
+
+      function group(digits) {
+        return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      }
+
+      function sync() {
+        var raw = display.value;
+        var caret = typeof display.selectionStart === 'number' ? display.selectionStart : raw.length;
+        var digitsBefore = raw.slice(0, caret).replace(/\D/g, '').length;
+        var digits = raw.replace(/\D/g, '');
+        var formatted = group(digits);
+        display.value = formatted;
+        if (hidden) hidden.value = digits;
+
+        var pos = 0, seen = 0;
+        while (pos < formatted.length && seen < digitsBefore) {
+          var code = formatted.charCodeAt(pos);
+          if (code >= 48 && code <= 57) seen++;
+          pos++;
+        }
+        if (typeof display.setSelectionRange === 'function') display.setSelectionRange(pos, pos);
+      }
+
+      display.addEventListener('input', sync);
+      sync();
+    });
+  }
+
   function boot() {
     initTables();
     initWizards();
@@ -1171,6 +1354,10 @@
     initSearchBoxes();
     initNicknameChecks();
     initOperatorChecks();
+    initPaymentMethods();
+    initMinLoaderForms();
+    initAmountPresets();
+    initCurrencyInputs();
     initTooltips();
     initActions();
     initModals();

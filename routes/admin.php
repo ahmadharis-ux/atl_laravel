@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\LookupController;
 use App\Http\Controllers\Admin\Product\ProductController as ProductModuleController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -30,7 +31,13 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::delete('/roles/{role}', [RoleController::class, 'destroy'])->middleware('permission:roles.delete')->name('roles.destroy');
 
     Route::get('/customer-topup/topup', [TopupController::class, 'index'])->middleware('permission:topups.view')->name('topup.index');
+    Route::get('/customer-topup/topup/{deposit}', [TopupController::class, 'show'])->middleware('permission:topups.view')->name('topup.show');
+    Route::post('/customer-topup/topup/{deposit}/settle', [TopupController::class, 'settle'])->middleware('permission:topups.update')->name('topup.settle');
+    Route::post('/customer-topup/topup/{deposit}/expire', [TopupController::class, 'expire'])->middleware('permission:topups.update')->name('topup.expire');
     Route::get('/customer-topup/product', [ProductController::class, 'index'])->middleware('permission:products.view')->name('product.index');
+
+    Route::get('/transactions', [TransactionController::class, 'index'])->middleware('permission:transactions.view')->name('transactions.index');
+    Route::get('/transactions/{order}', [TransactionController::class, 'show'])->middleware('permission:transactions.view')->name('transactions.show');
 
     Route::prefix('products')->name('products.')->group(function () {
         Route::get('/prabayar', [ProductModuleController::class, 'prabayar'])->middleware('permission:products.view')->name('prepay.index');

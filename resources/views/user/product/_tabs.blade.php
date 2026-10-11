@@ -4,9 +4,6 @@
             <span class="ms ms-sm tx-teal">search</span>
             Semua jenis untuk “{{ $term }}”
         </span>
-        <button type="button" class="btn-soft" data-ajax-clear-search>
-            <span class="ms ms-sm align-middle me-1">backspace</span>Bersihkan
-        </button>
     </div>
 @else
     <nav class="ptabs" role="tablist">

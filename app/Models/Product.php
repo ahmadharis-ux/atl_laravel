@@ -28,6 +28,14 @@ class Product extends Model
     /** @use HasFactory<ProductFactory> */
     use HasFactory;
 
+    /**
+     * Kategori yang punya alur pemesanan sendiri (deteksi nomor HP lewat
+     * halaman /pulsa) dan tidak ditampilkan di katalog produk umum.
+     *
+     * @var list<string>
+     */
+    public const OPERATOR_CATEGORY_SLUGS = ['pulsa', 'data'];
+
     public function brand(): BelongsTo
     {
         return $this->belongsTo(Brand::class);
@@ -73,6 +81,48 @@ class Product extends Model
     public function scopePaymentType(Builder $query, ProductPaymentType $type): void
     {
         $query->where('payment_type', $type);
+    }
+
+    /**
+     * Produk katalog umum: mengecualikan pulsa & paket data yang dipesan
+     * lewat alur khusus di halaman /pulsa.
+     */
+    public function scopeForCatalog(Builder $query): void
+    {
+        $query->whereNotIn('category_id', Category::query()
+            ->whereIn('slug', self::OPERATOR_CATEGORY_SLUGS)
+            ->select('id'));
+    }
+
+    /**
+     * Ekspresi SQL harga jual (harga modal + markup) dengan satu placeholder
+     * yang diisi nilai enum {@see MarkupType::Percent}.
+     */
+    public static function sellingPriceExpression(): string
+    {
+        return '(CASE WHEN markup_type = ? THEN cost_price + (cost_price * markup_value / 100) ELSE cost_price + markup_value END)';
+    }
+
+    /**
+     * Saring berdasarkan harga jual, yaitu harga modal ditambah markup.
+     * Batas yang null diabaikan, jadi bisa dipakai untuk min/maks saja.
+     */
+    public function scopePriceBetween(Builder $query, ?int $min, ?int $max): void
+    {
+        $price = self::sellingPriceExpression();
+
+        $query->when($min !== null, fn (Builder $q) => $q->whereRaw($price.' >= ?', [MarkupType::Percent->value, $min]))
+            ->when($max !== null, fn (Builder $q) => $q->whereRaw($price.' <= ?', [MarkupType::Percent->value, $max]));
+    }
+
+    /**
+     * Urutkan berdasarkan harga jual; arah selain "desc" dianggap menaik.
+     */
+    public function scopeOrderByPrice(Builder $query, string $direction = 'asc'): void
+    {
+        $direction = strtolower($direction) === 'desc' ? 'DESC' : 'ASC';
+
+        $query->orderByRaw(self::sellingPriceExpression().' '.$direction, [MarkupType::Percent->value]);
     }
 
     /**

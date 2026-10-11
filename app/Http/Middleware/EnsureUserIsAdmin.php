@@ -11,8 +11,7 @@ class EnsureUserIsAdmin
     public function handle(Request $request, Closure $next): Response
     {
         if (! $request->user()?->canAccessAdmin()) {
-            return redirect()->route('dashboard')
-                ->withErrors(['admin' => 'Anda tidak memiliki akses ke area admin.']);
+            abort(403, 'Anda tidak memiliki akses ke area admin.');
         }
 
         return $next($request);

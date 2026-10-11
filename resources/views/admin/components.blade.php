@@ -245,6 +245,8 @@
 
                 <div class="col-12"><x-ui.textarea name="f-desc" label="Deskripsi Singkat" :rows="3" placeholder="Tulis deskripsi produk..." hint="Maksimal 200 karakter." /></div>
 
+                <div class="col-md-6"><x-ui.currency-input name="f-harga" label="Harga" hint="Input mata uang: otomatis format ribuan & rata kanan." /></div>
+
                 <div class="col-12">
                     <label class="ui-label">Pencarian Produk (khusus produk, saran + riwayat)</label>
                     <x-ui.searchbox

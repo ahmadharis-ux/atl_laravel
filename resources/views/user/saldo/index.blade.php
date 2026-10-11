@@ -27,8 +27,8 @@
         </div>
         <span class="fs-12 tx-skyd balance-meta">Terakhir diperbarui 2 menit yang lalu</span>
         <div class="d-flex gap-3">
-            <a href="#" class="btn-ap btn-mint flex-fill"><span class="ms">add</span>Top Up Saldo</a>
-            <a href="#" class="btn-ap btn-glass flex-fill"><span class="ms">receipt_long</span>Mutasi</a>
+            <a href="{{ route('deposits.create') }}" class="btn-ap btn-mint flex-fill"><span class="ms">add</span>Top Up Saldo</a>
+            <a href="{{ route('saldo.mutations') }}" class="btn-ap btn-glass flex-fill"><span class="ms">receipt_long</span>Mutasi</a>
         </div>
     </section>
 
@@ -65,7 +65,7 @@
     <div class="card-ap r-card p-3">
         <div class="d-flex align-items-center justify-content-between pb-2">
             <h3 class="fw-bold fs-5 m-0">Transaksi Terakhir</h3>
-            <a href="#" class="fw-semibold tx-teal">Selengkapnya</a>
+            <a href="{{ route('orders.index') }}" class="fw-semibold tx-teal">Selengkapnya</a>
         </div>
         <ul class="trx list-unstyled m-0">
             @forelse ($transactions as $t)

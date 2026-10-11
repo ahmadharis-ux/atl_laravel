@@ -62,29 +62,23 @@
                         <span class="pill bg-glass tx-skyd">Maks Rp {{ number_format($product->max_price, 0, ',', '.') }}</span>
                     @endif
                 </div>
-                @if ($canValidateNickname)
-                    <div class="d-flex flex-column gap-2 pt-3 mt-1 border-top"
-                         data-nickname-check
-                         data-endpoint="{{ route('products.nickname') }}"
-                         data-brand="{{ $product->brand->slug }}">
-                        <div>
-                            <label class="ui-label" for="nickname-target">ID Tujuan</label>
-                            <input class="ui-input" id="nickname-target" type="text" inputmode="numeric"
-                                   autocomplete="off" placeholder="Masukkan ID akun" data-nickname-target>
+                @if ($canCheckout && $canValidateNickname)
+                    <form method="GET" action="{{ route('checkout.show', $product) }}" class="d-flex flex-column gap-3 pt-3 mt-1 border-top">
+                        @include('user.product._nickname', ['brand' => $product->brand->slug, 'requiresZone' => $requiresZone, 'target' => '', 'zone' => ''])
+                        <button type="submit" class="btn-ap btn-mint justify-content-center"><span class="ms align-middle me-1">shopping_cart</span>Beli Sekarang</button>
+                    </form>
+                @else
+                    @if ($canValidateNickname)
+                        <div class="pt-3 mt-1 border-top">
+                            @include('user.product._nickname', ['brand' => $product->brand->slug, 'requiresZone' => $requiresZone, 'target' => '', 'zone' => ''])
                         </div>
-                        @if ($requiresZone)
-                            <div>
-                                <label class="ui-label" for="nickname-zone">Zone ID</label>
-                                <input class="ui-input" id="nickname-zone" type="text" inputmode="numeric"
-                                       autocomplete="off" placeholder="Masukkan Zone ID" data-nickname-zone>
-                            </div>
-                        @endif
-                        <div class="fs-12" data-nickname-result>
-                            <span class="tx-skyd" style="opacity:.85">Masukkan ID untuk melihat nama akun.</span>
-                        </div>
-                    </div>
+                    @endif
+                    @if ($canCheckout)
+                        <a href="{{ route('checkout.show', $product) }}" class="btn-ap btn-mint justify-content-center"><span class="ms align-middle me-1">shopping_cart</span>Beli Sekarang</a>
+                    @else
+                        <a href="{{ route('pulsa.index', ['tab' => $product->category?->slug ?? 'pulsa']) }}" class="btn-ap btn-mint justify-content-center"><span class="ms align-middle me-1">shopping_cart</span>Beli Sekarang</a>
+                    @endif
                 @endif
-                <a href="#" class="btn-ap btn-mint justify-content-center"><span class="ms align-middle me-1">shopping_cart</span>Beli Sekarang</a>
                 <span class="fs-12 tx-skyd" style="opacity:.85">Pastikan tujuan &amp; nominal sudah benar sebelum bertransaksi.</span>
             </div>
         </div>

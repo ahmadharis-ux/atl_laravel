@@ -160,8 +160,3 @@ html.sidebar-collapsed #sidebar-toggle .ico-collapsed{display:inline-block}
 .wallet .btn-eye{position:relative;z-index:2}
 .wallet-arrow{flex:none;color:rgba(255,255,255,.75)}
 .wallet .btn-ap{padding:.6rem .9rem;font-size:.8125rem;white-space:nowrap}
-
-/* Panel filter produk: sidebar kanan di xl+, dibuka lewat tombol di < xl */
-[data-ajax-filter]{display:none}
-[data-ajax-filter].is-open{display:block}
-@media (min-width:1200px){[data-ajax-filter]{display:block}}

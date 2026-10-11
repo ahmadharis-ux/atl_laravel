@@ -8,13 +8,24 @@
 .err{color:var(--err);font-size:.75rem;margin-top:.3rem;display:none}
 .err.show{display:block}
 
+/* Currency input (format ribuan + rata kanan) */
+.ui-currency{display:flex;align-items:center;gap:.4rem;border:1px solid #d3e3e1;border-radius:.75rem;background:#f6fbfa;padding:.6rem .85rem;transition:border-color .15s,box-shadow .15s}
+.ui-currency:focus-within{border-color:var(--mintt);background:#fff;box-shadow:0 0 0 3px rgba(0,160,108,.15)}
+.ui-currency-prefix{flex:none;font-size:.875rem;font-weight:700;color:var(--mute)}
+.ui-currency-input{flex:1;min-width:0;border:0;background:transparent;outline:0;padding:0;font-size:.875rem;color:var(--ink);text-align:right;font-variant-numeric:tabular-nums}
+
 /* Searchbox (khusus produk) */
 .ui-search{display:flex;align-items:center;gap:.5rem;width:100%;min-height:3.5rem;background:#fff;border:1px solid #d3e3e1;border-radius:.75rem;padding:.45rem .5rem .45rem .85rem;transition:border-color .15s,box-shadow .15s}
 .ui-search:focus-within{border-color:var(--mintt);box-shadow:0 0 0 3px rgba(0,160,108,.15)}
 .ui-search-ic{flex:none;color:var(--mute)}
+.ui-search-field{flex:1;min-width:0;display:flex;align-items:center;gap:.35rem}
 .ui-search-in{flex:1;min-width:0;border:0;background:transparent;outline:0;padding:.4rem 0;font-size:.875rem;color:var(--ink)}
 .ui-search-in::placeholder{color:var(--mute)}
 .ui-search-in::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none}
+.ui-search-clear{flex:none;display:inline-flex;align-items:center;justify-content:center;border:0;background:transparent;padding:.15rem;border-radius:50%;color:var(--mute);cursor:pointer;line-height:1;transition:color .15s,background .15s}
+.ui-search-clear .ms{font-size:1.1rem}
+.ui-search-clear:hover{color:var(--err);background:var(--errc)}
+.ui-search-clear[hidden]{display:none}
 .ui-search-go{flex:none;border:0;border-radius:.55rem;background:var(--navy);color:#fff;font-weight:700;font-size:.8125rem;padding:.55rem .95rem;cursor:pointer;transition:background .15s}
 .ui-search-go:hover{background:var(--teal)}
 .ui-search{position:relative}
@@ -179,3 +190,6 @@ body.ap-modal-open{overflow:hidden}
 .empty-state-actions{margin-top:.75rem;display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center}
 .empty-state-fill{min-height:22rem;padding:3.5rem 1.5rem}
 [data-ajax-rows]>.empty-state-fill{width:100%}
+
+/* Transaction log detail (context / stack trace) */
+.ap-log-pre{margin:0;padding:.85rem 1rem;border-radius:.75rem;background:#06283a;color:#d6f7ff;font-family:'Manrope',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.72rem;line-height:1.5;white-space:pre-wrap;word-break:break-word;max-height:22rem;overflow:auto}

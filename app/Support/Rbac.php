@@ -34,6 +34,10 @@ final class Rbac
                 'topups.view' => 'Melihat daftar topup',
                 'topups.update' => 'Memproses / mengubah topup',
             ],
+            'Transaksi' => [
+                'transactions.view' => 'Melihat daftar transaksi',
+                'transactions.update' => 'Memproses / mengubah status transaksi',
+            ],
             'Produk' => [
                 'products.view' => 'Melihat daftar produk',
                 'products.update' => 'Mengubah produk',
@@ -87,18 +91,21 @@ final class Rbac
                 'dashboard.view',
                 'users.view', 'users.create', 'users.update', 'users.delete', 'users.assign-role',
                 'roles.view', 'roles.create', 'roles.update',
-                'topups.view', 'topups.update', 'products.view', 'products.update',
+                'topups.view', 'topups.update', 'transactions.view', 'transactions.update',
+                'products.view', 'products.update',
             ],
             Roles::STAFF => [
                 'dashboard.view',
                 'users.view', 'users.create', 'users.update', 'users.assign-role',
                 'roles.view',
-                'topups.view', 'topups.update', 'products.view',
+                'topups.view', 'topups.update', 'transactions.view', 'transactions.update',
+                'products.view',
             ],
             Roles::CS => [
                 'dashboard.view',
                 'users.view',
-                'topups.view', 'topups.update', 'products.view',
+                'topups.view', 'topups.update', 'transactions.view', 'transactions.update',
+                'products.view',
             ],
             Roles::USER => [],
         ];

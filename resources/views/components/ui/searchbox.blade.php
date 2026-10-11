@@ -14,15 +14,21 @@
       action="{{ $action }}" method="{{ $method }}" role="search"
       data-suggest-url="{{ $suggestUrl }}" data-clear-url="{{ $clearUrl }}">
     <span class="ms ms-md ui-search-ic" aria-hidden="true">search</span>
-    <input
-        type="search"
-        class="ui-search-in"
-        name="{{ $name }}"
-        value="{{ $value ?? old($name) }}"
-        placeholder="{{ $placeholder }}"
-        aria-label="{{ $placeholder }}"
-        autocomplete="off"
-    >
+    <div class="ui-search-field">
+        <input
+            type="search"
+            class="ui-search-in"
+            name="{{ $name }}"
+            value="{{ $value ?? old($name) }}"
+            placeholder="{{ $placeholder }}"
+            aria-label="{{ $placeholder }}"
+            autocomplete="off"
+        >
+        <button type="button" class="ui-search-clear" data-ajax-clear-search data-search-clear
+                aria-label="Bersihkan pencarian" @if (! ($value ?? old($name))) hidden @endif>
+            <span class="ms" aria-hidden="true">close</span>
+        </button>
+    </div>
     @if ($label)
         <button type="submit" class="ui-search-go">{{ $label }}</button>
     @endif
