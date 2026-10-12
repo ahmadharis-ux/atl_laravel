@@ -118,7 +118,7 @@ class BotDigiflazzScrapeJob implements ShouldQueue
                 continue;
             }
 
-            $saved = BotDigiflazzProduct::updateOrCreate(
+            BotDigiflazzProduct::updateOrCreate(
                 [
                     'config_id' => $configId,
                     'digiflazz_product_id' => $product['id'],
@@ -153,7 +153,7 @@ class BotDigiflazzScrapeJob implements ShouldQueue
                 ]
             );
 
-            $map[$product['id']] = $saved->toArray();
+            $map[$product['id']] = $product;
         }
 
         return $map;
