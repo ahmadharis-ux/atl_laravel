@@ -60,6 +60,9 @@ jobs:
             echo "Running database migrations..."
             php8.4 artisan migrate --force
 
+            echo "Seeding database (idempotent: akun demo & data dasar)..."
+            php8.4 artisan db:seed --force
+
             echo "Optimizing Laravel Cache..."
             php8.4 artisan optimize:clear
             php8.4 artisan config:cache

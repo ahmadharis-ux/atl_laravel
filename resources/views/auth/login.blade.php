@@ -205,7 +205,6 @@ body{min-height:100vh}
   </div>
   <button type="submit" class="btn-main">Masuk<span class="ms">arrow_forward</span></button>
 </form>
-@if (! app()->isProduction())
   <div class="demo">
     <div class="demo-head"><span class="ms">key</span>Akun demo<span class="hint">Klik "Pakai" untuk mengisi otomatis</span></div>
     <div class="demo-row">
@@ -217,7 +216,6 @@ body{min-height:100vh}
       <button type="button" class="demo-use" data-fill-email="admin@atlantic.test" data-fill-password="admin123">Pakai</button>
     </div>
   </div>
-@endif
         <p class="text-center m-0 mt-4 tx-mute">Belum punya akun? <a href="{{ route('register') }}" class="lnk">Daftar sekarang</a></p>
       </div>
     </div>
