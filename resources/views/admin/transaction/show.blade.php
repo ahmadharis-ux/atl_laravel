@@ -72,6 +72,60 @@
         </div>
     </div>
 
+    @if ($order->provider)
+        <x-ui.card title="Provider">
+            @if ($order->provider_payload)
+                <x-slot:header>
+                    <button type="button" class="btn-soft" data-modal-open="modalProviderPayload">
+                        <span class="ms ms-sm align-middle me-1">data_object</span>Payload
+                    </button>
+                </x-slot:header>
+            @endif
+
+            <dl class="row mb-0 fs-12 g-2">
+                <dt class="col-sm-4 tx-mute fw-normal">Provider</dt>
+                <dd class="col-sm-8 m-0 fw-semibold text-uppercase">{{ $order->provider }}</dd>
+
+                <dt class="col-sm-4 tx-mute fw-normal">Ref ID</dt>
+                <dd class="col-sm-8 m-0 fw-semibold">{{ $order->provider_ref ?: '—' }}</dd>
+
+                <dt class="col-sm-4 tx-mute fw-normal">Status Provider</dt>
+                <dd class="col-sm-8 m-0 fw-semibold">{{ $order->provider_status ?: '—' }}</dd>
+
+                <dt class="col-sm-4 tx-mute fw-normal">Serial Number</dt>
+                <dd class="col-sm-8 m-0 fw-semibold">{{ $order->provider_sn ?: '—' }}</dd>
+
+                <dt class="col-sm-4 tx-mute fw-normal">Dikirim ke Provider</dt>
+                <dd class="col-sm-8 m-0">{{ $order->processed_at?->locale('id')->translatedFormat('d F Y, H:i') ?? '—' }}</dd>
+
+                <dt class="col-sm-4 tx-mute fw-normal">Refund Saldo</dt>
+                <dd class="col-sm-8 m-0">{{ $order->refunded_at?->locale('id')->translatedFormat('d F Y, H:i') ?? '—' }}</dd>
+            </dl>
+
+            @if ($order->status === \App\Enums\OrderStatus::Failed)
+                <form id="formRefund{{ $order->getKey() }}" method="POST" action="{{ route('admin.transactions.refund', $order) }}" class="pt-3 mt-3 border-top d-flex justify-content-end">
+                    @csrf
+                    @if ($order->refunded_at === null)
+                        <button type="button" class="btn-soft" data-confirm="Proses refund untuk transaksi ini?" data-submit-form="formRefund{{ $order->getKey() }}">
+                            <span class="ms ms-sm align-middle me-1">currency_exchange</span>Proses Refund
+                        </button>
+                    @else
+                        <span class="pill bg-mint-l tx-mintt">Sudah direfund</span>
+                    @endif
+                </form>
+            @endif
+        </x-ui.card>
+
+        @if ($order->provider_payload)
+            <x-ui.modal id="modalProviderPayload" title="Payload Provider" size="lg">
+                <pre class="ap-log-pre">{{ json_encode($order->provider_payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) }}</pre>
+                <x-slot:footer>
+                    <button type="button" class="btn-soft" data-modal-close>Tutup</button>
+                </x-slot:footer>
+            </x-ui.modal>
+        @endif
+    @endif
+
     <x-ui.card title="Riwayat Log">
         @if ($logs->isEmpty())
             <x-ui.empty-state icon="history" title="Belum ada log" description="Belum ada catatan proses untuk transaksi ini." />

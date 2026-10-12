@@ -32,6 +32,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => RoleOrPermissionMiddleware::class,
         ]);
 
+        $middleware->validateCsrfTokens(except: [
+            'webhook/digiflazz',
+        ]);
+
         $middleware->redirectGuestsTo(fn (Request $request) => route('login'));
         $middleware->redirectUsersTo(
             fn (Request $request) => $request->user()?->canAccessAdmin() ? route('admin.dashboard') : route('dashboard'),

@@ -42,6 +42,7 @@ return [
         'mode' => env('DIGIFLAZZ_MODE', 'development'),
         'webhook_id' => env('DIGIFLAZZ_WEBHOOK_ID'),
         'webhook_secret' => env('DIGIFLAZZ_WEBHOOK_SECRET'),
+        'low_balance_threshold' => (int) env('DIGIFLAZZ_LOW_BALANCE_THRESHOLD', 100000),
     ],
 
     'game_nickname' => [

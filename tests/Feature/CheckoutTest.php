@@ -217,19 +217,13 @@ class CheckoutTest extends TestCase
         $this->assertNotNull($order->paid_at);
     }
 
-    public function test_pulsa_and_data_products_cannot_be_checked_out(): void
+    public function test_pulsa_and_data_products_can_be_checked_out(): void
     {
         $user = User::factory()->create(['balance' => 1_000_000]);
         $category = Category::factory()->create(['slug' => 'pulsa']);
         $product = Product::factory()->create(['status' => true, 'category_id' => $category->id]);
 
-        $this->actingAs($user)->get(route('checkout.show', $product))->assertNotFound();
-        $this->actingAs($user)
-            ->post(route('checkout.store', $product), [
-                'target' => '08123456789',
-                'payment_method' => PaymentMethod::Saldo->value,
-            ])
-            ->assertNotFound();
+        $this->actingAs($user)->get(route('checkout.show', $product))->assertOk();
     }
 
     public function test_history_lists_only_the_users_own_orders(): void

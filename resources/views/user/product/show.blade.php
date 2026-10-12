@@ -11,12 +11,18 @@
     $stockLabel = $product->unlimited_stock
         ? 'Unlimited'
         : number_format($product->stock, 0, ',', '.');
+    $brandLogo = $product->brand?->logoUrl();
 @endphp
 
 <div class="d-flex flex-column gap-3">
 
     <div class="d-flex align-items-center gap-2">
         <a href="{{ route('products.index', ['payment_type' => $product->payment_type->value]) }}" class="ap-icon-btn" data-tip="Kembali"><span class="ms ms-md">arrow_back</span></a>
+        @if ($brandLogo)
+            <span class="ibox ibox-48 bg-white border">
+                <img src="{{ $brandLogo }}" alt="{{ $product->brand->name }}" class="brand-logo-img">
+            </span>
+        @endif
         <div>
             <h1 class="fw-bold fs-5 m-0">{{ $product->name }}</h1>
             <div class="d-flex align-items-center gap-2 mt-1">
@@ -62,22 +68,13 @@
                         <span class="pill bg-glass tx-skyd">Maks Rp {{ number_format($product->max_price, 0, ',', '.') }}</span>
                     @endif
                 </div>
-                @if ($canCheckout && $canValidateNickname)
+                @if ($canValidateNickname)
                     <form method="GET" action="{{ route('checkout.show', $product) }}" class="d-flex flex-column gap-3 pt-3 mt-1 border-top">
                         @include('user.product._nickname', ['brand' => $product->brand->slug, 'requiresZone' => $requiresZone, 'target' => '', 'zone' => ''])
                         <button type="submit" class="btn-ap btn-mint justify-content-center"><span class="ms align-middle me-1">shopping_cart</span>Beli Sekarang</button>
                     </form>
                 @else
-                    @if ($canValidateNickname)
-                        <div class="pt-3 mt-1 border-top">
-                            @include('user.product._nickname', ['brand' => $product->brand->slug, 'requiresZone' => $requiresZone, 'target' => '', 'zone' => ''])
-                        </div>
-                    @endif
-                    @if ($canCheckout)
-                        <a href="{{ route('checkout.show', $product) }}" class="btn-ap btn-mint justify-content-center"><span class="ms align-middle me-1">shopping_cart</span>Beli Sekarang</a>
-                    @else
-                        <a href="{{ route('pulsa.index', ['tab' => $product->category?->slug ?? 'pulsa']) }}" class="btn-ap btn-mint justify-content-center"><span class="ms align-middle me-1">shopping_cart</span>Beli Sekarang</a>
-                    @endif
+                    <a href="{{ route('checkout.show', $product) }}" class="btn-ap btn-mint justify-content-center"><span class="ms align-middle me-1">shopping_cart</span>Beli Sekarang</a>
                 @endif
                 <span class="fs-12 tx-skyd" style="opacity:.85">Pastikan tujuan &amp; nominal sudah benar sebelum bertransaksi.</span>
             </div>

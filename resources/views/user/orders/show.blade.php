@@ -49,6 +49,13 @@
         </x-ui.card>
     @endif
 
+    @if ($order->status === \App\Enums\OrderStatus::Processing)
+        <div class="alert-ap r-sm bg-glass d-flex align-items-center gap-2">
+            <span class="ms tx-teal">hourglass_top</span>
+            <span class="fs-13">Pesanan kamu sedang diproses. Muat ulang halaman ini beberapa saat lagi untuk melihat hasilnya.</span>
+        </div>
+    @endif
+
     <div class="row g-3">
         <div class="col-lg-7">
             <x-ui.card title="Produk">
@@ -97,6 +104,12 @@
                 <li class="d-flex align-items-center justify-content-between">
                     <span class="tx-mute">Dibayar</span>
                     <span class="fw-semibold">{{ $order->paid_at->format('d M Y, H:i') }}</span>
+                </li>
+            @endif
+            @if ($order->provider_sn)
+                <li class="d-flex align-items-center justify-content-between">
+                    <span class="tx-mute">Serial Number</span>
+                    <span class="num fw-semibold">{{ $order->provider_sn }}</span>
                 </li>
             @endif
             <li class="d-flex align-items-center justify-content-between pt-2 border-top">

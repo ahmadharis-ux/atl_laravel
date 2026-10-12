@@ -5,6 +5,7 @@ namespace App\Http\Controllers\User;
 use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Support\OrderFulfillment;
 use App\Support\TransactionLogger;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -56,7 +57,9 @@ class OrderController extends Controller
                 }
 
                 $locked->update([
-                    'status' => OrderStatus::Success,
+                    'status' => $locked->usesProviderFulfillment()
+                        ? OrderStatus::Processing
+                        : OrderStatus::Success,
                     'paid_at' => now(),
                 ]);
 
@@ -71,6 +74,12 @@ class OrderController extends Controller
             ], $order, $request->user());
 
             throw $e;
+        }
+
+        $order->refresh();
+
+        if ($order->status === OrderStatus::Processing) {
+            OrderFulfillment::start($order);
         }
 
         return redirect()

@@ -10,6 +10,16 @@ enum OrderStatus: string
     case Failed = 'failed';
     case Expired = 'expired';
 
+    /**
+     * Status akhir (tidak akan berubah lagi). Dipakai agar pemenuhan
+     * transaksi bersifat idempoten: webhook yang datang berkali-kali tidak
+     * boleh memproses ulang pesanan yang sudah selesai/gagal.
+     */
+    public function isFinal(): bool
+    {
+        return in_array($this, [self::Success, self::Failed, self::Expired], true);
+    }
+
     public function label(): string
     {
         return match ($this) {

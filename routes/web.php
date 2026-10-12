@@ -12,7 +12,10 @@ use App\Http\Controllers\User\ProductController as UserProductController;
 use App\Http\Controllers\User\PulsaController as UserPulsaController;
 use App\Http\Controllers\User\SaldoController as UserSaldoController;
 use App\Http\Controllers\User\SearchHistoryController as UserSearchHistoryController;
+use App\Http\Controllers\Webhook\DigiflazzWebhookController;
 use Illuminate\Support\Facades\Route;
+
+Route::post('/webhook/digiflazz', DigiflazzWebhookController::class)->name('webhook.digiflazz');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');

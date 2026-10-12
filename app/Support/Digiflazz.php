@@ -31,6 +31,15 @@ final class Digiflazz
     }
 
     /**
+     * Apakah memakai mode sandbox Digiflazz. Di mode ini transaksi dikirim
+     * dengan penanda `testing` sehingga tidak memotong deposit sebenarnya.
+     */
+    public static function sandbox(): bool
+    {
+        return config('services.digiflazz.mode') === 'development';
+    }
+
+    /**
      * Signature autentikasi: md5(username + apiKey + suffix).
      */
     public function sign(string $suffix): string
@@ -118,6 +127,7 @@ final class Digiflazz
         $response = Http::baseUrl($this->baseUrl)
             ->acceptJson()
             ->asJson()
+            ->timeout(15)
             ->post($endpoint, array_merge(['username' => $this->username], $payload));
 
         $data = $response->json('data');

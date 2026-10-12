@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
-    'external_id', 'code', 'product_ref', 'name', 'payment_type',
+    'external_id', 'code', 'provider', 'product_ref', 'name', 'payment_type',
     'brand_id', 'category_id', 'type_id', 'seller_id', 'description',
     'cost_price', 'max_price', 'markup_type', 'markup_value',
     'stock', 'unlimited_stock', 'start_cut_off', 'end_cut_off',
@@ -35,6 +35,11 @@ class Product extends Model
      * @var list<string>
      */
     public const OPERATOR_CATEGORY_SLUGS = ['pulsa', 'data'];
+
+    /**
+     * Penanda produk yang dipenuhi lewat API Digiflazz.
+     */
+    public const PROVIDER_DIGIFLAZZ = 'digiflazz';
 
     public function brand(): BelongsTo
     {
@@ -76,6 +81,15 @@ class Product extends Model
 
             return $markup->apply((int) $this->cost_price, (float) $this->markup_value);
         });
+    }
+
+    /**
+     * Produk yang pemenuhan pesanannya dikirim ke provider eksternal
+     * (mis. Digiflazz) saat pesanan sudah lunas.
+     */
+    public function usesProviderFulfillment(): bool
+    {
+        return $this->provider !== null && $this->provider !== '';
     }
 
     public function scopePaymentType(Builder $query, ProductPaymentType $type): void

@@ -47,6 +47,21 @@ return [
             'report' => false,
         ],
 
+        /*
+         * Logo brand. Untuk saat ini ditulis langsung ke folder public/brands.
+         * Saat ingin pindah ke symlink storage, ubah root ke
+         * storage_path('app/public/brands') + url '/storage/brands' lalu
+         * jalankan `php artisan storage:link`.
+         */
+        'brands' => [
+            'driver' => 'local',
+            'root' => public_path('brands'),
+            'url' => '/brands',
+            'visibility' => 'public',
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

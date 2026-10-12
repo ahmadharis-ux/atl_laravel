@@ -1,7 +1,7 @@
 @php($kind = $tab === 'data' ? 'data' : 'pulsa')
 
 @forelse ($products as $p)
-    @include('user.product._card', ['p' => $p])
+    @include('user.product._card', ['p' => $p, 'checkout' => true])
 @empty
     @if ($awaitingOperator)
         <x-ui.empty-state

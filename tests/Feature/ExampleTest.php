@@ -16,4 +16,13 @@ class ExampleTest extends TestCase
     {
         $this->get('/login')->assertStatus(200);
     }
+
+    public function test_login_page_shows_demo_accounts_outside_production(): void
+    {
+        $this->get('/login')
+            ->assertOk()
+            ->assertSee('Akun demo')
+            ->assertSee('user@atlantic.test')
+            ->assertSee('admin@atlantic.test');
+    }
 }

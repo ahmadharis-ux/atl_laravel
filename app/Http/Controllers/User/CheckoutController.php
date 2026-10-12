@@ -8,6 +8,7 @@ use App\Enums\WalletTransactionType;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Product;
+use App\Support\OrderFulfillment;
 use App\Support\OrderTarget;
 use App\Support\PaymentInstruction;
 use App\Support\TransactionLogger;
@@ -76,6 +77,8 @@ class CheckoutController extends Controller
                 }
 
                 $paid = $method->isInstant();
+                $provider = $item->provider;
+                $orderNumber = $this->generateOrderNumber();
 
                 if (! $item->unlimited_stock) {
                     $item->decrement('stock');
@@ -83,14 +86,22 @@ class CheckoutController extends Controller
 
                 $item->increment('sold_count');
 
+                $status = match (true) {
+                    ! $paid => OrderStatus::Pending,
+                    $provider !== null => OrderStatus::Processing,
+                    default => OrderStatus::Success,
+                };
+
                 $order = Order::create([
                     'user_id' => $account->getKey(),
                     'product_id' => $item->getKey(),
-                    'order_number' => $this->generateOrderNumber(),
+                    'order_number' => $orderNumber,
                     'target' => $validated['target'],
                     'target_zone' => $validated['zone'] ?? null,
                     'amount' => $amount,
-                    'status' => $paid ? OrderStatus::Success : OrderStatus::Pending,
+                    'status' => $status,
+                    'provider' => $provider,
+                    'provider_ref' => $provider !== null ? $orderNumber : null,
                     'payment_method' => $method,
                     'payment_channel' => $channel,
                     'payment_code' => $paid ? null : PaymentInstruction::code($method),
@@ -142,6 +153,10 @@ class CheckoutController extends Controller
             throw $e;
         }
 
+        if ($order->status === OrderStatus::Processing) {
+            OrderFulfillment::start($order);
+        }
+
         return redirect()
             ->route('orders.show', $order)
             ->with('status', $method->isInstant()
@@ -156,7 +171,6 @@ class CheckoutController extends Controller
     private function ensurePurchasable(Product $product): void
     {
         abort_unless($product->status, 404);
-        abort_unless(OrderTarget::supportsCheckout($product->category?->slug), 404);
     }
 
     private function generateOrderNumber(): string

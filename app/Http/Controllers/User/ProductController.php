@@ -9,7 +9,6 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\SearchHistory;
 use App\Support\GameNickname;
-use App\Support\OrderTarget;
 use App\Support\ProductFilters;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
@@ -96,8 +95,7 @@ class ProductController extends Controller
         return view('user.product.show', [
             'product' => $product,
             'canValidateNickname' => GameNickname::supports($brandSlug),
-            'requiresZone' => GameNickname::requiresZone($brandSlug),
-            'canCheckout' => OrderTarget::supportsCheckout($product->category?->slug),
+            'requiresZone' => $product->brand?->slug !== null && GameNickname::requiresZone($brandSlug),
         ]);
     }
 }

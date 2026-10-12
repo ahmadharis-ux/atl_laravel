@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\TransactionLog;
 use App\Models\User;
+use App\Support\DigiflazzBalance;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -62,6 +63,7 @@ class DashboardController extends Controller
                 ->get(),
             'month' => $month,
             'recentUsers' => User::query()->latest()->take(5)->get(),
+            'digiflazz' => DigiflazzBalance::summary(),
         ]);
     }
 

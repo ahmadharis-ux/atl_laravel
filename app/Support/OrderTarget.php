@@ -2,30 +2,23 @@
 
 namespace App\Support;
 
-use App\Models\Product;
-
 /**
  * Label & aturan input tujuan untuk checkout produk.
  *
  * Label kolom tujuan menyesuaikan kategori produk (ID game, nomor meter PLN,
- * nomor HP e-wallet, dsb). Alur pulsa & paket data dikelola di halaman
- * terpisah (deteksi operator), jadi belum memakai checkout ini.
+ * nomor HP, dsb). Pulsa & paket data memilih paketnya di halaman /pulsa
+ * (deteksi operator), tetapi pembeliannya tetap lewat checkout yang sama.
  */
 final class OrderTarget
 {
-    /**
-     * Kategori yang belum boleh checkout lewat halaman umum.
-     *
-     * @var list<string>
-     */
-    private const EXCLUDED = Product::OPERATOR_CATEGORY_SLUGS;
-
     /**
      * Label kolom tujuan per slug kategori.
      *
      * @var array<string, string>
      */
     private const LABELS = [
+        'pulsa' => 'Nomor HP',
+        'data' => 'Nomor HP',
         'games' => 'ID Game',
         'tagihan' => 'Nomor Pelanggan',
         'pln' => 'Nomor Meter / ID Pelanggan',
@@ -43,11 +36,6 @@ final class OrderTarget
         'singapore-topup' => 'ID Game / Nomor HP',
         'vietnam-topup' => 'ID Game / Nomor HP',
     ];
-
-    public static function supportsCheckout(?string $categorySlug): bool
-    {
-        return ! in_array($categorySlug, self::EXCLUDED, true);
-    }
 
     public static function label(?string $categorySlug): string
     {

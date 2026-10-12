@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class PhoneOperatorTest extends TestCase
@@ -54,6 +55,20 @@ class PhoneOperatorTest extends TestCase
             ->assertJson([
                 'status' => false,
             ]);
+    }
+
+    public function test_detect_operator_returns_the_brand_logo_url(): void
+    {
+        Storage::fake('brands');
+        Storage::disk('brands')->put('telkomsel.png', 'x');
+
+        Brand::factory()->create(['slug' => 'telkomsel', 'name' => 'Telkomsel', 'logo' => 'telkomsel.png']);
+
+        $response = $this->actingAs(User::factory()->create())
+            ->getJson(route('products.detect-operator', ['number' => '081234567890']))
+            ->assertOk();
+
+        $this->assertStringContainsString('telkomsel.png', (string) $response->json('brand_logo'));
     }
 
     public function test_pulsa_products_are_not_listed_in_the_general_catalog(): void

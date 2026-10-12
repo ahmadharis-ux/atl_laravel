@@ -6,8 +6,10 @@ use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Support\OrderFulfillment;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class TransactionController extends Controller
@@ -62,5 +64,18 @@ class TransactionController extends Controller
             'order' => $order,
             'logs' => $logs,
         ]);
+    }
+
+    public function refund(Order $order): RedirectResponse
+    {
+        if ($order->status !== OrderStatus::Failed) {
+            return back()->with('error', 'Hanya transaksi gagal yang dapat direfund.');
+        }
+
+        if (! OrderFulfillment::refundManually($order)) {
+            return back()->with('error', 'Transaksi ini sudah direfund sebelumnya.');
+        }
+
+        return back()->with('success', 'Refund berhasil diproses.');
     }
 }

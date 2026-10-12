@@ -23,6 +23,36 @@
         @endforeach
     </div>
 
+    {{-- Saldo Digiflazz --}}
+    <div class="row g-3">
+        <div class="col-12 col-lg-4">
+            <div class="card-ap r-card p-3 h-100 d-flex flex-row align-items-center gap-3">
+                <span class="ibox ibox-48 {{ $digiflazz['low'] ? 'bg-errc-l tx-err' : 'bg-tealc-m tx-tealt' }}"><span class="ms">{{ $digiflazz['low'] ? 'warning' : 'account_balance' }}</span></span>
+                <div style="min-width:0">
+                    <div class="fs-12 tx-mute text-truncate">Saldo Digiflazz</div>
+                    @if ($digiflazz['balance'] === null)
+                        <div class="fw-800 fs-5 lh-1 tx-mute">Tidak tersedia</div>
+                    @else
+                        <div class="num fw-800 fs-4 lh-1">Rp {{ number_format($digiflazz['balance'], 0, ',', '.') }}</div>
+                    @endif
+                    <div class="fs-11 tx-mute">Ambang peringatan Rp {{ number_format($digiflazz['threshold'], 0, ',', '.') }}</div>
+                </div>
+            </div>
+        </div>
+
+        @if ($digiflazz['low'])
+            <div class="col-12 col-lg-8">
+                <div class="card-ap r-card p-3 h-100 d-flex align-items-center gap-3 bg-errc-l">
+                    <span class="ms ms-md tx-err">error</span>
+                    <div>
+                        <div class="fw-bold tx-err">Saldo Digiflazz menipis</div>
+                        <p class="fs-12 m-0 tx-err">Sisa saldo di bawah ambang Rp {{ number_format($digiflazz['threshold'], 0, ',', '.') }}. Segera top up deposit Digiflazz agar transaksi tidak gagal.</p>
+                    </div>
+                </div>
+            </div>
+        @endif
+    </div>
+
     {{-- Grafik --}}
     <div class="row g-3 g-lg-4">
         <section class="col-lg-8">

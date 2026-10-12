@@ -1133,7 +1133,10 @@
             if (data && data.status && data.brand_id) {
               var cats = (ajaxRoot && ajaxRoot.dataset.operatorCategories || '').split(',').filter(Boolean);
               var detectedCat = cats[0] || '';
-              setResult('<span class="tx-mintt fw-bold"><span class="ms ms-sm align-middle me-1">verified</span>Operator: ' + esc(data.operator) + '</span>');
+              var logo = data.brand_logo
+                ? '<img src="' + esc(data.brand_logo) + '" alt="" class="brand-logo-img brand-logo-sm me-1">'
+                : '<span class="ms ms-sm align-middle me-1">verified</span>';
+              setResult('<span class="tx-mintt fw-bold d-inline-flex align-items-center">' + logo + 'Operator: ' + esc(data.operator) + '</span>');
               applyFilter({ brand_id: data.brand_id, brand_name: data.brand_name, operator: data.operator, category_id: detectedCat });
             } else {
               message((data && data.message) || 'Nomor tidak dikenali.', 'tx-err');
@@ -1344,6 +1347,40 @@
     });
   }
 
+  // ---------------- Checkout target hand-off (pulsa/data) ----------------
+  // Kartu paket di halaman pulsa menaut ke checkout; nomor tujuan yang sudah
+  // dideteksi di kolom operator dibawa serta ke halaman checkout.
+  function initCheckoutTargets() {
+    document.addEventListener('click', function (e) {
+      var link = e.target.closest('[data-checkout-link]');
+      if (!link) return;
+
+      var root = document.querySelector('[data-operator-check]');
+      var input = root ? root.querySelector('[data-operator-number]') : null;
+      var number = input ? input.value.trim() : '';
+      var base = link.getAttribute('data-checkout-base') || link.getAttribute('href');
+      if (!base) return;
+
+      e.preventDefault();
+
+      if (number === '') {
+        if (input) {
+          input.focus();
+          input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        var resultEl = root ? root.querySelector('[data-operator-result]') : null;
+        if (resultEl) {
+          resultEl.innerHTML = '<span class="tx-err fw-bold">Isi Nomor Tujuan dulu ya.</span>';
+        }
+        return;
+      }
+
+      var url = new URL(base, window.location.origin);
+      url.searchParams.set('target', number);
+      window.location.href = url.toString();
+    });
+  }
+
   function boot() {
     initTables();
     initWizards();
@@ -1354,6 +1391,7 @@
     initSearchBoxes();
     initNicknameChecks();
     initOperatorChecks();
+    initCheckoutTargets();
     initPaymentMethods();
     initMinLoaderForms();
     initAmountPresets();

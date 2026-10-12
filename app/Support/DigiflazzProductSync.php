@@ -28,7 +28,7 @@ final class DigiflazzProductSync
      * @var array<int, string>
      */
     private const UPDATABLE = [
-        'name', 'payment_type',
+        'provider', 'name', 'payment_type',
         'brand_id', 'category_id', 'type_id', 'seller_id',
         'description', 'cost_price', 'stock', 'unlimited_stock', 'multi',
         'start_cut_off', 'end_cut_off',
@@ -77,6 +77,7 @@ final class DigiflazzProductSync
     {
         return [
             'code' => (string) $item['buyer_sku_code'],
+            'provider' => Product::PROVIDER_DIGIFLAZZ,
             'name' => (string) ($item['product_name'] ?? $item['buyer_sku_code']),
             'payment_type' => $type->value,
             'brand_id' => $this->masterId(Brand::class, $item['brand'] ?? null),

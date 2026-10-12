@@ -43,6 +43,7 @@ class PhoneOperatorController extends Controller
             'brand_id' => $brand->getKey(),
             'brand_slug' => $brand->slug,
             'brand_name' => $brand->name,
+            'brand_logo' => $brand->logoUrl(),
         ]);
     }
 }
