@@ -1,10 +1,12 @@
 <?php
 
+use App\Http\Controllers\Admin\Bot\DigiflazzController;
 use App\Http\Controllers\Admin\CustomerTopup\ProductController;
 use App\Http\Controllers\Admin\CustomerTopup\TopupController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\LookupController;
 use App\Http\Controllers\Admin\Product\ProductController as ProductModuleController;
+use App\Http\Controllers\Admin\Product\SyncDigiflazzController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\Admin\UserController;
@@ -40,9 +42,30 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/transactions/{order}', [TransactionController::class, 'show'])->middleware('permission:transactions.view')->name('transactions.show');
     Route::post('/transactions/{order}/refund', [TransactionController::class, 'refund'])->middleware('permission:transactions.update')->name('transactions.refund');
 
+    Route::prefix('bot/digiflazz')->name('bot.digiflazz.')->group(function () {
+        Route::get('/', [DigiflazzController::class, 'index'])->middleware('permission:products.view')->name('index');
+        Route::get('/create', [DigiflazzController::class, 'create'])->middleware('permission:products.update')->name('create');
+        Route::post('/', [DigiflazzController::class, 'store'])->middleware('permission:products.update')->name('store');
+        Route::get('/options/{type}', [DigiflazzController::class, 'options'])->middleware('permission:products.view')->name('options');
+        Route::get('/{digiflazz}/edit', [DigiflazzController::class, 'edit'])->middleware('permission:products.update')->name('edit');
+        Route::put('/{digiflazz}', [DigiflazzController::class, 'update'])->middleware('permission:products.update')->name('update');
+        Route::delete('/{digiflazz}', [DigiflazzController::class, 'destroy'])->middleware('permission:products.update')->name('destroy');
+
+        Route::get('/sync', [DigiflazzController::class, 'syncIndex'])->middleware('permission:products.view')->name('sync.index');
+        Route::get('/sync/{syncLog}', [DigiflazzController::class, 'syncShow'])->middleware('permission:products.view')->name('sync.show');
+        Route::post('/sync/start', [DigiflazzController::class, 'startSync'])->middleware('permission:products.update')->name('sync.start');
+    });
+
     Route::prefix('products')->name('products.')->group(function () {
         Route::get('/prabayar', [ProductModuleController::class, 'prabayar'])->middleware('permission:products.view')->name('prepay.index');
         Route::get('/pascabayar', [ProductModuleController::class, 'pascabayar'])->middleware('permission:products.view')->name('postpaid.index');
+
+        Route::prefix('sync-digiflazz')->name('sync-digiflazz.')->group(function () {
+            Route::get('/', [SyncDigiflazzController::class, 'index'])->middleware('permission:products.view')->name('index');
+            Route::post('/start', [SyncDigiflazzController::class, 'start'])->middleware('permission:products.update')->name('start');
+            Route::get('/{syncLog}', [SyncDigiflazzController::class, 'show'])->middleware('permission:products.view')->name('show');
+        });
+
         Route::get('/{product}', [ProductModuleController::class, 'show'])->middleware('permission:products.view')->name('show');
         Route::get('/{product}/edit', [ProductModuleController::class, 'edit'])->middleware('permission:products.update')->name('edit');
         Route::put('/{product}', [ProductModuleController::class, 'update'])->middleware('permission:products.update')->name('update');

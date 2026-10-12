@@ -13,9 +13,16 @@
             <h1 class="fw-bold fs-4 m-0">Produk {{ $paymentType->label() }}</h1>
             <p class="tx-mute fs-12 m-0">Struktur produk {{ strtolower($paymentType->label()) }}, harga modal, markup & harga jual.</p>
         </div>
-        <span class="pill {{ $paymentType === \App\Enums\ProductPaymentType::Prabayar ? 'bg-tealc-m tx-tealt' : 'bg-sky-l tx-skyd' }}">
-            {{ $paymentType->label() }}
-        </span>
+        <div class="d-flex align-items-center gap-2">
+            @can('products.update')
+                <a href="{{ route('admin.products.sync-digiflazz.index') }}" class="btn-soft" data-tip="Kelola sinkronisasi Digiflazz">
+                    <span class="ms ms-sm align-middle me-1">sync</span>Sync Digiflazz
+                </a>
+            @endcan
+            <span class="pill {{ $paymentType === \App\Enums\ProductPaymentType::Prabayar ? 'bg-tealc-m tx-tealt' : 'bg-sky-l tx-skyd' }}">
+                {{ $paymentType->label() }}
+            </span>
+        </div>
     </div>
 
     <x-ui.card>

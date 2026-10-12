@@ -15,13 +15,24 @@
         ['label' => 'Pengguna',          'icon' => 'group',              'url' => route('admin.users.index'), 'active' => request()->routeIs('admin.users.*'),   'show' => $auth?->can('users.view') ?? false],
         ['label' => 'Role & Permission', 'icon' => 'admin_panel_settings','url' => route('admin.roles.index'), 'active' => request()->routeIs('admin.roles.*'),   'show' => $auth?->can('roles.view') ?? false],
         [
+            'label' => 'Bot Digiflazz',
+            'icon' => 'smart_toy',
+            'active' => request()->routeIs('admin.bot.digiflazz.*'),
+            'show' => $auth?->can('products.view') ?? false,
+            'children' => [
+                ['label' => 'Konfigurasi',      'url' => route('admin.bot.digiflazz.index'),      'active' => request()->routeIs('admin.bot.digiflazz.index'),      'show' => $auth?->can('products.view') ?? false],
+                ['label' => 'Sinkronisasi',     'url' => route('admin.bot.digiflazz.sync.index'), 'active' => request()->routeIs('admin.bot.digiflazz.sync.index'), 'show' => $auth?->can('products.view') ?? false],
+            ],
+        ],
+        [
             'label' => 'Produk',
             'icon' => 'inventory_2',
             'active' => request()->routeIs('admin.products.*'),
             'show' => $auth?->can('products.view') ?? false,
             'children' => [
-                ['label' => 'Prabayar',   'url' => route('admin.products.prepay.index'),   'active' => request()->routeIs('admin.products.prepay.*'),   'show' => $auth?->can('products.view') ?? false],
-                ['label' => 'Pascabayar', 'url' => route('admin.products.postpaid.index'), 'active' => request()->routeIs('admin.products.postpaid.*'), 'show' => $auth?->can('products.view') ?? false],
+                ['label' => 'Prabayar',       'url' => route('admin.products.prepay.index'),       'active' => request()->routeIs('admin.products.prepay.*'),       'show' => $auth?->can('products.view') ?? false],
+                ['label' => 'Pascabayar',     'url' => route('admin.products.postpaid.index'),     'active' => request()->routeIs('admin.products.postpaid.*'),     'show' => $auth?->can('products.view') ?? false],
+                ['label' => 'Sinkron Digiflazz','url' => route('admin.products.sync-digiflazz.index'), 'active' => request()->routeIs('admin.products.sync-digiflazz.*'), 'show' => $auth?->can('products.view') ?? false],
             ],
         ],
         [

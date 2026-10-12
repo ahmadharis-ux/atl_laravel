@@ -226,6 +226,9 @@
                 <div class="col-md-6">
                     <x-ui.search-select name="f-seller" label="Seller (remote)" :remote="true" :remote-url="route('admin.lookup', ['type' => 'sellers'])" placeholder="Cari seller..." hint="Opsi diambil dari server saat mengetik." />
                 </div>
+                <div class="col-12">
+                    <x-ui.multi-select name="f-tags" label="Multi-select (bisa dicari, banyak nilai)" :options="['pulsa' => 'Pulsa', 'data' => 'Paket Data', 'pln' => 'Token PLN']" placeholder="Pilih beberapa..." hint="Dipakai untuk filter kategori/brand/type pada Bot Digiflazz." />
+                </div>
 
                 <div class="col-md-6">
                     <label class="ui-label">Jenis Produk</label>

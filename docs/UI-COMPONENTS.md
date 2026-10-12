@@ -125,6 +125,23 @@ Bila satu halaman punya beberapa blok, tandai dengan pola berikut (lihat `/admin
   - **Aturan:** pencarian dari beranda hanya mencari produk — bukan transaksi, ID, atau pengguna — lalu diarahkan ke halaman `Produk` dengan `?q=`. Di halaman Produk, kotak ini bisa dikaitkan ke filter AJAX dengan menambahkan `data-ajax-maybe` pada pemakaiannya: ketikan dan Enter ikut memuat ulang grid tanpa pindah URL (tidak tercatat ke riwayat, sesuai prinsip filter tanpa ganti URL). Selama ada kata kunci `q`, tab prabayar/pascabayar dilewati sehingga produk jenis apa pun langsung tampil; blok `data-ajax-tabs` diganti keterangan "Semua jenis" dan tab kembali begitu pencarian dikosongkan.
 - `select`: `name`, `label`, `options` (array value=>text), `value`, `placeholder`, `hint`.
 - `textarea`: `name`, `label`, `rows`, `value`, `hint`.
+- `multi-select` (select ganda yang bisa dicari, berbasis Tom Select):
+
+```blade
+{{-- Opsi lokal, nilai terpilih dari array --}}
+<x-ui.multi-select name="tags" label="Tag" :options="['a' => 'Alpha', 'b' => 'Beta']"
+    :value="['a']" placeholder="Pilih..." hint="Kosongkan untuk semua." />
+
+{{-- Opsi remote (dimuat saat mengetik) --}}
+<x-ui.multi-select name="categories" label="Kategori" placeholder="Semua kategori"
+    :value="$config->scraper_config['categories'] ?? []"
+    :options="$selectedOptions['categories']"
+    :remote-url="route('admin.bot.digiflazz.options', ['type' => 'categories'])" />
+```
+
+  - `name`, `label`, `value` (array nilai terpilih), `options` (array `id => label` untuk nilai terpilih yang sudah diketahui), `placeholder`, `hint`, `remoteUrl`.
+  - Field dikirim sebagai `name[]`. Tag berubah dibuat lewat `plugins: ['remove_button']`; endpoint remote mengembalikan JSON `{ "results": [{ "value", "text" }] }` (lihat `LookupController`) dan menerima `q` + `limit`.
+  - Pakai bila pilihan bisa banyak (> ~50) atau perlu memilih beberapa nilai sekaligus, seperti filter kategori/brand/type pada Bot Digiflazz.
 - `currency-input`: `name`, `label`, `value`, `hint`, `prefix` (default `Rp`) — input mata uang, otomatis format ribuan (`.`) dan rata kanan. Nilai yang dikirim ke server adalah angka mentah (tanpa titik), jadi tetap aman untuk validasi `integer`/`min`/`max`.
 - `search-select` (select yang bisa dicari, berbasis Tom Select — tanpa jQuery):
 

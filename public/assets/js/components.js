@@ -276,6 +276,52 @@
     });
   }
 
+  // ---------------- Multi-select (searchable) ----------------
+  // Enhances <select multiple class="js-multi-select"> (via <x-ui.multi-select>).
+  // With a data-remote-url the options are fetched on demand as JSON
+  // { results: [{ value, text }] }, so large lists stay light.
+  function initMultiSelects() {
+    var els = [...document.querySelectorAll('select.js-multi-select')];
+    if (!els.length) return;
+    Promise.all([
+      loadStyle('https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css'),
+      loadScript('https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js'),
+    ]).then(function () {
+      if (!window.TomSelect) return;
+      els.forEach(function (el) {
+        if (el.tomselect) return;
+        var remote = el.dataset.remoteUrl;
+        var cfg = {
+          create: false,
+          plugins: ['remove_button'],
+          maxItems: null,
+          placeholder: el.dataset.placeholder || '',
+          maxOptions: null,
+        };
+
+        if (remote) {
+          cfg.valueField = 'value';
+          cfg.labelField = 'text';
+          cfg.searchField = ['text'];
+          cfg.loadThrottle = 300;
+          cfg.preload = 'focus';
+          cfg.load = function (query, callback) {
+            var url = new URL(remote, window.location.origin);
+            url.searchParams.set('q', query || '');
+            fetch(url.toString(), {
+              headers: { 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json' },
+            })
+              .then(function (r) { return r.ok ? r.json() : { results: [] }; })
+              .then(function (data) { callback(data.results || data || []); })
+              .catch(function () { callback(); });
+          };
+        }
+
+        el.tomselect = new TomSelect(el, cfg);
+      });
+    });
+  }
+
   // ---------------- AJAX list (filter tanpa reload / tanpa ubah URL) ----------------
   // Markup: <div data-ajax data-ajax-url="... " data-persist-key="...">
   //   <form data-ajax-form> ... </form>   (opsional; submit & change memicu load)
@@ -1215,10 +1261,33 @@
     window.addEventListener('pageshow', function (e) { if (e.persisted) hide(); });
   }
 
+  // ---------------- Toast notifications ----------------
+  // Markup: tidak perlu — container dibuat otomatis oleh showToast().
+  function showToast(message, type) {
+    if (!message) return;
+    var container = document.querySelector('.ap-toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.className = 'ap-toast-container';
+      document.body.appendChild(container);
+    }
+    var toast = document.createElement('div');
+    toast.className = 'ap-toast ap-toast-' + (type || 'info');
+    toast.setAttribute('role', 'status');
+    toast.textContent = message;
+    container.appendChild(toast);
+    requestAnimationFrame(function () { toast.classList.add('show'); });
+    setTimeout(function () {
+      toast.classList.remove('show');
+      setTimeout(function () { toast.remove(); }, 250);
+    }, 3500);
+  }
+
   window.AP = {
     openModal: openModal,
     closeModal: function (id) { closeModal(typeof id === 'string' ? document.getElementById(id) : id); },
     confirm: confirmAction,
+    showToast: showToast,
   };
 
   // ---------------- Payment methods (checkout) ----------------
@@ -1387,6 +1456,7 @@
     initCharts();
     initEditors();
     initSearchSelects();
+    initMultiSelects();
     initAjaxTables();
     initSearchBoxes();
     initNicknameChecks();
