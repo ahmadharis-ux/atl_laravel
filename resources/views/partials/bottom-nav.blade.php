@@ -4,6 +4,6 @@
         <a href="{{ route('products.index') }}" class="{{ request()->routeIs('products.*') ? 'on' : '' }}"><span class="ms">storefront</span>Produk</a>
         <a href="{{ route('saldo.index') }}" class="mid {{ request()->routeIs('saldo.*') ? 'on' : '' }}"><span class="fab"><span class="ms ms-lg">add</span></span>Deposit</a>
         <a href="{{ route('orders.index') }}" class="{{ request()->routeIs('orders.*') ? 'on' : '' }}"><span class="ms">schedule</span>Riwayat</a>
-        <a href="#"><span class="ms">person</span>Akun</a>
+        <a href="{{ route('settings.index') }}" class="{{ request()->routeIs('settings.*') ? 'on' : '' }}"><span class="ms">person</span>Akun</a>
     </div>
 </nav>

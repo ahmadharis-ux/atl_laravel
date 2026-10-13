@@ -46,6 +46,7 @@ class DatabaseSeeder extends Seeder
                     'phone' => $account['phone'],
                     'password' => $account['password'],
                     'is_admin' => in_array($account['role'], Roles::adminArea(), true),
+                    'email_verified_at' => now(),
                 ],
             );
 

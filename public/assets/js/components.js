@@ -1450,6 +1450,34 @@
     });
   }
 
+  // ---------------- Clickable rows ----------------
+  // Baris list (mis. riwayat transaksi) membawa data-row-href; klik di area
+  // mana pun pada baris membuka tautan, kecuali pada elemen interaktif.
+  function initRowLinks() {
+    document.addEventListener('click', function (e) {
+      var row = e.target.closest('[data-row-href]');
+      if (!row) return;
+      if (e.target.closest('a,button,input,select,textarea,label')) return;
+      var href = row.getAttribute('data-row-href');
+      if (href) window.location.href = href;
+    });
+  }
+
+  // ---------------- Password reveal ----------------
+  // Tombol mata pada <x-ui.input type="password"> via data-toggle-password.
+  function initPasswordToggles() {
+    document.querySelectorAll('[data-toggle-password]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var input = document.getElementById(btn.getAttribute('data-toggle-password'));
+        if (!input) return;
+        var show = input.type === 'password';
+        input.type = show ? 'text' : 'password';
+        var icon = btn.firstElementChild;
+        if (icon) icon.textContent = show ? 'visibility_off' : 'visibility';
+      });
+    });
+  }
+
   function boot() {
     initTables();
     initWizards();
@@ -1462,6 +1490,8 @@
     initNicknameChecks();
     initOperatorChecks();
     initCheckoutTargets();
+    initRowLinks();
+    initPasswordToggles();
     initPaymentMethods();
     initMinLoaderForms();
     initAmountPresets();

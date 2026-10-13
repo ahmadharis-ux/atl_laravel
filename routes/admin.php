@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\CustomerTopup\ProductController;
 use App\Http\Controllers\Admin\CustomerTopup\TopupController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\LookupController;
+use App\Http\Controllers\Admin\MasterBankController;
 use App\Http\Controllers\Admin\Product\ProductController as ProductModuleController;
 use App\Http\Controllers\Admin\Product\SyncDigiflazzController;
 use App\Http\Controllers\Admin\RoleController;
@@ -41,6 +42,13 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/transactions', [TransactionController::class, 'index'])->middleware('permission:transactions.view')->name('transactions.index');
     Route::get('/transactions/{order}', [TransactionController::class, 'show'])->middleware('permission:transactions.view')->name('transactions.show');
     Route::post('/transactions/{order}/refund', [TransactionController::class, 'refund'])->middleware('permission:transactions.update')->name('transactions.refund');
+
+    Route::prefix('master-bank')->name('master-banks.')->group(function () {
+        Route::get('/', [MasterBankController::class, 'index'])->middleware('permission:master-banks.view')->name('index');
+        Route::post('/', [MasterBankController::class, 'store'])->middleware('permission:master-banks.update')->name('store');
+        Route::put('/{masterBank}', [MasterBankController::class, 'update'])->middleware('permission:master-banks.update')->name('update');
+        Route::delete('/{masterBank}', [MasterBankController::class, 'destroy'])->middleware('permission:master-banks.update')->name('destroy');
+    });
 
     Route::prefix('bot/digiflazz')->name('bot.digiflazz.')->group(function () {
         Route::get('/', [DigiflazzController::class, 'index'])->middleware('permission:products.view')->name('index');

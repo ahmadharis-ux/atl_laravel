@@ -34,6 +34,7 @@ class SaldoController extends Controller
                 'detail' => $order->order_number.' • '.$order->created_at->locale('id')->translatedFormat('d M H:i'),
                 'amount' => $order->amount,
                 'status' => $order->status->label(),
+                'url' => route('orders.show', $order),
             ])->all(),
         ]);
     }
@@ -44,6 +45,7 @@ class SaldoController extends Controller
     public function mutations(Request $request): View
     {
         $entries = $request->user()->walletTransactions()
+            ->with('reference')
             ->latest('id')
             ->paginate(15);
 

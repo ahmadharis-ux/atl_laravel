@@ -193,6 +193,9 @@ body{min-height:100vh}
       <div class="form-card">
         <h1 class="fw-bold mb-1" style="font-size:1.625rem;letter-spacing:-.015em">Selamat datang kembali</h1>
         <p class="tx-mute mb-4">Masuk untuk mengelola transaksi dan saldo Anda.</p>
+@if (session('status'))
+<div class="alert alert-success border-0 mb-3 fs-12">{{ session('status') }}</div>
+@endif
 <form action="{{ route('login') }}" method="POST" novalidate>
   @csrf
   <div class="field"><label for="email">Email</label><div class="inp"><span class="ms">person</span><input id="email" name="email" type="email" value="{{ old('email') }}" placeholder="nama@email.com" autocomplete="username" required autofocus></div>
@@ -201,10 +204,14 @@ body{min-height:100vh}
     @error('password')<div class="err show">{{ $message }}</div>@enderror</div>
   <div class="d-flex align-items-center justify-content-between mb-4">
     <label class="chk m-0"><input type="checkbox" name="remember" value="1">Ingat saya</label>
-    <a href="#" class="lnk fs-12">Lupa kata sandi?</a>
+    <a href="{{ route('password.request') }}" class="lnk fs-12">Lupa kata sandi?</a>
   </div>
-  <button type="submit" class="btn-main">Masuk<span class="ms">arrow_forward</span></button>
+  <button type="submit" class="btn-main">Masuk</button>
 </form>
+@if (config('services.google.client_id'))
+<div class="divider">atau</div>
+<a href="{{ route('auth.google.redirect') }}" class="btn-alt"><span class="ms ms-md">g_translate</span>Masuk dengan Google</a>
+@endif
   <div class="demo">
     <div class="demo-head"><span class="ms">key</span>Akun demo<span class="hint">Klik "Pakai" untuk mengisi otomatis</span></div>
     <div class="demo-row">

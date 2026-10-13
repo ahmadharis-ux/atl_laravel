@@ -14,6 +14,7 @@
         ],
         ['label' => 'Pengguna',          'icon' => 'group',              'url' => route('admin.users.index'), 'active' => request()->routeIs('admin.users.*'),   'show' => $auth?->can('users.view') ?? false],
         ['label' => 'Role & Permission', 'icon' => 'admin_panel_settings','url' => route('admin.roles.index'), 'active' => request()->routeIs('admin.roles.*'),   'show' => $auth?->can('roles.view') ?? false],
+        ['label' => 'Master Bank',       'icon' => 'account_balance',     'url' => route('admin.master-banks.index'), 'active' => request()->routeIs('admin.master-banks.*'), 'show' => $auth?->can('master-banks.view') ?? false],
         [
             'label' => 'Bot Digiflazz',
             'icon' => 'smart_toy',

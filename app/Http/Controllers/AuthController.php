@@ -23,15 +23,25 @@ class AuthController extends Controller
             'password' => ['required'],
         ]);
 
-        if (Auth::attempt($credentials, $request->boolean('remember'))) {
-            $request->session()->regenerate();
-
-            return redirect()->intended($this->homePath($request->user()));
+        if (! Auth::validate($credentials)) {
+            return back()
+                ->withInput($request->only('email'))
+                ->withErrors(['email' => 'Email atau kata sandi salah.']);
         }
 
-        return back()
-            ->withInput($request->only('email'))
-            ->withErrors(['email' => 'Email atau kata sandi salah.']);
+        $user = User::query()->where('email', $credentials['email'])->firstOrFail();
+
+        if ($user->two_factor_confirmed_at !== null) {
+            $request->session()->put('auth.two_factor.id', $user->getKey());
+            $request->session()->put('auth.two_factor.remember', $request->boolean('remember'));
+
+            return redirect()->route('two-factor.challenge');
+        }
+
+        Auth::login($user, $request->boolean('remember'));
+        $request->session()->regenerate();
+
+        return redirect()->intended($this->homePath($user));
     }
 
     public function showRegister(): View
@@ -58,10 +68,12 @@ class AuthController extends Controller
 
         $user->assignRole(Roles::USER);
 
+        $user->sendEmailVerificationNotification();
+
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route('dashboard');
+        return redirect()->route('verification.notice');
     }
 
     public function logout(Request $request): RedirectResponse

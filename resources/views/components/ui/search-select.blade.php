@@ -1,5 +1,6 @@
 @props([
     'name',
+    'id' => null,
     'label' => null,
     'options' => [],
     'value' => null,
@@ -13,12 +14,13 @@
 ])
 
 @php($selected = $value ?? old($name))
+@php($inputId = $id ?? $name)
 
 <div {{ $attributes->only('class') }}>
-    @if ($label)<label class="ui-label" for="{{ $name }}">{{ $label }}</label>@endif
+    @if ($label)<label class="ui-label" for="{{ $inputId }}">{{ $label }}</label>@endif
     <select
         {{ $attributes->except('class')->merge(['class' => 'ui-select js-search-select']) }}
-        id="{{ $name }}"
+        id="{{ $inputId }}"
         name="{{ $name }}"
         data-placeholder="{{ $placeholder }}"
         @if ($remote)

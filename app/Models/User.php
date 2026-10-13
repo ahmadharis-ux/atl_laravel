@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Support\Roles;
 use Database\Factories\UserFactory;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,8 +14,8 @@ use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 
 #[Fillable(['name', 'email', 'phone', 'password', 'is_admin'])]
-#[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
+#[Hidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'])]
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasRoles, Notifiable;
@@ -55,6 +55,24 @@ class User extends Authenticatable
         return $this->hasMany(WalletTransaction::class)->latest('id');
     }
 
+    public function bankAccounts(): HasMany
+    {
+        return $this->hasMany(BankAccount::class)->latest('id');
+    }
+
+    /**
+     * Menandai email berubah: verifikasi lama tidak lagi berlaku.
+     */
+    public function resetEmailVerification(string $email): void
+    {
+        if ($this->email !== $email) {
+            $this->forceFill([
+                'email' => $email,
+                'email_verified_at' => null,
+            ])->save();
+        }
+    }
+
     /**
      * Get the attributes that should be cast.
      *
@@ -67,6 +85,9 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_admin' => 'boolean',
             'balance' => 'integer',
+            'two_factor_secret' => 'encrypted',
+            'two_factor_recovery_codes' => 'encrypted:array',
+            'two_factor_confirmed_at' => 'datetime',
         ];
     }
 }

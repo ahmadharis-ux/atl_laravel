@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\SearchHistory;
@@ -45,6 +46,7 @@ class DashboardController extends Controller
             'topQueries' => $topQueries,
             'recommended' => $this->recommendedFor($topQueries),
             'catalog' => $this->catalog(),
+            'brands' => $this->popularBrands(),
             'bestSellers' => Product::query()
                 ->with(['brand', 'category'])
                 ->where('status', true)
@@ -53,6 +55,23 @@ class DashboardController extends Controller
                 ->limit(6)
                 ->get(),
         ]);
+    }
+
+    /**
+     * Brand populer: brand dengan produk aktif terbanyak, untuk section brand
+     * di beranda.
+     *
+     * @return Collection<int, Brand>
+     */
+    private function popularBrands(): Collection
+    {
+        return Brand::query()
+            ->whereHas('products', fn (Builder $query) => $query->where('status', true))
+            ->withCount(['products' => fn (Builder $query) => $query->where('status', true)])
+            ->orderByDesc('products_count')
+            ->orderBy('name')
+            ->limit(12)
+            ->get();
     }
 
     /**

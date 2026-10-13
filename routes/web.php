@@ -1,7 +1,12 @@
 <?php
 
+use App\Http\Controllers\Auth\EmailVerificationController;
+use App\Http\Controllers\Auth\PasswordResetController;
+use App\Http\Controllers\Auth\SocialiteController;
+use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\User\BankAccountController as UserBankAccountController;
 use App\Http\Controllers\User\CheckoutController as UserCheckoutController;
 use App\Http\Controllers\User\DepositController as UserDepositController;
 use App\Http\Controllers\User\LookupController as UserLookupController;
@@ -12,6 +17,7 @@ use App\Http\Controllers\User\ProductController as UserProductController;
 use App\Http\Controllers\User\PulsaController as UserPulsaController;
 use App\Http\Controllers\User\SaldoController as UserSaldoController;
 use App\Http\Controllers\User\SearchHistoryController as UserSearchHistoryController;
+use App\Http\Controllers\User\SettingsController as UserSettingsController;
 use App\Http\Controllers\Webhook\DigiflazzWebhookController;
 use Illuminate\Support\Facades\Route;
 
@@ -22,13 +28,30 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
     Route::post('/register', [AuthController::class, 'register']);
+
+    Route::get('/forgot-password', [PasswordResetController::class, 'request'])->name('password.request');
+    Route::post('/forgot-password', [PasswordResetController::class, 'email'])->name('password.email');
+    Route::get('/reset-password/{token}', [PasswordResetController::class, 'reset'])->name('password.reset');
+    Route::post('/reset-password', [PasswordResetController::class, 'update'])->name('password.update');
+
+    Route::get('/two-factor-challenge', [TwoFactorController::class, 'challenge'])->name('two-factor.challenge');
+    Route::post('/two-factor-challenge', [TwoFactorController::class, 'verifyChallenge'])->name('two-factor.challenge.verify');
+
+    Route::get('/auth/google/redirect', [SocialiteController::class, 'redirect'])->name('auth.google.redirect');
+    Route::get('/auth/google/callback', [SocialiteController::class, 'callback'])->name('auth.google.callback');
 });
 
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+    Route::get('/email/verify', [EmailVerificationController::class, 'notice'])->name('verification.notice');
+    Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
+        ->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
+    Route::post('/email/verification-notification', [EmailVerificationController::class, 'send'])
+        ->middleware('throttle:6,1')->name('verification.send');
 });
 
-Route::middleware(['auth', 'non-admin'])->group(function () {
+Route::middleware(['auth', 'non-admin', 'verified'])->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/saldo', [UserSaldoController::class, 'index'])->name('saldo.index');
@@ -53,6 +76,27 @@ Route::middleware(['auth', 'non-admin'])->group(function () {
     Route::get('/transaksi', [UserOrderController::class, 'index'])->name('orders.index');
     Route::get('/transaksi/{order}', [UserOrderController::class, 'show'])->name('orders.show');
     Route::post('/transaksi/{order}/bayar', [UserOrderController::class, 'pay'])->name('orders.pay');
+
+    Route::get('/pengaturan', [UserSettingsController::class, 'index'])->name('settings.index');
+
+    Route::get('/pengaturan/profil', [UserSettingsController::class, 'profile'])->name('settings.profile');
+    Route::put('/pengaturan/profil', [UserSettingsController::class, 'updateProfile'])->name('settings.profile.update');
+
+    Route::get('/pengaturan/kata-sandi', [UserSettingsController::class, 'password'])->name('settings.password');
+    Route::put('/pengaturan/kata-sandi', [UserSettingsController::class, 'updatePassword'])->name('settings.password.update');
+
+    Route::get('/pengaturan/rekening', [UserBankAccountController::class, 'index'])->name('settings.banks.index');
+    Route::post('/pengaturan/rekening', [UserBankAccountController::class, 'store'])->name('settings.banks.store');
+    Route::put('/pengaturan/rekening/{bankAccount}', [UserBankAccountController::class, 'update'])->name('settings.banks.update');
+    Route::delete('/pengaturan/rekening/{bankAccount}', [UserBankAccountController::class, 'destroy'])->name('settings.banks.destroy');
+
+    Route::get('/pengaturan/keamanan', [TwoFactorController::class, 'show'])->name('settings.two-factor');
+    Route::post('/pengaturan/2fa/aktifkan', [TwoFactorController::class, 'enable'])->name('settings.two-factor.enable');
+    Route::post('/pengaturan/2fa/konfirmasi', [TwoFactorController::class, 'confirm'])->name('settings.two-factor.confirm');
+    Route::delete('/pengaturan/2fa', [TwoFactorController::class, 'disable'])->name('settings.two-factor.disable');
+
+    Route::get('/pengaturan/perangkat', [UserSettingsController::class, 'sessions'])->name('settings.sessions');
+    Route::post('/pengaturan/perangkat/keluar-lain', [UserSettingsController::class, 'logoutOtherDevices'])->name('settings.sessions.logout-others');
 
     Route::delete('/search-history', [UserSearchHistoryController::class, 'clear'])->name('search.history.clear');
 });

@@ -34,6 +34,10 @@ final class Rbac
                 'topups.view' => 'Melihat daftar topup',
                 'topups.update' => 'Memproses / mengubah topup',
             ],
+            'Master Bank' => [
+                'master-banks.view' => 'Melihat master bank',
+                'master-banks.update' => 'Menambah / mengubah master bank',
+            ],
             'Transaksi' => [
                 'transactions.view' => 'Melihat daftar transaksi',
                 'transactions.update' => 'Memproses / mengubah status transaksi',
@@ -93,6 +97,7 @@ final class Rbac
                 'roles.view', 'roles.create', 'roles.update',
                 'topups.view', 'topups.update', 'transactions.view', 'transactions.update',
                 'products.view', 'products.update',
+                'master-banks.view', 'master-banks.update',
             ],
             Roles::STAFF => [
                 'dashboard.view',
@@ -100,12 +105,14 @@ final class Rbac
                 'roles.view',
                 'topups.view', 'topups.update', 'transactions.view', 'transactions.update',
                 'products.view',
+                'master-banks.view', 'master-banks.update',
             ],
             Roles::CS => [
                 'dashboard.view',
                 'users.view',
                 'topups.view', 'topups.update', 'transactions.view', 'transactions.update',
                 'products.view',
+                'master-banks.view',
             ],
             Roles::USER => [],
         ];

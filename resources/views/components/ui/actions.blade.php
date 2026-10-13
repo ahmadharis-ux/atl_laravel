@@ -11,11 +11,15 @@
         $url = $a['url'] ?? null; // for DELETE form submissions
         $confirm = $a['confirm'] ?? null;
         $action = $a['action'] ?? null;
+        $modal = $a['modal'] ?? null;
 
         $base = $withText ? 'ap-menu-item ' . $tone : 'ap-icon-btn ' . $tone;
         $attrs = '';
         if ($href) {
             $attrs .= ' href="' . e($href) . '"';
+        }
+        if ($modal) {
+            $attrs .= ' data-modal-open="' . e($modal) . '"';
         }
         if ($url) {
             // For DELETE action, render a form with method spoofing
@@ -34,7 +38,7 @@
         if ($action) {
             $attrs .= ' data-action="' . e($action) . '"';
         }
-        if (! $href && ! $confirm && ! $action && ! $url) {
+        if (! $href && ! $confirm && ! $action && ! $url && ! $modal) {
             $attrs .= ' disabled';
         }
         $tip = $withText ? '' : ' data-tip="' . e($label) . '"';

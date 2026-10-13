@@ -6,7 +6,7 @@
         ['label' => 'Riwayat',    'icon' => 'receipt_long',           'url' => route('orders.index'), 'active' => request()->routeIs('orders.*')],
         ['label' => 'Kontak',     'icon' => 'contact_phone',          'url' => '#', 'active' => false],
         ['label' => 'Deposit',    'icon' => 'account_balance_wallet', 'url' => route('saldo.index'), 'active' => request()->routeIs('saldo.*')],
-        ['label' => 'Pengaturan', 'icon' => 'settings',               'url' => '#', 'active' => false],
+        ['label' => 'Pengaturan', 'icon' => 'settings',               'url' => route('settings.index'), 'active' => request()->routeIs('settings.*')],
     ];
 @endphp
 

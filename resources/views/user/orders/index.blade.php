@@ -16,7 +16,7 @@
     <div class="card-ap r-card p-3">
         <ul class="trx list-unstyled m-0">
             @forelse ($orders as $order)
-                <li>
+                <li data-row-href="{{ route('orders.show', $order) }}">
                     <span class="ibox ibox-44 bg-mint-l tx-mintt"><span class="ms" style="font-size:20px">shopping_bag</span></span>
                     <div class="t">
                         <div class="fw-bold text-truncate">{{ $order->product?->name ?? 'Produk tidak tersedia' }}</div>

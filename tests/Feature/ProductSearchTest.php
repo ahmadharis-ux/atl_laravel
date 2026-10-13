@@ -115,18 +115,18 @@ class ProductSearchTest extends TestCase
             ->assertSee('data-search-clear', false);
     }
 
-    public function test_product_list_uses_load_more_with_sixteen_per_page(): void
+    public function test_product_list_uses_load_more_with_forty_per_page(): void
     {
         $user = User::factory()->create();
-        Product::factory()->prabayar()->count(20)->create(['status' => true]);
+        Product::factory()->prabayar()->count(45)->create(['status' => true]);
 
         $response = $this->actingAs($user)->get('/produk');
 
         $response->assertOk()
             ->assertSee('Muat lebih banyak')
-            ->assertSee('dari 20 produk');
+            ->assertSee('dari 45 produk');
 
-        $this->assertSame(16, substr_count($response->getContent(), 'pcard r-card'));
+        $this->assertSame(40, substr_count($response->getContent(), 'pcard r-card'));
     }
 
     public function test_catalog_hides_pulsa_and_data_products(): void

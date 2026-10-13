@@ -55,7 +55,7 @@ class ProductController extends Controller
             ->priceBetween($minPrice, $maxPrice)
             ->orderBy('sort_order')
             ->orderBy('name')
-            ->paginate(16)
+            ->paginate(40)
             ->withQueryString();
 
         $data = [

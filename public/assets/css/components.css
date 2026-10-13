@@ -5,6 +5,10 @@
 .ui-input:focus,.ui-select:focus,.ui-textarea:focus{outline:0;border-color:var(--mintt);background:#fff;box-shadow:0 0 0 3px rgba(0,160,108,.15)}
 .ui-label{font-weight:700;font-size:.8125rem;margin-bottom:.35rem;display:block}
 .ui-hint{font-size:.72rem;color:var(--mute);margin-top:.3rem}
+.ui-input-wrap{position:relative}
+.ui-input-wrap.has-eye .ui-input{padding-right:2.75rem}
+.ui-eye{position:absolute;top:50%;right:.4rem;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:2.1rem;height:2.1rem;border:0;background:transparent;border-radius:.5rem;color:var(--mute);cursor:pointer;transition:color .15s,background .15s}
+.ui-eye:hover,.ui-eye:focus-visible{color:var(--deep);background:rgba(0,0,0,.04);outline:0}
 .err{color:var(--err);font-size:.75rem;margin-top:.3rem;display:none}
 .err.show{display:block}
 
@@ -193,3 +197,13 @@ body.ap-modal-open{overflow:hidden}
 
 /* Transaction log detail (context / stack trace) */
 .ap-log-pre{margin:0;padding:.85rem 1rem;border-radius:.75rem;background:#06283a;color:#d6f7ff;font-family:'Manrope',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.72rem;line-height:1.5;white-space:pre-wrap;word-break:break-word;max-height:22rem;overflow:auto}
+
+/* Settings menu grid (halaman Pengaturan akun) */
+.settings-card{display:flex;align-items:flex-start;gap:.875rem;padding:1rem;color:inherit;border:1px solid transparent;transition:transform .15s,box-shadow .15s,border-color .15s}
+.settings-card:hover,.settings-card:focus-visible{border-color:rgba(0,160,108,.45);box-shadow:0 8px 18px rgba(0,0,0,.06);transform:translateY(-2px);outline:0}
+.settings-card .t{flex:1;min-width:0}
+.settings-card .lbl{display:block;font-weight:800;font-size:.9375rem;color:var(--deep)}
+.settings-card .desc{display:block;font-size:.75rem;color:var(--mute);margin-top:.15rem}
+.settings-card .go{color:var(--mute);transition:transform .15s}
+.settings-card:hover .go{transform:translateX(2px);color:var(--teal)}
+

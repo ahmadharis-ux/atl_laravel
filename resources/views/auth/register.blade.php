@@ -196,6 +196,10 @@ body{min-height:100vh}
   <label class="chk mb-4"><input type="checkbox" name="terms" required><span>Saya menyetujui <a href="#" class="lnk">Syarat &amp; Ketentuan</a> dan <a href="#" class="lnk">Kebijakan Privasi</a>.</span></label>
   <button type="submit" class="btn-main">Buat akun<span class="ms">arrow_forward</span></button>
 </form>
+@if (config('services.google.client_id'))
+<div class="divider">atau</div>
+<a href="{{ route('auth.google.redirect') }}" class="btn-alt"><span class="ms ms-md">g_translate</span>Daftar dengan Google</a>
+@endif
         <p class="text-center m-0 mt-4 tx-mute">Sudah punya akun? <a href="{{ route('login') }}" class="lnk">Masuk</a></p>
       </div>
     </div>

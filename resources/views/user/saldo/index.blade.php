@@ -69,7 +69,7 @@
         </div>
         <ul class="trx list-unstyled m-0">
             @forelse ($transactions as $t)
-                <li>
+                <li data-row-href="{{ $t['url'] }}">
                     <span class="ibox ibox-44 bg-mint-l tx-mintt"><span class="ms" style="font-size:20px">{{ $t['icon'] }}</span></span>
                     <div class="t">
                         <div class="fw-bold text-truncate">{{ $t['title'] }}</div>

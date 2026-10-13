@@ -26,7 +26,12 @@
         <ul class="trx list-unstyled m-0">
             @forelse ($entries as $entry)
                 @php($incoming = $entry->direction->sign() > 0)
-                <li>
+                @php($rowUrl = match (true) {
+                    $entry->reference instanceof \App\Models\Order => route('orders.show', $entry->reference),
+                    $entry->reference instanceof \App\Models\Deposit => route('deposits.show', $entry->reference),
+                    default => null,
+                })
+                <li @if ($rowUrl) data-row-href="{{ $rowUrl }}" @endif>
                     <span class="ibox ibox-44 {{ $entry->type->tone() }}"><span class="ms" style="font-size:20px">{{ $entry->type->icon() }}</span></span>
                     <div class="t">
                         <div class="fw-bold text-truncate">{{ $entry->type->label() }}</div>
