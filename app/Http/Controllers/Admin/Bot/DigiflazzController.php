@@ -12,7 +12,6 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -51,13 +50,7 @@ class DigiflazzController extends Controller
             }
         }
 
-        // 2. Gabungkan pilihan kategori/brand/type ke dalam scraper_config
-        $input['scraper_config'] = $this->mergeSelections(
-            is_array($input['scraper_config'] ?? null) ? $input['scraper_config'] : [],
-            $request
-        );
-
-        // 3. Gunakan Validator manual agar memvalidasi variabel $input yang sudah di-decode
+        // 2. Gunakan Validator manual agar memvalidasi variabel $input yang sudah di-decode
         $validator = Validator::make($input, [
             'name' => ['required', 'string', 'max:100'],
             'cookies_content' => ['required', 'string'],
@@ -102,15 +95,8 @@ class DigiflazzController extends Controller
 
     public function edit(BotDigiflazzConfig $digiflazz): View
     {
-        $scraperConfig = $digiflazz->scraper_config ?? [];
-
         return view('admin.bot.digiflazz.edit', [
             'config' => $digiflazz,
-            'selectedOptions' => [
-                'categories' => $this->selectedOptionLabels($digiflazz, 'categories', $scraperConfig['categories'] ?? []),
-                'brands' => $this->selectedOptionLabels($digiflazz, 'brands', $scraperConfig['brands'] ?? []),
-                'types' => $this->selectedOptionLabels($digiflazz, 'types', $scraperConfig['types'] ?? []),
-            ],
         ]);
     }
 
@@ -127,12 +113,6 @@ class DigiflazzController extends Controller
                 $input['scraper_config'] = null;
             }
         }
-
-        // Gabungkan pilihan kategori/brand/type ke dalam scraper_config
-        $input['scraper_config'] = $this->mergeSelections(
-            is_array($input['scraper_config'] ?? null) ? $input['scraper_config'] : [],
-            $request
-        );
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:100'],
@@ -177,126 +157,6 @@ class DigiflazzController extends Controller
         return redirect()
             ->route('admin.bot.digiflazz.index')
             ->with('status', 'Konfigurasi Digiflazz beserta data terkait dihapus.');
-    }
-
-    // ── Kategori / Brand / Type (picker) ─────────────────────────
-
-    /** @var array<int, string> */
-    private const OPTION_TYPES = ['categories', 'brands', 'types'];
-
-    /**
-     * Endpoint pencarian kategori/brand/type Digiflazz untuk multi-select.
-     * Memakai konfigurasi aktif, atau `config_id` bila diberikan.
-     */
-    public function options(Request $request, string $type): JsonResponse
-    {
-        if (! in_array($type, self::OPTION_TYPES, true)) {
-            abort(404);
-        }
-
-        $config = $request->filled('config_id')
-            ? BotDigiflazzConfig::find($request->integer('config_id'))
-            : BotDigiflazzConfig::where('is_active', true)->first();
-
-        if (! $config) {
-            return response()->json([
-                'results' => [],
-                'message' => 'Belum ada konfigurasi Digiflazz aktif.',
-            ]);
-        }
-
-        $term = Str::lower(trim((string) $request->query('q', '')));
-        $limit = min(max($request->integer('limit', 20), 1), 50);
-
-        $results = collect($this->optionMap($config, $type))
-            ->when($term !== '', fn ($items) => $items->filter(
-                fn ($name) => str_contains(Str::lower((string) $name), $term)
-            ))
-            ->take($limit)
-            ->map(fn ($name, $id): array => ['value' => (string) $id, 'text' => (string) $name])
-            ->values();
-
-        return response()->json(['results' => $results]);
-    }
-
-    /**
-     * Gabungkan pilihan kategori/brand/type dari request ke dalam scraper_config.
-     * Array kosong dihilangkan agar job memperlakukannya sebagai "semua".
-     *
-     * @param  array<string, mixed>  $scraperConfig
-     * @return array<string, mixed>
-     */
-    private function mergeSelections(array $scraperConfig, Request $request): array
-    {
-        foreach (self::OPTION_TYPES as $type) {
-            $values = array_values(array_filter(array_map(
-                fn ($value) => is_scalar($value) ? trim((string) $value) : null,
-                (array) $request->input($type, [])
-            ), fn ($value) => $value !== null && $value !== ''));
-
-            if (! empty($values)) {
-                $scraperConfig[$type] = $values;
-            } else {
-                unset($scraperConfig[$type]);
-            }
-        }
-
-        return $scraperConfig;
-    }
-
-    /**
-     * Label pilihan tersimpan (id => nama) untuk ditampilkan sebelum picker dimuat.
-     * Membaca dari cache saja — tidak memanggil API.
-     *
-     * @param  array<int, string|int>  $ids
-     * @return array<string, string>
-     */
-    private function selectedOptionLabels(BotDigiflazzConfig $config, string $type, array $ids): array
-    {
-        if (empty($ids)) {
-            return [];
-        }
-
-        $map = Cache::get("bot_digiflazz.options.{$config->id}.{$type}", []);
-        $labels = [];
-
-        foreach ($ids as $id) {
-            $key = (string) $id;
-            $labels[$key] = (string) ($map[$id] ?? $id);
-        }
-
-        return $labels;
-    }
-
-    /** @return array<array-key, string> id => nama (di-cache 6 jam) */
-    private function optionMap(BotDigiflazzConfig $config, string $type): array
-    {
-        return Cache::remember(
-            "bot_digiflazz.options.{$config->id}.{$type}",
-            now()->addHours(6),
-            function () use ($config, $type): array {
-                try {
-                    $map = match ($type) {
-                        'categories' => $config->getClient()->listCategories(),
-                        'brands' => $config->getClient()->listBrands(),
-                        'types' => $config->getClient()->listTypes(),
-                        default => [],
-                    };
-                } catch (\Throwable $e) {
-                    Log::warning('Gagal memuat opsi Digiflazz', [
-                        'config_id' => $config->id,
-                        'type' => $type,
-                        'error' => $e->getMessage(),
-                    ]);
-
-                    return [];
-                }
-
-                asort($map);
-
-                return $map;
-            }
-        );
     }
 
     // ── Sync Logs ────────────────────────────────────────────────

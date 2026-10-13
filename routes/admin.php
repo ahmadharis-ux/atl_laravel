@@ -46,7 +46,6 @@ Route::middleware(['auth', 'admin'])->group(function () {
         Route::get('/', [DigiflazzController::class, 'index'])->middleware('permission:products.view')->name('index');
         Route::get('/create', [DigiflazzController::class, 'create'])->middleware('permission:products.update')->name('create');
         Route::post('/', [DigiflazzController::class, 'store'])->middleware('permission:products.update')->name('store');
-        Route::get('/options/{type}', [DigiflazzController::class, 'options'])->middleware('permission:products.view')->name('options');
         Route::get('/{digiflazz}/edit', [DigiflazzController::class, 'edit'])->middleware('permission:products.update')->name('edit');
         Route::put('/{digiflazz}', [DigiflazzController::class, 'update'])->middleware('permission:products.update')->name('update');
         Route::delete('/{digiflazz}', [DigiflazzController::class, 'destroy'])->middleware('permission:products.update')->name('destroy');

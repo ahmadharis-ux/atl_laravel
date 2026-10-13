@@ -51,18 +51,33 @@ class BotDigiflazzPagesTest extends TestCase
             ->get(route('admin.bot.digiflazz.edit', $config));
 
         $response->assertOk()
-            ->assertSee('js-multi-select', false)
-            ->assertSee('Filter Sinkronisasi', false);
+            ->assertSee('Scraper Config (JSON)')
+            ->assertSee('pattern_mode');
     }
 
-    public function test_create_page_renders_selection_picker(): void
+    public function test_create_page_renders_scraper_config_field(): void
     {
         $response = $this->actingAs($this->admin())
             ->get(route('admin.bot.digiflazz.create'));
 
         $response->assertOk()
-            ->assertSee('js-multi-select', false)
-            ->assertSee('Filter Sinkronisasi', false);
+            ->assertSee('Scraper Config (JSON)')
+            ->assertSee('description_patterns');
+    }
+
+    public function test_store_saves_scraper_config_json_as_array(): void
+    {
+        $this->actingAs($this->admin())->post(route('admin.bot.digiflazz.store'), [
+            'name' => 'Baru',
+            'cookies_content' => 'session=abc',
+            'csrf_token' => 'csrf',
+            'is_active' => '1',
+            'scraper_config' => json_encode(['pattern_mode' => 'AND', 'prioritize_favorite' => true]),
+        ])->assertRedirect(route('admin.bot.digiflazz.index'));
+
+        $config = BotDigiflazzConfig::firstOrFail();
+        $this->assertSame('AND', $config->scraper_config['pattern_mode']);
+        $this->assertTrue($config->scraper_config['prioritize_favorite']);
     }
 
     public function test_sync_index_page_renders(): void

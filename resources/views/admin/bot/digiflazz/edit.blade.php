@@ -57,29 +57,6 @@
                 </div>
 
                 <div class="col-12">
-                    <label class="ui-label mb-1">Filter Sinkronisasi (opsional)</label>
-                    <div class="ui-hint">Kosongkan untuk menyinkronkan <strong>semua</strong> kategori/brand/type.</div>
-                </div>
-                <div class="col-md-4">
-                    <x-ui.multi-select name="categories" label="Kategori" placeholder="Semua kategori"
-                        :value="$config->scraper_config['categories'] ?? []"
-                        :options="$selectedOptions['categories']"
-                        :remote-url="route('admin.bot.digiflazz.options', ['type' => 'categories', 'config_id' => $config->id])" />
-                </div>
-                <div class="col-md-4">
-                    <x-ui.multi-select name="brands" label="Brand" placeholder="Semua brand"
-                        :value="$config->scraper_config['brands'] ?? []"
-                        :options="$selectedOptions['brands']"
-                        :remote-url="route('admin.bot.digiflazz.options', ['type' => 'brands', 'config_id' => $config->id])" />
-                </div>
-                <div class="col-md-4">
-                    <x-ui.multi-select name="types" label="Type" placeholder="Semua type"
-                        :value="$config->scraper_config['types'] ?? []"
-                        :options="$selectedOptions['types']"
-                        :remote-url="route('admin.bot.digiflazz.options', ['type' => 'types', 'config_id' => $config->id])" />
-                </div>
-
-                <div class="col-12">
                     <label class="form-label fw-bold">Scraper Config (JSON)</label>
                     @php
                         $scraperConfigJson = $config->scraper_config

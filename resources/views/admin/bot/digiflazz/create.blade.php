@@ -70,23 +70,6 @@
                 </div>
 
                 <div class="col-12">
-                    <label class="ui-label mb-1">Filter Sinkronisasi (opsional)</label>
-                    <div class="ui-hint">Kosongkan untuk menyinkronkan <strong>semua</strong> kategori/brand/type.</div>
-                </div>
-                <div class="col-md-4">
-                    <x-ui.multi-select name="categories" label="Kategori" placeholder="Semua kategori"
-                        :remote-url="route('admin.bot.digiflazz.options', ['type' => 'categories'])" />
-                </div>
-                <div class="col-md-4">
-                    <x-ui.multi-select name="brands" label="Brand" placeholder="Semua brand"
-                        :remote-url="route('admin.bot.digiflazz.options', ['type' => 'brands'])" />
-                </div>
-                <div class="col-md-4">
-                    <x-ui.multi-select name="types" label="Type" placeholder="Semua type"
-                        :remote-url="route('admin.bot.digiflazz.options', ['type' => 'types'])" />
-                </div>
-
-                <div class="col-12">
                     <label class="form-label fw-bold">Scraper Config (JSON)</label>
                     <textarea name="scraper_config" class="form-control font-monospace fs-11" rows="8" placeholder='{
   "description_patterns": ["/100%/i", "/detikan/i"],

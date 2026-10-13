@@ -5,6 +5,13 @@ namespace App\Services\Digiflazz;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * Klien scraping & update produk Digiflazz (member.digiflazz.com).
+ *
+ * Port dari script `produk.php` + `lib/Digiflazz.php` (folder Digiflazz)
+ * yang menangani STEP 1 (daftar produk closed), STEP 2 (seller per produk),
+ * dan STEP 3 (update ke seller termurah) — termasuk retry HTTP 429.
+ */
 class DigiflazzClient
 {
     private array $baseHeaders = [];
@@ -18,6 +25,15 @@ class DigiflazzClient
     private string $socketId;
 
     private string $xsrfToken;
+
+    /** Jeda antar request dalam microsecond (300000 = 0.3 detik). */
+    public int $requestDelay = 300000;
+
+    /** Jumlah maksimal retry jika dapat HTTP 429. 0 = tidak retry. */
+    public int $retryMax = 3;
+
+    /** Delay awal (detik) sebelum retry pertama; berlipat ganda tiap retry. */
+    public int $retryDelaySeconds = 5;
 
     public function __construct(
         private string $cookieContent,
@@ -76,36 +92,74 @@ class DigiflazzClient
         ]);
     }
 
+    /**
+     * Request dengan retry otomatis saat HTTP 429 (Too Many Requests).
+     * Menghormati header `Retry-After` dan memakai exponential backoff.
+     *
+     * @return array{success: bool, http_code: int, data: mixed}
+     */
     private function request(string $method, string $url, array $data = [], bool $isUpdate = false): array
     {
         $headers = $isUpdate ? $this->updateHeaders : $this->baseHeaders;
+        $attempt = 0;
+        $delaySeconds = $this->retryDelaySeconds;
 
-        try {
-            $response = Http::withHeaders($headers)
-                ->timeout(30)
-                ->retry(3, 500)
-                ->withBody($data ? json_encode($data) : '', 'application/json')
-                ->$method($url);
+        while (true) {
+            try {
+                $pending = Http::withHeaders($headers)->timeout(30);
 
-            return [
-                'success' => $response->successful(),
-                'http_code' => $response->status(),
-                'data' => $response->json(),
-                'raw' => $response->body(),
-            ];
-        } catch (\Throwable $e) {
-            Log::error('Digiflazz request failed', [
-                'method' => $method,
-                'url' => $url,
-                'error' => $e->getMessage(),
-            ]);
+                if ($method === 'POST' && ! empty($data)) {
+                    $pending = $pending->withBody(
+                        json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                        'application/json'
+                    );
+                }
 
-            return [
-                'success' => false,
-                'http_code' => 0,
-                'data' => ['message' => $e->getMessage()],
-                'raw' => '',
-            ];
+                $response = $pending->send($method, $url);
+            } catch (\Throwable $e) {
+                Log::error('Digiflazz request failed', [
+                    'method' => $method,
+                    'url' => $url,
+                    'error' => $e->getMessage(),
+                ]);
+
+                return ['success' => false, 'http_code' => 0, 'data' => ['message' => $e->getMessage()]];
+            }
+
+            $httpCode = $response->status();
+
+            // ── Handle 429 Too Many Requests ──────────────────────
+            if ($httpCode === 429) {
+                if ($attempt >= $this->retryMax) {
+                    return ['success' => false, 'http_code' => 429, 'data' => $response->json()];
+                }
+
+                $waitSeconds = $delaySeconds;
+                $retryAfter = $response->header('Retry-After');
+
+                if (is_string($retryAfter) && preg_match('/\d+/', $retryAfter, $m)) {
+                    $waitSeconds = (int) $m[0];
+                }
+
+                $attempt++;
+                Log::warning('Digiflazz 429 Too Many Requests, retry', [
+                    'url' => $url,
+                    'wait_seconds' => $waitSeconds,
+                    'attempt' => $attempt,
+                    'max' => $this->retryMax,
+                ]);
+
+                sleep($waitSeconds);
+                $delaySeconds *= 2;
+
+                continue;
+            }
+
+            if ($httpCode !== 200) {
+                return ['success' => false, 'http_code' => $httpCode, 'data' => $response->json()];
+            }
+
+            return ['success' => true, 'http_code' => 200, 'data' => $response->json()];
         }
     }
 
@@ -115,285 +169,71 @@ class DigiflazzClient
         $response = $this->request('GET', 'https://member.digiflazz.com/api/v1/buyer/product/closed');
         $data = $response['data']['data'] ?? [];
 
-        return $data;
+        return is_array($data) ? $data : [];
     }
 
-    // ── Kategori / Brand / Type ──────────────────────────────────
-
-    /** Ambil semua kategori Digiflazz → [id => name] */
-    public function listCategories(): array
-    {
-        $response = $this->request('GET', 'https://member.digiflazz.com/api/v1/buyer/product/category');
-        $raw = $response['data']['data'] ?? $response['data'] ?? [];
-
-        return is_array($raw) ? array_column($raw, 'name', 'id') : [];
-    }
-
-    /** Ambil semua brand Digiflazz → [id => name] */
-    public function listBrands(): array
-    {
-        $response = $this->request('GET', 'https://member.digiflazz.com/api/v1/buyer/product/brand');
-        $raw = $response['data']['data'] ?? $response['data'] ?? [];
-
-        return is_array($raw) ? array_column($raw, 'name', 'id') : [];
-    }
-
-    /** Ambil semua type Digiflazz → [id => name] */
-    public function listTypes(): array
-    {
-        $response = $this->request('GET', 'https://member.digiflazz.com/api/v1/buyer/product/type');
-        $raw = $response['data']['data'] ?? $response['data'] ?? [];
-
-        return is_array($raw) ? array_column($raw, 'name', 'id') : [];
-    }
-
+    // ── STEP 2 — Ambil seller per produk ─────────────────────────
     /**
-     * Fetch produk untuk satu/beberapa kategori → [productId => product].
+     * Ambil seller untuk satu produk, sudah diurutkan dari harga termurah.
      *
-     * @param  array<int, string|int>  $categoryIds
+     * @return array{success: bool, http_code: int, sellers: array}
      */
-    public function fetchProductsByCategories(array $categoryIds): array
+    public function fetchSellers(string $productId): array
     {
-        $result = [];
+        $url = "https://member.digiflazz.com/api/v1/buyer/product/seller/{$productId}";
+        $response = $this->request('GET', $url);
 
-        foreach ($categoryIds as $categoryId) {
-            $response = $this->request('GET', "https://member.digiflazz.com/api/v1/buyer/product/category/{$categoryId}/");
-            $items = $response['data']['data'] ?? [];
-
-            if (is_array($items)) {
-                foreach ($items as $product) {
-                    if (isset($product['id'])) {
-                        $result[$product['id']] = $product;
-                    }
-                }
-            }
-
-            usleep(300000);
+        if (! $response['success']) {
+            return ['success' => false, 'http_code' => $response['http_code'], 'sellers' => []];
         }
 
-        return $result;
+        $sellers = $response['data']['data'] ?? [];
+        $sellers = is_array($sellers) ? $sellers : [];
+
+        usort($sellers, function ($a, $b) {
+            $pA = is_numeric($a['price'] ?? null) ? (float) $a['price'] : PHP_INT_MAX;
+            $pB = is_numeric($b['price'] ?? null) ? (float) $b['price'] : PHP_INT_MAX;
+
+            return $pA <=> $pB;
+        });
+
+        return ['success' => true, 'http_code' => $response['http_code'], 'sellers' => $sellers];
     }
 
+    // ── STEP 3 — Filter & pilih seller termurah ──────────────────
     /**
-     * Filter produk (client-side) berdasarkan brand & type terpilih.
-     * Array kosong berarti tanpa filter (semua lolos).
+     * Terapkan hard filter (multi/favorit/rating) dan filter pattern deskripsi,
+     * lalu pilih seller dengan harga termurah.
      *
-     * @param  array<array-key, array>  $products
-     * @param  array<int, string|int>  $brandIds
-     * @param  array<int, string|int>  $typeIds
+     * @param  array<array-key, array>  $sellers
+     * @param  array<string, mixed>  $config  config mentah atau hasil normalizeConfig()
+     * @return array{status: string, chosen: ?array, fallback: bool, source: string}
      */
-    public function filterProductsByBrandAndType(array $products, array $brandIds = [], array $typeIds = []): array
+    public function selectCheapestSeller(array $sellers, array $config): array
     {
-        if (! empty($brandIds)) {
-            $allowed = array_flip(array_map('strval', $brandIds));
-            $products = array_filter($products, function ($product) use ($allowed) {
-                $id = $product['brand_id'] ?? $product['brandId']
-                    ?? $product['product_details']['brand']['id']
-                    ?? null;
+        $config = self::normalizeConfig($config);
 
-                return $id !== null && isset($allowed[(string) $id]);
-            });
-        }
+        $baseFiltered = $sellers;
 
-        if (! empty($typeIds)) {
-            $allowed = array_flip(array_map('strval', $typeIds));
-            $products = array_filter($products, function ($product) use ($allowed) {
-                $id = $product['type_id'] ?? $product['typeId']
-                    ?? $product['product_details']['type']['id']
-                    ?? null;
-
-                return $id !== null && isset($allowed[(string) $id]);
-            });
-        }
-
-        return $products;
-    }
-
-    // ── STEP 2 — Scrape seller per produk ────────────────────────
-    public function scrapeSellerPerProduct(array $products): array
-    {
-        $total = count($products);
-        $results = [];
-        $success = 0;
-        $failed = 0;
-
-        foreach ($products as $i => $product) {
-            $productId = $product['id'] ?? null;
-            $productName = $product['product'] ?? '-';
-            $productCode = $product['code'] ?? '-';
-            $no = $i + 1;
-
-            if (! $productId) {
-                $failed++;
-
-                continue;
-            }
-
-            $url = "https://member.digiflazz.com/api/v1/buyer/product/seller/{$productId}";
-            $response = $this->request('GET', $url);
-
-            if (! $response['success']) {
-                $failed++;
-
-                continue;
-            }
-
-            $sellerData = $response['data'];
-
-            if (isset($sellerData['data']) && is_array($sellerData['data'])) {
-                usort($sellerData['data'], function ($a, $b) {
-                    $pA = is_numeric($a['price'] ?? null) ? (float) $a['price'] : PHP_INT_MAX;
-                    $pB = is_numeric($b['price'] ?? null) ? (float) $b['price'] : PHP_INT_MAX;
-
-                    return $pA <=> $pB;
-                });
-            }
-
-            $sellerCount = count($sellerData['data'] ?? []);
-            $results[] = [
-                'product_id' => $productId,
-                'product_code' => $productCode,
-                'product_name' => $productName,
-                'seller_data' => $sellerData,
-            ];
-            $success++;
-
-            usleep(300000); // 0.3 detik delay
-        }
-
-        return $results;
-    }
-
-    // ── STEP 3 — Update produk ke seller termurah ────────────────
-    public function updateProducts(
-        array $sellerResults,
-        array $productMap,
-        array $config
-    ): array {
-        $total = count($sellerResults);
-        $results = [];
-        $updated = 0;
-        $skipped = 0;
-        $deleted = 0;
-        $noSeller = 0;
-
-        foreach ($sellerResults as $i => $item) {
-            $no = $i + 1;
-            $productId = $item['product_id'];
-            $productCode = $item['product_code'];
-            $productName = $item['product_name'];
-            $sellers = $item['seller_data']['data'] ?? [];
-
-            // ── Tidak ada seller ──────────────────────────────────
-            if (empty($sellers)) {
-                $noSeller++;
-                if ($config['no_seller_action'] === 'delete') {
-                    if (! $config['dry_run']) {
-                        $this->deleteProduct($productId);
-                    }
-                    $deleted++;
-                    $results[] = ['product_id' => $productId, 'status' => $config['dry_run'] ? 'dry_run_delete_no_seller' : 'deleted_no_seller', 'seller' => null];
-
-                    continue;
-                }
-                $skipped++;
-                $results[] = ['product_id' => $productId, 'status' => 'skip_no_seller', 'seller' => null];
-
-                continue;
-            }
-
-            // ── Filter & pilih seller termurah ──────────────────
-            $filtered = $this->filterAndSelectSeller($sellers, $config);
-
-            if (empty($filtered)) {
-                if ($config['strict_filters']) {
-                    $noSeller++;
-                    $results[] = ['product_id' => $productId, 'status' => 'skip_strict_hard_filter', 'seller' => null];
-
-                    continue;
-                }
-                $filtered = $sellers; // fallback
-            }
-
-            usort($filtered, function ($a, $b) {
-                $pA = is_numeric($a['price'] ?? null) ? (float) $a['price'] : PHP_INT_MAX;
-                $pB = is_numeric($b['price'] ?? null) ? (float) $b['price'] : PHP_INT_MAX;
-
-                return $pA <=> $pB;
-            });
-
-            $chosen = $filtered[0];
-            $original = $productMap[$productId] ?? [];
-
-            $body = array_merge($original, [
-                'price' => $chosen['price'],
-                'stock' => $chosen['stock'],
-                'start_cut_off' => $chosen['start_cut_off'],
-                'end_cut_off' => $chosen['end_cut_off'],
-                'unlimited_stock' => $chosen['unlimited_stock'],
-                'faktur' => $chosen['faktur'],
-                'multi' => $chosen['multi'],
-                'multi_counter' => $chosen['multi_counter'],
-                'seller' => $chosen['seller'],
-                'seller_sku_id' => $chosen['id'],
-                'seller_sku_id_int' => $chosen['id_int'],
-                'seller_connection_type' => $chosen['connectionType'],
-                'seller_sku_code' => $chosen['seller_sku_code'],
-                'seller_details' => $chosen['seller_details'],
-                'status' => $chosen['status'],
-                'seller_sku_desc' => $chosen['deskripsi'],
-                'max_price' => 0,
-                'change' => true,
-            ]);
-
-            if ($config['dry_run']) {
-                $results[] = ['product_id' => $productId, 'status' => 'dry_run', 'seller' => $this->buildSellerMeta($chosen)];
-
-                continue;
-            }
-
-            $response = $this->request('POST', 'https://member.digiflazz.com/api/v1/buyer/product', $body, true);
-
-            if ($response['http_code'] === 200) {
-                $results[] = ['product_id' => $productId, 'status' => 'updated', 'seller' => $this->buildSellerMeta($chosen)];
-            } elseif (
-                $response['http_code'] === 400
-                && str_contains($response['data']['message'] ?? '', 'Produk dan Seller sudah ada sebelumnya')
-            ) {
-                $this->deleteProduct($productId);
-                $results[] = ['product_id' => $productId, 'status' => 'deleted_duplicate', 'seller' => $this->buildSellerMeta($chosen)];
-            } else {
-                $results[] = ['product_id' => $productId, 'status' => "failed_http_{$response['http_code']}", 'response' => $response['data']];
-            }
-
-            usleep(300000);
-        }
-
-        return $results;
-    }
-
-    private function filterAndSelectSeller(array $sellers, array $config): array
-    {
-        $filtered = $sellers;
-
-        // Hard filters
+        // ── TAHAP 1: Hard filter ─────────────────────────────────
         if ($config['filter_multi'] !== null) {
-            $filtered = array_values(array_filter($filtered, function ($s) use ($config) {
+            $baseFiltered = array_values(array_filter($baseFiltered, function ($s) use ($config) {
                 return ((bool) ($s['multi'] ?? false)) === $config['filter_multi'];
             }));
         }
 
         if ($config['prioritize_favorite']) {
-            $favoriteSellers = array_values(array_filter($filtered, function ($s) {
+            $favoriteSellers = array_values(array_filter($baseFiltered, function ($s) {
                 return (bool) ($s['is_seller_favorite'] ?? false);
             }));
+
             if (! empty($favoriteSellers)) {
-                $filtered = $favoriteSellers;
+                $baseFiltered = $favoriteSellers;
             }
         }
 
         if ($config['filter_min_rating'] !== null) {
-            $filtered = array_values(array_filter($filtered, function ($s) use ($config) {
+            $baseFiltered = array_values(array_filter($baseFiltered, function ($s) use ($config) {
                 $avg = is_numeric($s['reviewAvg'] ?? null) ? (float) $s['reviewAvg'] : 0;
 
                 return $avg >= $config['filter_min_rating'];
@@ -401,62 +241,166 @@ class DigiflazzClient
         }
 
         if ($config['filter_min_rating_qty'] !== null) {
-            $filtered = array_values(array_filter($filtered, function ($s) use ($config) {
+            $baseFiltered = array_values(array_filter($baseFiltered, function ($s) use ($config) {
                 $qty = (int) filter_var($s['rating_qty'] ?? 0, FILTER_SANITIZE_NUMBER_INT);
 
                 return $qty >= $config['filter_min_rating_qty'];
             }));
         }
 
-        // Strict hard filter
         $hardFilterActive = $config['filter_multi'] !== null || $config['prioritize_favorite']
             || $config['filter_min_rating'] !== null || $config['filter_min_rating_qty'] !== null;
-        $hardFallbackUsed = $hardFilterActive && empty($filtered);
+        $hardFallbackUsed = $hardFilterActive && empty($baseFiltered);
 
         if ($hardFallbackUsed && $config['strict_filters']) {
-            return []; // strict mode: skip
+            return ['status' => 'skip_strict_hard_filter', 'chosen' => null, 'fallback' => false, 'source' => '[STRICT] Tidak ada seller memenuhi hard filter'];
         }
 
-        if ($hardFallbackUsed) {
-            $filtered = $this->sellers ?? $sellers; // fallback to all
-        }
+        $afterHardFilter = ! empty($baseFiltered) ? $baseFiltered : $sellers;
 
-        // Pattern filter
-        $patterns = $config['description_patterns'] ?? [];
-        if (! empty($patterns)) {
-            $patternFiltered = array_values(array_filter($filtered, function ($s) use ($config) {
+        // ── TAHAP 2: Filter pattern deskripsi ────────────────────
+        $patternActive = ! empty($config['description_patterns']);
+        $patternFallback = false;
+
+        if ($patternActive) {
+            $filteredByPattern = array_values(array_filter($afterHardFilter, function ($s) use ($config) {
                 $desc = $s['deskripsi'] ?? '';
+
                 if ($config['pattern_mode'] === 'AND') {
-                    foreach ($config['description_patterns'] as $pat) {
-                        if (! preg_match($pat, $desc)) {
+                    foreach ($config['description_patterns'] as $pattern) {
+                        if (! preg_match($pattern, $desc)) {
                             return false;
                         }
                     }
 
                     return true;
-                } else {
-                    foreach ($config['description_patterns'] as $pat) {
-                        if (preg_match($pat, $desc)) {
-                            return true;
-                        }
-                    }
-
-                    return false;
                 }
+
+                foreach ($config['description_patterns'] as $pattern) {
+                    if (preg_match($pattern, $desc)) {
+                        return true;
+                    }
+                }
+
+                return false;
             }));
 
-            if (! empty($patternFiltered)) {
-                $filtered = $patternFiltered;
+            if (! empty($filteredByPattern)) {
+                $filtered = $filteredByPattern;
             } elseif ($config['strict_patterns']) {
-                return []; // strict pattern: skip
+                return ['status' => 'skip_strict_pattern', 'chosen' => null, 'fallback' => false, 'source' => '[STRICT] Tidak ada seller cocok pattern'];
+            } else {
+                $filtered = $afterHardFilter;
+                $patternFallback = true;
             }
-            // fallback to hard filtered
+        } else {
+            $filtered = $afterHardFilter;
         }
 
-        return $filtered;
+        if (empty($filtered)) {
+            return ['status' => 'skip_no_seller', 'chosen' => null, 'fallback' => false, 'source' => ''];
+        }
+
+        // ── TAHAP 3: Sort by harga termurah ──────────────────────
+        usort($filtered, function ($a, $b) {
+            $pA = is_numeric($a['price'] ?? null) ? (float) $a['price'] : PHP_INT_MAX;
+            $pB = is_numeric($b['price'] ?? null) ? (float) $b['price'] : PHP_INT_MAX;
+
+            return $pA <=> $pB;
+        });
+
+        $chosen = $filtered[0];
+
+        // ── Label sumber ─────────────────────────────────────────
+        if (! $patternActive && ! $hardFilterActive) {
+            $sourceLabel = '[TANPA FILTER] Pakai termurah';
+        } elseif ($patternFallback && $hardFallbackUsed) {
+            $sourceLabel = '[FALLBACK PENUH] Hard filter & pattern tidak cocok, pakai termurah';
+        } elseif ($patternFallback) {
+            $sourceLabel = '[FALLBACK PATTERN] Tidak ada yang cocok pattern, pakai termurah dari hard filter';
+        } elseif ($hardFallbackUsed) {
+            $sourceLabel = '[FALLBACK HARD] Hard filter tidak cocok, pakai dari semua seller';
+        } elseif ($patternActive) {
+            $modeLabel = count($config['description_patterns']) > 1 ? "[{$config['pattern_mode']}]" : '';
+            $sourceLabel = "[PATTERN MATCH] $modeLabel";
+        } else {
+            $sourceLabel = '[HARD FILTER MATCH]';
+        }
+
+        return [
+            'status' => 'ok',
+            'chosen' => $chosen,
+            'fallback' => $patternFallback || $hardFallbackUsed,
+            'source' => $sourceLabel,
+        ];
     }
 
-    private function buildSellerMeta(array $chosen): array
+    // ── Update produk ke seller terpilih ─────────────────────────
+    /**
+     * POST update produk ke seller terpilih. Duplikat otomatis dihapus.
+     *
+     * @return array{status: string, http_code: int, response: mixed}
+     */
+    public function updateProduct(array $product, array $chosen): array
+    {
+        $body = array_merge($product, [
+            'price' => $chosen['price'] ?? null,
+            'stock' => $chosen['stock'] ?? null,
+            'start_cut_off' => $chosen['start_cut_off'] ?? null,
+            'end_cut_off' => $chosen['end_cut_off'] ?? null,
+            'unlimited_stock' => $chosen['unlimited_stock'] ?? false,
+            'faktur' => $chosen['faktur'] ?? false,
+            'multi' => $chosen['multi'] ?? false,
+            'multi_counter' => $chosen['multi_counter'] ?? null,
+            'seller' => $chosen['seller'] ?? null,
+            'seller_sku_id' => $chosen['id'] ?? null,
+            'seller_sku_id_int' => $chosen['id_int'] ?? null,
+            'seller_connection_type' => $chosen['connectionType'] ?? null,
+            'seller_sku_code' => $chosen['seller_sku_code'] ?? null,
+            'seller_details' => $chosen['seller_details'] ?? null,
+            'status' => $chosen['status'] ?? true,
+            'seller_sku_desc' => $chosen['deskripsi'] ?? null,
+            'max_price' => 0,
+            'change' => true,
+        ]);
+
+        $response = $this->request('POST', 'https://member.digiflazz.com/api/v1/buyer/product', $body, true);
+
+        if ($response['http_code'] === 200) {
+            return ['status' => 'updated', 'http_code' => 200, 'response' => $response['data']];
+        }
+
+        if (
+            $response['http_code'] === 400
+            && str_contains($response['data']['message'] ?? '', 'Produk dan Seller sudah ada sebelumnya')
+        ) {
+            $deleted = $this->deleteProduct((string) ($product['id'] ?? ''));
+
+            return [
+                'status' => $deleted ? 'deleted_duplicate' : 'delete_failed',
+                'http_code' => 400,
+                'response' => $response['data'],
+            ];
+        }
+
+        return [
+            'status' => "failed_http_{$response['http_code']}",
+            'http_code' => $response['http_code'],
+            'response' => $response['data'],
+        ];
+    }
+
+    public function deleteProduct(string $productId): bool
+    {
+        $response = $this->request('POST', "https://member.digiflazz.com/api/v1/buyer/product/delete/{$productId}", [], true);
+
+        return $response['http_code'] === 200;
+    }
+
+    /**
+     * Metadata seller terpilih untuk keperluan log.
+     */
+    public function buildSellerMeta(array $chosen): array
     {
         return [
             'name' => $chosen['seller'] ?? '',
@@ -469,11 +413,45 @@ class DigiflazzClient
         ];
     }
 
-    private function deleteProduct(string $productId): bool
+    /**
+     * Normalisasi scraper_config ke tipe yang aman + default ala produk.php.
+     *
+     * @param  array<string, mixed>  $config
+     * @return array<string, mixed>
+     */
+    public static function normalizeConfig(array $config): array
     {
-        $url = "https://member.digiflazz.com/api/v1/buyer/product/delete/{$productId}";
-        $response = $this->request('POST', $url, [], true);
+        $toBool = function ($value, bool $default = false): bool {
+            if ($value === null || $value === '') {
+                return $default;
+            }
 
-        return $response['http_code'] === 200;
+            return filter_var($value, FILTER_VALIDATE_BOOLEAN);
+        };
+
+        $filterMulti = $config['filter_multi'] ?? null;
+        $filterMulti = ($filterMulti === null || $filterMulti === '')
+            ? null
+            : filter_var($filterMulti, FILTER_VALIDATE_BOOLEAN);
+
+        $minRating = $config['filter_min_rating'] ?? null;
+        $minRatingQty = $config['filter_min_rating_qty'] ?? null;
+
+        return [
+            'description_patterns' => array_values(array_filter(
+                (array) ($config['description_patterns'] ?? []),
+                fn ($pattern) => is_string($pattern) && $pattern !== ''
+            )),
+            'pattern_mode' => strtoupper((string) ($config['pattern_mode'] ?? 'OR')) === 'AND' ? 'AND' : 'OR',
+            'prioritize_favorite' => $toBool($config['prioritize_favorite'] ?? null),
+            'filter_multi' => $filterMulti,
+            'filter_min_rating' => ($minRating === null || $minRating === '') ? null : (float) $minRating,
+            'filter_min_rating_qty' => ($minRatingQty === null || $minRatingQty === '') ? null : (int) $minRatingQty,
+            'strict_filters' => $toBool($config['strict_filters'] ?? null),
+            'strict_patterns' => $toBool($config['strict_patterns'] ?? null),
+            'no_seller_action' => ($config['no_seller_action'] ?? 'skip') === 'delete' ? 'delete' : 'skip',
+            'dry_run' => $toBool($config['dry_run'] ?? null),
+            'request_delay' => (int) ($config['request_delay'] ?? 300000),
+        ];
     }
 }
