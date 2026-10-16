@@ -17,11 +17,11 @@
                 @php($isLast = $index === $crumbs->count() - 1)
                 <li class="crumb-item">
                     @if (! $isLast && $crumb['url'])
-                        <a href="{{ $crumb['url'] }}" class="crumb-link crumb-label">
+                        <a href="{{ $crumb['url'] }}" class="crumb-link crumb-label" title="{{ $crumb['label'] }}">
                             <span class="crumb-label-text">{{ $crumb['label'] }}</span>
                         </a>
                     @else
-                        <span @class(['crumb-current', 'crumb-label' => $isLast]) @if ($isLast) aria-current="page" @endif>
+                        <span @class(['crumb-current', 'crumb-label']) title="{{ $crumb['label'] }}" @if ($isLast) aria-current="page" @endif>
                             <span class="crumb-label-text">{{ $crumb['label'] }}</span>
                         </span>
                     @endif

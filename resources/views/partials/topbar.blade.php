@@ -31,15 +31,6 @@
         @endif
     </div>
     <div class="d-flex align-items-center gap-3 flex-shrink-0">
-        <div class="crumb-wrap d-none d-lg-block">
-            @hasSection('breadcrumb')
-                @yield('breadcrumb')
-            @else
-                <x-ui.breadcrumb :items="$pageTitle === 'Beranda'
-                    ? [['label' => 'Beranda']]
-                    : [['label' => 'Beranda', 'url' => route('dashboard')], ['label' => $pageTitle]]" />
-            @endif
-        </div>
         <button class="sq" aria-label="Notifikasi">
             <span class="ms">notifications</span>
             <span class="dot" style="top:.5rem;right:.5rem;background:var(--err)"></span>
@@ -69,7 +60,7 @@
                 : [['label' => 'Beranda', 'url' => route('dashboard')], ['label' => $pageTitle]]" />
         @endif
     </div>
-    <div class="d-flex align-items-center gap-3 flex-shrink-0">
+    <div class="d-flex align-items-center gap-3 flex-shrink-0 ms-auto">
         <button class="sq rounded-circle shadow-sm flex-shrink-0" style="width:2.75rem;height:2.75rem" aria-label="Notifikasi">
             <span class="ms">notifications</span>
             <span class="dot bg-mintt" style="top:.65rem;right:.8rem"></span>
