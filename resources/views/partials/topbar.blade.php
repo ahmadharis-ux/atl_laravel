@@ -22,7 +22,6 @@
             <span class="ms ico-expanded">menu_open</span>
             <span class="ms ico-collapsed">menu</span>
         </button>
-        <h1 class="fs-5 fw-semibold m-0 text-truncate">{{ $pageTitle }}</h1>
     </div>
     <div class="d-flex align-items-center gap-3 flex-shrink-0">
         <div class="crumb-wrap d-none d-xl-block">
@@ -50,10 +49,7 @@
 
 {{-- Header mobile --}}
 <header class="d-flex d-lg-none align-items-center gap-3 px-3 pt-3 pb-2">
-    <div class="flex-fill min-w-0">
-        <div class="fs-12 fw-semibold tx-mute text-truncate">Atlantic Pedia</div>
-        <h1 class="fw-bold fs-5 lh-sm m-0 text-truncate">{{ $pageTitle }}</h1>
-    </div>
+    <div class="flex-fill min-w-0 d-none d-lg-block"></div>
     <button class="sq rounded-circle shadow-sm flex-shrink-0" style="width:2.75rem;height:2.75rem" aria-label="Notifikasi">
         <span class="ms">notifications</span>
         <span class="dot bg-mintt" style="top:.65rem;right:.8rem"></span>
