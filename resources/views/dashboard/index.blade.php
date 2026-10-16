@@ -70,7 +70,7 @@
     <section>
         <div class="d-flex align-items-center justify-content-between mb-3">
             <h2 class="fw-bold fs-5 m-0 d-flex align-items-center gap-2"><span class="ms tx-teal d-none d-lg-inline">category</span>Katalog Produk</h2>
-            <a href="{{ route('products.index') }}" class="fw-semibold tx-teal d-inline-flex align-items-center">Lihat Semua<span class="ms ms-sm">chevron_right</span></a>
+            <a href="{{ route('products.index', ['tab' => 'brand']) }}" class="fw-semibold tx-teal d-inline-flex align-items-center">Lihat Semua<span class="ms ms-sm">chevron_right</span></a>
         </div>
         <div class="row row-cols-3 row-cols-lg-6 g-2 g-sm-3">
             @foreach ($catalog as $c)
@@ -89,7 +89,7 @@
         <section>
             <div class="d-flex align-items-center justify-content-between mb-3">
                 <h2 class="fw-bold fs-5 m-0 d-flex align-items-center gap-2"><span class="ms tx-teal d-none d-lg-inline">brand</span>Brand Populer</h2>
-                <a href="{{ route('products.index') }}" class="fw-semibold tx-teal d-inline-flex align-items-center">Lihat Semua<span class="ms ms-sm">chevron_right</span></a>
+                <a href="{{ route('products.index', ['tab' => 'brand']) }}" class="fw-semibold tx-teal d-inline-flex align-items-center">Lihat Semua<span class="ms ms-sm">chevron_right</span></a>
             </div>
             <div class="row row-cols-3 row-cols-sm-4 row-cols-lg-6 g-2 g-sm-3">
                 @foreach ($brands as $b)

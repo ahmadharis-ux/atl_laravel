@@ -16,8 +16,15 @@ use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
+    /** Jumlah brand yang tampil di tab "Brand" sebelum tombol "Lihat semua". */
+    private const BRAND_TAB_LIMIT = 24;
+
     public function index(Request $request): View|JsonResponse
     {
+        if ($request->query('tab') === 'brand') {
+            return $this->brandIndex($request);
+        }
+
         $rawTerm = $request->query('q');
         $term = is_string($rawTerm) ? trim($rawTerm) : '';
         $searching = $term !== '';
@@ -64,10 +71,6 @@ class ProductController extends Controller
             'searching' => $searching,
             'term' => $term,
             'searchHistory' => SearchHistory::topQueries((int) $request->user()->getKey(), 3),
-            'brands' => Brand::query()
-                ->whereHas('products', fn ($q) => $q->where('status', true)->forCatalog())
-                ->orderBy('name')
-                ->get(),
         ];
 
         if ($request->ajax()) {
@@ -85,6 +88,36 @@ class ProductController extends Controller
             'selectedBrand' => $request->filled('brand')
                 ? Brand::whereKey($request->integer('brand'))->value('name')
                 : null,
+        ]);
+    }
+
+    /**
+     * Tab "Brand": direktori brand. Default dibatasi {@see self::BRAND_TAB_LIMIT}
+     * brand; pencarian menyaring per nama, dan "Lihat semua" menampilkan sisanya.
+     */
+    private function brandIndex(Request $request): View
+    {
+        $rawTerm = $request->query('q');
+        $term = is_string($rawTerm) ? trim($rawTerm) : '';
+        $showAll = $request->boolean('all');
+
+        $query = Brand::query()
+            ->whereHas('products', fn ($q) => $q->where('status', true)->forCatalog())
+            ->withCount(['products' => fn ($q) => $q->where('status', true)->forCatalog()])
+            ->when($term !== '', function ($q) use ($term): void {
+                $like = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $term).'%';
+                $q->where('name', 'like', $like);
+            })
+            ->orderBy('name');
+
+        $brandTotal = (clone $query)->count();
+
+        return view('user.product.index', [
+            'tab' => 'brand',
+            'brands' => $query->when(! $showAll, fn ($q) => $q->limit(self::BRAND_TAB_LIMIT))->get(),
+            'brandTotal' => $brandTotal,
+            'allBrands' => $showAll,
+            'term' => $term,
         ]);
     }
 

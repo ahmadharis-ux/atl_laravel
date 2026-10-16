@@ -42,16 +42,6 @@
     ];
 @endphp
 
-@push('styles')
-<style>
-    .sec{scroll-margin-top:6rem}
-    .sec-head{display:flex;align-items:center;gap:.65rem;margin-bottom:1rem}
-    .sec-head .ic{width:2.25rem;height:2.25rem;border-radius:.75rem;display:flex;align-items:center;justify-content:center;background:rgba(159,240,247,.35);color:var(--tealt)}
-    .sec-head h2{font-weight:800;font-size:1.15rem;margin:0}
-    .sec-head p{font-size:.78rem;color:var(--mute);margin:0}
-</style>
-@endpush
-
 @section('content')
 <div class="d-flex flex-column gap-4">
 

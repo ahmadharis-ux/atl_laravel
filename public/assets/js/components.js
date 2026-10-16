@@ -852,9 +852,11 @@
       }
       function openPop() { pop.hidden = false; }
       function showEmptyHistory() {
+        if (!historyList) return;
         historyList.innerHTML = '<li class="ui-search-empty" data-role="history-empty">Belum ada pencarian.</li>';
       }
       function filterHistory(term) {
+        if (!historySec || !historyList) return;
         var empty = historyList.querySelector('[data-role="history-empty"]');
         var shown = 0;
         historyList.querySelectorAll('li:not([data-role="history-empty"])').forEach(function (li) {
@@ -869,6 +871,7 @@
         if (shown === 0) activeRow = null;
       }
       function showAllHistory() {
+        if (!historySec || !historyList) return;
         historyList.querySelectorAll('li').forEach(function (li) { li.hidden = false; });
         var empty = historyList.querySelector('[data-role="history-empty"]');
         if (empty) empty.hidden = false;
@@ -924,7 +927,9 @@
           .catch(function () {});
       }
 
-      input.addEventListener('focus', openPop);
+      input.addEventListener('focus', function () {
+        if (historySec || input.value.trim() !== '') openPop();
+      });
 
       if (clearInput) {
         clearInput.addEventListener('click', function () {

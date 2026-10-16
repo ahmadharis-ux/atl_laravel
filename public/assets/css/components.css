@@ -4,6 +4,13 @@
 .bcard{position:relative;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid transparent;transition:transform .15s,box-shadow .15s,border-color .15s;color:inherit;overflow:hidden;min-width:0}
 .bcard:hover,.bcard:focus-visible{border-color:rgba(0,160,108,.45);box-shadow:0 6px 16px rgba(0,0,0,.06);transform:translateY(-2px);outline:0;color:inherit}
 
+/* Section head (judul blok dalam satu halaman) */
+.sec{scroll-margin-top:6rem}
+.sec-head{display:flex;align-items:center;gap:.65rem;margin-bottom:1rem}
+.sec-head .ic{width:2.25rem;height:2.25rem;border-radius:.75rem;display:flex;align-items:center;justify-content:center;background:rgba(159,240,247,.35);color:var(--tealt)}
+.sec-head h2{font-weight:800;font-size:1.15rem;margin:0}
+.sec-head p{font-size:.78rem;color:var(--mute);margin:0}
+
 /* Form controls */
 .ui-input,.ui-select,.ui-textarea{width:100%;border:1px solid #d3e3e1;border-radius:.75rem;background:#f6fbfa;padding:.6rem .85rem;font-size:.875rem;color:var(--ink);transition:border-color .15s,box-shadow .15s}
 .ui-input:focus,.ui-select:focus,.ui-textarea:focus{outline:0;border-color:var(--mintt);background:#fff;box-shadow:0 0 0 3px rgba(0,160,108,.15)}

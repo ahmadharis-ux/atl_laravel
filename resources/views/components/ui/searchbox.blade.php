@@ -8,6 +8,8 @@
     'history' => [],
     'suggestUrl' => null,
     'clearUrl' => null,
+    'suggestLabel' => 'Saran Produk',
+    'showHistory' => true,
 ])
 
 <form {{ $attributes->merge(['class' => 'ui-search']) }}
@@ -34,31 +36,33 @@
     @endif
 
     <div class="ui-search-pop" data-role="pop" hidden>
-        <div class="ui-search-sec" data-role="history">
-            <div class="ui-search-head">
-                <span>Sering Dicari</span>
-                <button type="button" class="ui-search-headbtn" data-role="clear-history"
-                        @if (! $history) hidden @endif>Hapus</button>
+        @if ($showHistory)
+            <div class="ui-search-sec" data-role="history">
+                <div class="ui-search-head">
+                    <span>Sering Dicari</span>
+                    <button type="button" class="ui-search-headbtn" data-role="clear-history"
+                            @if (! $history) hidden @endif>Hapus</button>
+                </div>
+                <ul class="ui-search-list" data-role="history-list">
+                    @forelse ($history as $q)
+                        <li>
+                            <button type="button" class="ui-search-row"
+                                    data-url="{{ route('products.index', ['q' => $q]) }}"
+                                    data-query="{{ $q }}">
+                                <span class="ms ui-search-row-ic" aria-hidden="true">history</span>
+                                <span class="ui-search-row-tx">{{ $q }}</span>
+                                <span class="ms ui-search-row-go" aria-hidden="true">north_west</span>
+                            </button>
+                        </li>
+                    @empty
+                        <li class="ui-search-empty" data-role="history-empty">Belum ada pencarian.</li>
+                    @endforelse
+                </ul>
             </div>
-            <ul class="ui-search-list" data-role="history-list">
-                @forelse ($history as $q)
-                    <li>
-                        <button type="button" class="ui-search-row"
-                                data-url="{{ route('products.index', ['q' => $q]) }}"
-                                data-query="{{ $q }}">
-                            <span class="ms ui-search-row-ic" aria-hidden="true">history</span>
-                            <span class="ui-search-row-tx">{{ $q }}</span>
-                            <span class="ms ui-search-row-go" aria-hidden="true">north_west</span>
-                        </button>
-                    </li>
-                @empty
-                    <li class="ui-search-empty" data-role="history-empty">Belum ada pencarian.</li>
-                @endforelse
-            </ul>
-        </div>
+        @endif
 
         <div class="ui-search-sec" data-role="suggest" hidden>
-            <div class="ui-search-head"><span>Saran Produk</span></div>
+            <div class="ui-search-head"><span>{{ $suggestLabel }}</span></div>
             <ul class="ui-search-list" data-role="suggest-list"></ul>
         </div>
     </div>

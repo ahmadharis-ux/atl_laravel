@@ -71,6 +71,23 @@ Bila satu halaman punya beberapa blok, tandai dengan pola berikut (lihat `/admin
 
 ---
 
+## 2c. Tab Tingkat Halaman
+
+Untuk memisahkan beberapa "mode" pada satu halaman, pakai navigasi tab bersegmen (contoh: halaman **Produk** → tab **Produk** dan **Brand**). Tab berupa **link biasa** (navigasi penuh, bukan JS) agar URL tetap bisa dibagikan.
+
+```blade
+<nav class="ptabs">
+    <a href="{{ route('products.index') }}" @class(['active' => ! $isBrandTab]) @if(! $isBrandTab) aria-current="page" @endif>Produk</a>
+    <a href="{{ route('products.index', ['tab' => 'brand']) }}" @class(['active' => $isBrandTab]) @if($isBrandTab) aria-current="page" @endif>Brand</a>
+</nav>
+```
+
+- Gaya `.ptabs` ada di `atlantic.css`. Tab aktif diberi kelas `active` + `aria-current="page"`.
+- Tab ditentukan lewat query param (mis. `?tab=brand`); param kosong = tab pertama. Partial tab dapat dipisah (mis. `user/product/_toptabs.blade.php`) agar dipakai ulang.
+- Contoh lengkap: `resources/views/user/product/index.blade.php` + `_toptabs.blade.php`, `_brand_tab.blade.php`.
+
+---
+
 ## 3. Referensi Komponen
 
 ### Card & Statistik
@@ -119,7 +136,8 @@ Bila satu halaman punya beberapa blok, tandai dengan pola berikut (lihat `/admin
 />
 ```
 
-  - Props: `action`, `name` (default `q`), `value`, `placeholder`, `label` (teks tombol, kosongkan untuk tanpa tombol), `method` (default `GET`), `history` (array kata kunci milik user), `suggestUrl`, `clearUrl`.
+  - Props: `action`, `name` (default `q`), `value`, `placeholder`, `label` (teks tombol, kosongkan untuk tanpa tombol), `method` (default `GET`), `history` (array kata kunci milik user), `suggestUrl`, `clearUrl`, `suggestLabel` (judul dropdown saran, default `Saran Produk`), `showHistory` (default `true`).
+  - `showHistory="false"` menyembunyikan bagian riwayat/kosong — dipakai kotak pencarian yang bukan pencarian produk (mis. pencarian brand di tab **Brand**).
   - Saat kosong: tampil "Sering Dicari" (**3 teratas** berdasarkan `hits` — pakai `SearchHistory::topQueries($id, 3)`) + tombol "Hapus". Saat mengetik: riwayat yang cocok difilter + baris "Cari …" + saran produk dengan harga (dari lookup `type=products`, `{value, text, url, hint}`). ↩/klik baris apa pun membuka `url` baris.
   - Riwayat disimpan **di DB** (`search_histories` per `user_id`, dengan kolom `hits`, maks 10, di-prune), dicatat oleh `ProductController::index` hanya untuk navigasi penuh non-AJAX (penyaring AJAX tidak ikut tercatat), dihapus lewat `DELETE /search-history`. Menghapus riwayat **hanya mengosongkan dropdown di bawah input** — section "Sesuai Pencarianmu" di beranda tetap tampil karena kata kunci terakhir diingat di sesi (`DashboardController`).
   - **Aturan:** pencarian dari beranda hanya mencari produk — bukan transaksi, ID, atau pengguna — lalu diarahkan ke halaman `Produk` dengan `?q=`. Di halaman Produk, kotak ini bisa dikaitkan ke filter AJAX dengan menambahkan `data-ajax-maybe` pada pemakaiannya: ketikan dan Enter ikut memuat ulang grid tanpa pindah URL (tidak tercatat ke riwayat, sesuai prinsip filter tanpa ganti URL). Selama ada kata kunci `q`, tab prabayar/pascabayar dilewati sehingga produk jenis apa pun langsung tampil; blok `data-ajax-tabs` diganti keterangan "Semua jenis" dan tab kembali begitu pencarian dikosongkan.

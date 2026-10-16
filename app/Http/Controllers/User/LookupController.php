@@ -69,7 +69,7 @@ class LookupController extends Controller
             ->limit($limit)
             ->get($type === 'products'
                 ? ['id', 'name', 'cost_price', 'markup_type', 'markup_value']
-                : ['id', 'name'])
+                : ['id', 'name', 'slug'])
             ->map(fn (Model $row): array => $this->toResult($type, $row));
 
         return response()->json(['results' => $rows]);
@@ -94,7 +94,7 @@ class LookupController extends Controller
     {
         return match ($type) {
             'categories' => route('products.index', ['category' => $row->getKey()]),
-            'brands' => route('products.index', ['brand' => $row->getKey()]),
+            'brands' => route('products.brand', $row),
             'products' => route('products.show', $row),
         };
     }
