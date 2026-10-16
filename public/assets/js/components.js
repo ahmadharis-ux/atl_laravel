@@ -1491,6 +1491,59 @@
     });
   }
 
+  // ---------------- Auto-refresh status (polling) ----------------
+  // Elemen dengan [data-poll-url] dicek berkala; server membalas JSON
+  // { "active": bool }. Saat "active" jadi false (mis. pembayaran lunas),
+  // halaman dimuat ulang untuk menampilkan status terbaru.
+  function initPollers() {
+    document.querySelectorAll('[data-poll-url]').forEach(function (el) {
+      var url = el.getAttribute('data-poll-url');
+      if (!url) return;
+      var interval = parseInt(el.getAttribute('data-poll-interval'), 10) || 5000;
+      var timer = null;
+      var stopped = false;
+
+      function stop() {
+        if (timer) {
+          clearInterval(timer);
+          timer = null;
+        }
+      }
+
+      function tick() {
+        if (stopped || document.hidden) return;
+        fetch(url, {
+          headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (data && data.active === false) {
+              stopped = true;
+              stop();
+              window.location.reload();
+            }
+          })
+          .catch(function () {});
+      }
+
+      function start() {
+        stop();
+        if (stopped) return;
+        timer = setInterval(tick, interval);
+      }
+
+      start();
+
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden) stop();
+        else start();
+      });
+    });
+  }
+
   function boot() {
     initTables();
     initWizards();
@@ -1513,6 +1566,7 @@
     initActions();
     initModals();
     initLoader();
+    initPollers();
   }
 
   if (document.readyState !== 'loading') boot();

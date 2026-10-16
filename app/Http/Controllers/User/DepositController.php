@@ -12,6 +12,7 @@ use App\Support\DepositSettler;
 use App\Support\PaymentInstruction;
 use App\Support\TransactionLogger;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -138,9 +139,16 @@ class DepositController extends Controller
         return $masterBank;
     }
 
-    public function show(Request $request, Deposit $deposit): View
+    public function show(Request $request, Deposit $deposit): View|JsonResponse
     {
         abort_unless($deposit->user_id === $request->user()->getKey(), 403);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'active' => $deposit->isPending(),
+                'status' => $deposit->status->value,
+            ]);
+        }
 
         return view('user.deposit.show', [
             'deposit' => $deposit,

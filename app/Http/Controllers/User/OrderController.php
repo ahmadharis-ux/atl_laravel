@@ -10,6 +10,7 @@ use App\Services\MidtransService;
 use App\Support\OrderPaymentSettler;
 use App\Support\TransactionLogger;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Throwable;
@@ -28,9 +29,16 @@ class OrderController extends Controller
         ]);
     }
 
-    public function show(Request $request, Order $order): View
+    public function show(Request $request, Order $order): View|JsonResponse
     {
         abort_unless($order->user_id === $request->user()->getKey(), 403);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'active' => $order->status === OrderStatus::Pending,
+                'status' => $order->status->value,
+            ]);
+        }
 
         return view('user.orders.show', [
             'order' => $order->load(['product.brand', 'product.category']),

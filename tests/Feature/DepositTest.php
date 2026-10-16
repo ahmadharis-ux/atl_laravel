@@ -315,4 +315,55 @@ class DepositTest extends TestCase
         $this->actingAs($user)->get(route('deposits.show', $deposit))->assertForbidden();
         $this->actingAs($user)->post(route('deposits.pay', $deposit))->assertForbidden();
     }
+
+    public function test_show_returns_json_status_for_polling(): void
+    {
+        $user = User::factory()->create();
+        $deposit = Deposit::factory()->create([
+            'user_id' => $user->getKey(),
+            'status' => DepositStatus::Pending,
+        ]);
+
+        $this->actingAs($user)
+            ->withHeaders(['X-Requested-With' => 'XMLHttpRequest'])
+            ->getJson(route('deposits.show', $deposit))
+            ->assertOk()
+            ->assertJson(['active' => true, 'status' => 'pending']);
+
+        $deposit->update(['status' => DepositStatus::Paid]);
+
+        $this->actingAs($user)
+            ->withHeaders(['X-Requested-With' => 'XMLHttpRequest'])
+            ->getJson(route('deposits.show', $deposit))
+            ->assertOk()
+            ->assertJson(['active' => false, 'status' => 'paid']);
+    }
+
+    public function test_pending_top_up_page_renders_the_poll_hook(): void
+    {
+        $user = User::factory()->create();
+        $deposit = Deposit::factory()->create([
+            'user_id' => $user->getKey(),
+            'status' => DepositStatus::Pending,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('deposits.show', $deposit))
+            ->assertOk()
+            ->assertSee('data-poll-url="'.route('deposits.show', $deposit).'"', false)
+            ->assertSee('menyegarkan otomatis');
+    }
+
+    public function test_paid_deposit_page_does_not_render_the_poll_hook(): void
+    {
+        $user = User::factory()->create();
+        $deposit = Deposit::factory()->paid()->create([
+            'user_id' => $user->getKey(),
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('deposits.show', $deposit))
+            ->assertOk()
+            ->assertDontSee('data-poll-url', false);
+    }
 }

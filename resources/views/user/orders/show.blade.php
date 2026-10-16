@@ -15,7 +15,8 @@
     $isQris = $method === \App\Enums\PaymentMethod::Qris;
 @endphp
 
-<div class="d-flex flex-column gap-3">
+<div class="d-flex flex-column gap-3"
+     @if ($pending) data-poll-url="{{ route('orders.show', $order) }}" data-poll-interval="4000" @endif>
 
     <div class="d-flex align-items-center gap-2">
         <a href="{{ route('orders.index') }}" class="ap-icon-btn" data-tip="Kembali"><span class="ms ms-md">arrow_back</span></a>
@@ -34,6 +35,11 @@
     @endif
 
     @if ($pending)
+        <div class="alert-ap r-sm bg-glass d-flex align-items-center gap-2">
+            <span class="ms tx-teal">autorenew</span>
+            <span class="fs-13">Halaman ini menyegarkan otomatis setelah pembayaran diterima.</span>
+        </div>
+
         <x-ui.card title="Selesaikan Pembayaran">
             <div class="d-flex flex-column align-items-center gap-2 text-center">
                 <span class="ibox ibox-48 bg-mint-l tx-mintt"><span class="ms">{{ $method?->icon() }}</span></span>

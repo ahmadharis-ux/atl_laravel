@@ -164,4 +164,56 @@ class MidtransOrderTest extends TestCase
         $this->assertFalse($service->isConfigured());
         $this->assertNull($service->syncOrderStatus($order));
     }
+
+    public function test_order_show_returns_json_status_for_polling(): void
+    {
+        $user = User::factory()->create();
+        $order = Order::factory()->create([
+            'user_id' => $user->getKey(),
+            'status' => OrderStatus::Pending,
+        ]);
+
+        $this->actingAs($user)
+            ->withHeaders(['X-Requested-With' => 'XMLHttpRequest'])
+            ->getJson(route('orders.show', $order))
+            ->assertOk()
+            ->assertJson(['active' => true, 'status' => 'pending']);
+
+        $order->update(['status' => OrderStatus::Success]);
+
+        $this->actingAs($user)
+            ->withHeaders(['X-Requested-With' => 'XMLHttpRequest'])
+            ->getJson(route('orders.show', $order))
+            ->assertOk()
+            ->assertJson(['active' => false, 'status' => 'success']);
+    }
+
+    public function test_pending_order_page_renders_the_poll_hook(): void
+    {
+        $user = User::factory()->create();
+        $order = Order::factory()->create([
+            'user_id' => $user->getKey(),
+            'status' => OrderStatus::Pending,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('orders.show', $order))
+            ->assertOk()
+            ->assertSee('data-poll-url="'.route('orders.show', $order).'"', false)
+            ->assertSee('menyegarkan otomatis');
+    }
+
+    public function test_settled_order_page_does_not_render_the_poll_hook(): void
+    {
+        $user = User::factory()->create();
+        $order = Order::factory()->create([
+            'user_id' => $user->getKey(),
+            'status' => OrderStatus::Success,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('orders.show', $order))
+            ->assertOk()
+            ->assertDontSee('data-poll-url', false);
+    }
 }
