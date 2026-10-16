@@ -1,16 +1,17 @@
-@props(['name', 'label' => null, 'type' => 'text', 'value' => null, 'hint' => null])
+@props(['name', 'label' => null, 'type' => 'text', 'value' => null, 'hint' => null, 'id' => null])
 
 @php($isPassword = $type === 'password')
+@php($inputId = $id ?? $name)
 
 <div {{ $attributes->only('class') }}>
-    @if ($label)<label class="ui-label" for="{{ $name }}">{{ $label }}</label>@endif
+    @if ($label)<label class="ui-label" for="{{ $inputId }}">{{ $label }}</label>@endif
     <div class="ui-input-wrap{{ $isPassword ? ' has-eye' : '' }}">
         <input
-            {{ $attributes->except('class')->merge(['class' => 'ui-input']) }}
-            id="{{ $name }}"
+            {{ $attributes->except(['class', 'id'])->merge(['class' => 'ui-input']) }}
+            id="{{ $inputId }}"
             name="{{ $name }}"
             type="{{ $type }}"
-            value="{{ $value ?? old($name) }}"
+            value="{{ $type === 'file' ? null : $value ?? old($name) }}"
         >
         @if ($isPassword)
             <button type="button" class="ui-eye" data-toggle-password="{{ $name }}" tabindex="-1"

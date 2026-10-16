@@ -48,4 +48,8 @@
         <span class="ms">notifications</span>
         <span class="dot bg-mintt" style="top:.65rem;right:.8rem"></span>
     </button>
+    <button class="sq rounded-circle shadow-sm js-sidebar-mobile-toggle" style="width:2.75rem;height:2.75rem"
+        type="button" aria-label="Buka menu navigasi" aria-controls="adminSidebar" aria-expanded="false">
+        <span class="ms">menu</span>
+    </button>
 </header>

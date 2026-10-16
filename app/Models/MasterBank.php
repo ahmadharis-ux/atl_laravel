@@ -7,11 +7,15 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable(['bank_name', 'account_number', 'account_holder', 'is_active', 'sort_order'])]
+#[Fillable(['type', 'bank_name', 'account_number', 'account_holder', 'is_active', 'sort_order'])]
 class MasterBank extends Model
 {
     /** @use HasFactory<MasterBankFactory> */
     use HasFactory;
+
+    public const TYPE_BANK = 'bank';
+
+    public const TYPE_EWALLET = 'ewallet';
 
     /**
      * @return array<string, string>
@@ -22,6 +26,22 @@ class MasterBank extends Model
             'is_active' => 'boolean',
             'sort_order' => 'integer',
         ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function typeOptions(): array
+    {
+        return [
+            self::TYPE_BANK => 'Bank',
+            self::TYPE_EWALLET => 'E-Wallet',
+        ];
+    }
+
+    public function typeLabel(): string
+    {
+        return self::typeOptions()[$this->type] ?? ucfirst((string) $this->type);
     }
 
     /**

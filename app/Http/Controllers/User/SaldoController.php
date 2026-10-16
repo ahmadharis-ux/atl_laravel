@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\User;
 
+use App\Enums\DepositStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Support\Wallet;
@@ -23,11 +24,17 @@ class SaldoController extends Controller
             'points' => Wallet::POINTS,
             'adminFee' => Wallet::ADMIN_FEE,
             'shortcuts' => [
-                ['label' => 'Transfer', 'icon' => 'swap_horiz',    'tone' => 'bg-tealc-m tx-tealt'],
-                ['label' => 'Poin',     'icon' => 'loyalty',       'tone' => 'bg-gold tx-gold'],
-                ['label' => 'Kontak',   'icon' => 'support_agent', 'tone' => 'bg-sky-l tx-navy'],
-                ['label' => 'Riwayat',  'icon' => 'history',       'tone' => 'bg-mint-l tx-mintt'],
+                ['label' => 'Transfer', 'icon' => 'swap_horiz',    'tone' => 'bg-tealc-m tx-tealt', 'url' => null],
+                ['label' => 'Poin',     'icon' => 'loyalty',       'tone' => 'bg-gold tx-gold',     'url' => null],
+                ['label' => 'Kontak',   'icon' => 'support_agent', 'tone' => 'bg-sky-l tx-navy',    'url' => null],
+                ['label' => 'Riwayat',  'icon' => 'history',       'tone' => 'bg-mint-l tx-mintt',  'url' => route('deposits.index')],
             ],
+            'pendingDeposits' => $request->user()->deposits()
+                ->where('status', DepositStatus::Pending)
+                ->where('expires_at', '>', now())
+                ->latest('id')
+                ->limit(3)
+                ->get(),
             'transactions' => $orders->map(fn (Order $order): array => [
                 'icon' => $this->iconFor($order->product?->category?->slug),
                 'title' => $order->product?->name ?? 'Produk tidak tersedia',

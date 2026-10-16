@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 
-#[Fillable(['user_id', 'reference', 'amount', 'payment_method', 'payment_channel', 'payment_code', 'status', 'expires_at', 'paid_at', 'metadata'])]
+#[Fillable(['user_id', 'reference', 'amount', 'payment_method', 'payment_channel', 'payment_code', 'master_bank_id', 'status', 'expires_at', 'paid_at', 'metadata'])]
 class Deposit extends Model
 {
     /** @use HasFactory<DepositFactory> */
@@ -20,6 +20,11 @@ class Deposit extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function masterBank(): BelongsTo
+    {
+        return $this->belongsTo(MasterBank::class);
     }
 
     /**

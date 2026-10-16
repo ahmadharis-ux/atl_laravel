@@ -18,11 +18,20 @@ class MasterBankFactory extends Factory
     public function definition(): array
     {
         return [
+            'type' => MasterBank::TYPE_BANK,
             'bank_name' => fake()->randomElement(['BCA', 'BNI', 'BRI', 'Mandiri', 'CIMB Niaga']),
             'account_number' => (string) fake()->unique()->numerify('##########'),
             'account_holder' => fake()->company(),
             'is_active' => true,
             'sort_order' => fake()->numberBetween(0, 10),
         ];
+    }
+
+    public function ewallet(): static
+    {
+        return $this->state(fn (): array => [
+            'type' => MasterBank::TYPE_EWALLET,
+            'bank_name' => fake()->randomElement(['GoPay', 'OVO', 'DANA', 'ShopeePay', 'LinkAja']),
+        ]);
     }
 }

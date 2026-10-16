@@ -3,7 +3,12 @@
     'filters' => [],
     'bulk' => false,
     'search' => true,
+    'server' => false,
+    'action' => null,
+    'searchName' => 'q',
+    'searchValue' => null,
     'searchPlaceholder' => 'Cari...',
+    'reset' => true,
     'title' => null,
     'bulkActions' => [
         ['value' => 'delete', 'label' => 'Hapus', 'icon' => 'delete', 'tone' => 'text-danger border-0 fw-bold'],
@@ -16,22 +21,48 @@
 
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
         <h3 class="fw-bold fs-6 m-0">{{ $title ?? '' }}</h3>
-        <div class="d-flex flex-wrap align-items-center gap-2">
-            @foreach ($filters as $f)
-                <select class="ui-select" style="width:auto" data-dt-filter data-col="{{ $f['col'] ?? $f['name'] }}" aria-label="{{ $f['label'] ?? 'Filter' }}">
-                    <option value="">{{ $f['label'] ?? 'Semua' }}</option>
-                    @foreach (($f['options'] ?? []) as $val => $text)
-                        <option value="{{ $val }}">{{ $text }}</option>
-                    @endforeach
-                </select>
-            @endforeach
-            @if ($search)
-                <div class="d-flex align-items-center bg-white r-sm px-3" style="border:1px solid #d3e3e1;height:2.5rem">
-                    <span class="ms ms-md tx-mute me-2">search</span>
-                    <input class="border-0 bg-transparent fs-12 js-dt-search" style="outline:0;width:12rem" placeholder="{{ $searchPlaceholder }}">
-                </div>
-            @endif
-        </div>
+
+        @if ($server)
+            <form method="GET" action="{{ $action }}" data-ajax-form class="d-flex flex-wrap align-items-center gap-2">
+                @isset($toolbar)
+                    {{ $toolbar }}
+                @endisset
+                @foreach ($filters as $f)
+                    <select name="{{ $f['name'] }}" class="ui-select" style="width:auto" aria-label="{{ $f['label'] ?? 'Filter' }}">
+                        <option value="">{{ $f['label'] ?? 'Semua' }}</option>
+                        @foreach (($f['options'] ?? []) as $val => $text)
+                            <option value="{{ $val }}" @selected((string) ($f['value'] ?? '') === (string) $val)>{{ $text }}</option>
+                        @endforeach
+                    </select>
+                @endforeach
+                @if ($search)
+                    <div class="d-flex align-items-center bg-white r-sm px-3" style="border:1px solid #d3e3e1;height:2.5rem">
+                        <span class="ms ms-md tx-mute me-2">search</span>
+                        <input name="{{ $searchName }}" value="{{ $searchValue }}" class="border-0 bg-transparent fs-12" style="outline:0;width:12rem" placeholder="{{ $searchPlaceholder }}">
+                    </div>
+                @endif
+                @if ($reset)
+                    <button type="button" class="btn-soft" data-ajax-reset data-tip="Reset filter"><span class="ms ms-sm align-middle">restart_alt</span></button>
+                @endif
+            </form>
+        @else
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                @foreach ($filters as $f)
+                    <select class="ui-select" style="width:auto" data-dt-filter data-col="{{ $f['col'] ?? $f['name'] }}" aria-label="{{ $f['label'] ?? 'Filter' }}">
+                        <option value="">{{ $f['label'] ?? 'Semua' }}</option>
+                        @foreach (($f['options'] ?? []) as $val => $text)
+                            <option value="{{ $val }}">{{ $text }}</option>
+                        @endforeach
+                    </select>
+                @endforeach
+                @if ($search)
+                    <div class="d-flex align-items-center bg-white r-sm px-3" style="border:1px solid #d3e3e1;height:2.5rem">
+                        <span class="ms ms-md tx-mute me-2">search</span>
+                        <input class="border-0 bg-transparent fs-12 js-dt-search" style="outline:0;width:12rem" placeholder="{{ $searchPlaceholder }}">
+                    </div>
+                @endif
+            </div>
+        @endif
     </div>
 
     @if ($bulk)

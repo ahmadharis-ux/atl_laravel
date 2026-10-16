@@ -34,6 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->validateCsrfTokens(except: [
             'webhook/digiflazz',
+            'webhook/midtrans',
         ]);
 
         $middleware->redirectGuestsTo(fn (Request $request) => route('login'));

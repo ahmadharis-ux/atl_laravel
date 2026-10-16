@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Support\Rbac;
 use App\Support\Roles;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -13,11 +14,31 @@ use Spatie\Permission\Models\Role;
 
 class RoleController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View|JsonResponse
     {
-        return view('admin.roles.index', [
-            'roles' => Role::withCount(['permissions', 'users'])->orderByDesc('id')->get(),
-        ]);
+        $roles = Role::query()
+            ->withCount(['permissions', 'users'])
+            ->when($request->filled('q'), function ($query) use ($request): void {
+                $term = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], trim((string) $request->query('q'))).'%';
+                $query->where('name', 'like', $term);
+            })
+            ->orderByDesc('id')
+            ->paginate(15)
+            ->withQueryString();
+
+        $data = [
+            'roles' => $roles,
+            'listRoute' => route('admin.roles.index'),
+        ];
+
+        if ($request->ajax()) {
+            return response()->json([
+                'rows' => view('admin.roles._rows', $data)->render(),
+                'footer' => view('admin.roles._footer', $data)->render(),
+            ]);
+        }
+
+        return view('admin.roles.index', $data);
     }
 
     public function create(): View

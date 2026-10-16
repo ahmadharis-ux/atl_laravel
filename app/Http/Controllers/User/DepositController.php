@@ -6,6 +6,8 @@ use App\Enums\DepositStatus;
 use App\Enums\PaymentMethod;
 use App\Http\Controllers\Controller;
 use App\Models\Deposit;
+use App\Models\MasterBank;
+use App\Services\MidtransService;
 use App\Support\DepositSettler;
 use App\Support\PaymentInstruction;
 use App\Support\TransactionLogger;
@@ -25,11 +27,34 @@ class DepositController extends Controller
 
     public const EXPIRY_HOURS = 3;
 
+    public function __construct(private MidtransService $midtrans) {}
+
+    /**
+     * Riwayat seluruh permintaan top up milik pengguna (semua status).
+     */
+    public function index(Request $request): View
+    {
+        $deposits = $request->user()->deposits()
+            ->latest('id')
+            ->paginate(15);
+
+        return view('user.deposit.index', [
+            'deposits' => $deposits,
+        ]);
+    }
+
     public function create(Request $request): View
     {
+        $targets = MasterBank::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('bank_name')
+            ->get();
+
         return view('user.deposit.create', [
             'paymentMethods' => $this->topUpMethods(),
-            'channels' => PaymentMethod::channelOptions(),
+            'bankTargets' => $targets->where('type', MasterBank::TYPE_BANK)->values(),
+            'ewalletTargets' => $targets->where('type', MasterBank::TYPE_EWALLET)->values(),
             'selectedMethod' => old('payment_method', PaymentMethod::Qris->value),
             'presets' => [20_000, 50_000, 100_000, 200_000, 500_000, 1_000_000],
             'minAmount' => self::MIN_AMOUNT,
@@ -42,11 +67,11 @@ class DepositController extends Controller
         $validated = $request->validate([
             'amount' => ['required', 'integer', 'min:'.self::MIN_AMOUNT, 'max:'.self::MAX_AMOUNT],
             'payment_method' => ['required', Rule::in($this->topUpMethodValues())],
-            'payment_channel' => ['nullable', 'string', Rule::in(array_keys(PaymentMethod::channelOptions()))],
+            'master_bank_id' => ['nullable', 'integer'],
         ]);
 
         $method = PaymentMethod::from($validated['payment_method']);
-        $channel = PaymentInstruction::channel($method, $validated['payment_channel'] ?? null);
+        $masterBank = $this->resolveMasterBank($method, $validated['master_bank_id'] ?? null);
         $amount = (int) $validated['amount'];
 
         try {
@@ -55,11 +80,16 @@ class DepositController extends Controller
                 'reference' => $this->generateReference(),
                 'amount' => $amount,
                 'payment_method' => $method,
-                'payment_channel' => $channel,
-                'payment_code' => PaymentInstruction::code($method),
+                'payment_channel' => $masterBank?->bank_name,
+                'payment_code' => $masterBank?->account_number ?? PaymentInstruction::code($method),
+                'master_bank_id' => $masterBank?->getKey(),
                 'status' => DepositStatus::Pending,
                 'expires_at' => now()->addHours(self::EXPIRY_HOURS),
             ]);
+
+            if ($method === PaymentMethod::Qris) {
+                $this->midtrans->chargeQris($deposit);
+            }
         } catch (Throwable $e) {
             TransactionLogger::error('deposit.failed', 'Gagal membuat top up saldo.', $e, [
                 'amount' => $amount,
@@ -80,12 +110,41 @@ class DepositController extends Controller
             ->with('status', 'Instruksi top up dibuat. Selesaikan pembayaran sebelum kedaluwarsa.');
     }
 
+    /**
+     * Ambil master bank tujuan sesuai metode. Wajib untuk VA & e-wallet.
+     */
+    private function resolveMasterBank(PaymentMethod $method, ?int $id): ?MasterBank
+    {
+        if (! $method->requiresChannel()) {
+            return null;
+        }
+
+        $type = $method === PaymentMethod::EWallet ? MasterBank::TYPE_EWALLET : MasterBank::TYPE_BANK;
+
+        $masterBank = MasterBank::query()
+            ->where('is_active', true)
+            ->where('type', $type)
+            ->whereKey($id)
+            ->first();
+
+        if ($masterBank === null) {
+            throw ValidationException::withMessages([
+                'master_bank_id' => $method === PaymentMethod::EWallet
+                    ? 'Pilih e-wallet tujuan yang tersedia.'
+                    : 'Pilih bank tujuan yang tersedia.',
+            ]);
+        }
+
+        return $masterBank;
+    }
+
     public function show(Request $request, Deposit $deposit): View
     {
         abort_unless($deposit->user_id === $request->user()->getKey(), 403);
 
         return view('user.deposit.show', [
             'deposit' => $deposit,
+            'midtransEnabled' => $this->midtrans->isConfigured(),
         ]);
     }
 

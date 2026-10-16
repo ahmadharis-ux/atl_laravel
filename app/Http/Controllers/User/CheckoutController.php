@@ -8,11 +8,12 @@ use App\Enums\WalletTransactionType;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Product;
+use App\Services\MidtransService;
 use App\Support\OrderFulfillment;
 use App\Support\OrderTarget;
 use App\Support\PaymentInstruction;
 use App\Support\TransactionLogger;
-use App\Support\Wallet;
+use App\Support\Wallet as WalletSupport;
 use App\Support\WalletLedger;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -37,14 +38,14 @@ class CheckoutController extends Controller
             'target' => (string) $request->query('target', ''),
             'zone' => (string) $request->query('zone', ''),
             'balance' => (int) $request->user()->balance,
-            'adminFee' => Wallet::ADMIN_FEE,
+            'adminFee' => WalletSupport::ADMIN_FEE,
             'paymentMethods' => PaymentMethod::cases(),
             'channels' => PaymentMethod::channelOptions(),
             'selectedMethod' => old('payment_method', PaymentMethod::Saldo->value),
         ]);
     }
 
-    public function store(Request $request, Product $product): RedirectResponse
+    public function store(Request $request, Product $product, MidtransService $midtrans): RedirectResponse
     {
         $this->ensurePurchasable($product);
 
@@ -106,6 +107,7 @@ class CheckoutController extends Controller
                     'payment_channel' => $channel,
                     'payment_code' => $paid ? null : PaymentInstruction::code($method),
                     'paid_at' => $paid ? now() : null,
+                    'expires_at' => ! $paid && $method === PaymentMethod::Qris ? now()->addHours(DepositController::EXPIRY_HOURS) : null,
                 ]);
 
                 if ($paid) {
@@ -155,6 +157,17 @@ class CheckoutController extends Controller
 
         if ($order->status === OrderStatus::Processing) {
             OrderFulfillment::start($order);
+        }
+
+        if ($method === PaymentMethod::Qris) {
+            try {
+                $midtrans->chargeOrderQris($order);
+            } catch (Throwable $e) {
+                TransactionLogger::error('order.failed', 'Gagal menginisiasi pembayaran QRIS untuk pesanan.', $e, [
+                    'order_number' => $order->order_number,
+                    'amount' => $order->amount,
+                ], $order, $request->user());
+            }
         }
 
         return redirect()

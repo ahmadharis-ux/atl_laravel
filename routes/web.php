@@ -9,6 +9,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\User\BankAccountController as UserBankAccountController;
 use App\Http\Controllers\User\CheckoutController as UserCheckoutController;
 use App\Http\Controllers\User\DepositController as UserDepositController;
+use App\Http\Controllers\User\EwalletTokenizationController as UserEwalletTokenizationController;
 use App\Http\Controllers\User\LookupController as UserLookupController;
 use App\Http\Controllers\User\NicknameController as UserNicknameController;
 use App\Http\Controllers\User\OrderController as UserOrderController;
@@ -19,9 +20,11 @@ use App\Http\Controllers\User\SaldoController as UserSaldoController;
 use App\Http\Controllers\User\SearchHistoryController as UserSearchHistoryController;
 use App\Http\Controllers\User\SettingsController as UserSettingsController;
 use App\Http\Controllers\Webhook\DigiflazzWebhookController;
+use App\Http\Controllers\Webhook\MidtransWebhookController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/webhook/digiflazz', DigiflazzWebhookController::class)->name('webhook.digiflazz');
+Route::post('/webhook/midtrans', MidtransWebhookController::class)->name('webhook.midtrans');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -59,8 +62,10 @@ Route::middleware(['auth', 'non-admin', 'verified'])->group(function () {
 
     Route::get('/saldo/topup', [UserDepositController::class, 'create'])->name('deposits.create');
     Route::post('/saldo/topup', [UserDepositController::class, 'store'])->name('deposits.store');
+    Route::get('/saldo/topup/riwayat', [UserDepositController::class, 'index'])->name('deposits.index');
     Route::get('/saldo/topup/{deposit}', [UserDepositController::class, 'show'])->name('deposits.show');
     Route::post('/saldo/topup/{deposit}/bayar', [UserDepositController::class, 'pay'])->name('deposits.pay');
+    Route::post('/saldo/ewallet/link', [UserEwalletTokenizationController::class, 'link'])->name('ewallet.link');
 
     Route::get('/produk/lookup/{type}', UserLookupController::class)->name('products.lookup');
     Route::get('/produk/cek-nickname', UserNicknameController::class)->name('products.nickname');
@@ -76,6 +81,7 @@ Route::middleware(['auth', 'non-admin', 'verified'])->group(function () {
     Route::get('/transaksi', [UserOrderController::class, 'index'])->name('orders.index');
     Route::get('/transaksi/{order}', [UserOrderController::class, 'show'])->name('orders.show');
     Route::post('/transaksi/{order}/bayar', [UserOrderController::class, 'pay'])->name('orders.pay');
+    Route::post('/transaksi/{order}/cek-status', [UserOrderController::class, 'sync'])->name('orders.sync');
 
     Route::get('/pengaturan', [UserSettingsController::class, 'index'])->name('settings.index');
 

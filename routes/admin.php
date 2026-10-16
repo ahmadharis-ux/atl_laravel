@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\Bot\DigiflazzController;
+use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CustomerTopup\ProductController;
 use App\Http\Controllers\Admin\CustomerTopup\TopupController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -48,6 +49,11 @@ Route::middleware(['auth', 'admin'])->group(function () {
         Route::post('/', [MasterBankController::class, 'store'])->middleware('permission:master-banks.update')->name('store');
         Route::put('/{masterBank}', [MasterBankController::class, 'update'])->middleware('permission:master-banks.update')->name('update');
         Route::delete('/{masterBank}', [MasterBankController::class, 'destroy'])->middleware('permission:master-banks.update')->name('destroy');
+    });
+
+    Route::prefix('master-brand')->name('master-brands.')->group(function () {
+        Route::get('/', [BrandController::class, 'index'])->middleware('permission:master-brands.view')->name('index');
+        Route::put('/{brand}', [BrandController::class, 'update'])->middleware('permission:master-brands.update')->name('update');
     });
 
     Route::prefix('bot/digiflazz')->name('bot.digiflazz.')->group(function () {

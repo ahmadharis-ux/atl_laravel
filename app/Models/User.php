@@ -57,7 +57,12 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function bankAccounts(): HasMany
     {
-        return $this->hasMany(BankAccount::class)->latest('id');
+        return $this->hasMany(BankAccount::class);
+    }
+
+    public function paymentTokens(): HasMany
+    {
+        return $this->hasMany(PaymentToken::class);
     }
 
     /**

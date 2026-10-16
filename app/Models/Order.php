@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'user_id', 'product_id', 'order_number', 'target', 'target_zone', 'amount', 'status',
-    'payment_method', 'payment_channel', 'payment_code', 'paid_at', 'notes',
+    'payment_method', 'payment_channel', 'payment_code', 'paid_at', 'expires_at', 'metadata', 'notes',
     'provider', 'provider_ref', 'provider_sn', 'provider_status', 'provider_price',
     'provider_admin', 'provider_payload', 'processed_at', 'refunded_at',
 ])]
@@ -42,7 +42,8 @@ class Order extends Model
      */
     public function usesProviderFulfillment(): bool
     {
-        return $this->provider !== null && $this->provider !== '';
+        return $this->provider !== null && $this->provider !== ''
+            || $this->product?->provider !== null && $this->product?->provider !== '';
     }
 
     /**
@@ -56,6 +57,14 @@ class Order extends Model
     }
 
     /**
+     * Apakah batas waktu pembayaran (khusus QRIS) sudah lewat.
+     */
+    public function isExpired(): bool
+    {
+        return $this->expires_at !== null && $this->expires_at->isPast();
+    }
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array
@@ -65,6 +74,8 @@ class Order extends Model
             'status' => OrderStatus::class,
             'payment_method' => PaymentMethod::class,
             'paid_at' => 'datetime',
+            'expires_at' => 'datetime',
+            'metadata' => 'array',
             'provider_price' => 'integer',
             'provider_admin' => 'integer',
             'provider_payload' => 'array',

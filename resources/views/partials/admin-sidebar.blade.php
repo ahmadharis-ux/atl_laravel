@@ -14,7 +14,6 @@
         ],
         ['label' => 'Pengguna',          'icon' => 'group',              'url' => route('admin.users.index'), 'active' => request()->routeIs('admin.users.*'),   'show' => $auth?->can('users.view') ?? false],
         ['label' => 'Role & Permission', 'icon' => 'admin_panel_settings','url' => route('admin.roles.index'), 'active' => request()->routeIs('admin.roles.*'),   'show' => $auth?->can('roles.view') ?? false],
-        ['label' => 'Master Bank',       'icon' => 'account_balance',     'url' => route('admin.master-banks.index'), 'active' => request()->routeIs('admin.master-banks.*'), 'show' => $auth?->can('master-banks.view') ?? false],
         [
             'label' => 'Bot Digiflazz',
             'icon' => 'smart_toy',
@@ -46,12 +45,13 @@
             ],
         ],
         ['label' => 'Laporan',           'icon' => 'bar_chart',          'url' => '#',                        'active' => false,                                'show' => true],
-        ['label' => 'Komponen',          'icon' => 'widgets',            'url' => route('admin.components'),  'active' => request()->routeIs('admin.components'),'show' => true],
-        ['label' => 'Pengaturan',        'icon' => 'settings',           'url' => '#',                        'active' => false,                                'show' => true],
+        ['label' => 'Komponen',          'icon' => 'widgets',            'url' => route('admin.components'),  'active' => request()->routeIs('admin.components'), 'show' => true],
+        ['label' => 'Master Brand',      'icon' => 'branding_watermark',  'url' => route('admin.master-brands.index'), 'active' => request()->routeIs('admin.master-brands.*'), 'show' => $auth?->can('master-brands.view') ?? false],
+        ['label' => 'Master Bank',       'icon' => 'account_balance',     'url' => route('admin.master-banks.index'), 'active' => request()->routeIs('admin.master-banks.*'), 'show' => $auth?->can('master-banks.view') ?? false],
     ];
 @endphp
 
-<aside class="sidebar d-none d-lg-flex flex-column justify-content-between">
+<aside class="sidebar d-flex flex-column justify-content-between" id="adminSidebar" data-admin-sidebar>
     <div class="d-flex flex-column gap-4">
         <div class="side-head d-flex align-items-center justify-content-between gap-2 px-3 py-2">
             <div class="d-flex align-items-center gap-2 brand">

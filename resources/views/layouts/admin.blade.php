@@ -21,6 +21,7 @@
 <body>
     @include('partials.admin-sidebar')
     @include('partials.admin-topbar')
+    <div class="sidebar-backdrop" data-admin-sidebar-close></div>
 
     <main class="main">
         @yield('content')

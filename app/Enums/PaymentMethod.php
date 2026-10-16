@@ -14,7 +14,7 @@ enum PaymentMethod: string
         return match ($this) {
             self::Saldo => 'Saldo',
             self::Qris => 'QRIS',
-            self::VirtualAccount => 'Transfer Bank / VA',
+            self::VirtualAccount => 'Transfer Bank',
             self::EWallet => 'E-Wallet',
         };
     }

@@ -37,7 +37,8 @@ class AdminMasterBankTest extends TestCase
             ->get(route('admin.master-banks.index'))
             ->assertOk()
             ->assertSee('Master Bank')
-            ->assertSee('BCA');
+            ->assertSee('BCA')
+            ->assertSee('E-Wallet');
     }
 
     public function test_admin_can_create_update_and_delete_a_master_bank(): void
@@ -45,6 +46,7 @@ class AdminMasterBankTest extends TestCase
         $admin = $this->admin();
 
         $this->actingAs($admin)->post(route('admin.master-banks.store'), [
+            'type' => MasterBank::TYPE_BANK,
             'bank_name' => 'BNI',
             'account_number' => '111222333',
             'account_holder' => 'PT Atlantic Pedia',
@@ -54,9 +56,11 @@ class AdminMasterBankTest extends TestCase
 
         $bank = MasterBank::query()->sole();
         $this->assertSame('BNI', $bank->bank_name);
+        $this->assertSame(MasterBank::TYPE_BANK, $bank->type);
         $this->assertTrue($bank->is_active);
 
         $this->actingAs($admin)->put(route('admin.master-banks.update', $bank), [
+            'type' => MasterBank::TYPE_EWALLET,
             'bank_name' => 'BNI',
             'account_number' => '111222333',
             'account_holder' => 'PT Atlantic Pedia Baru',
@@ -65,6 +69,7 @@ class AdminMasterBankTest extends TestCase
         ])->assertSessionHas('status');
 
         $bank->refresh();
+        $this->assertSame(MasterBank::TYPE_EWALLET, $bank->type);
         $this->assertSame('PT Atlantic Pedia Baru', $bank->account_holder);
         $this->assertSame(5, $bank->sort_order);
 

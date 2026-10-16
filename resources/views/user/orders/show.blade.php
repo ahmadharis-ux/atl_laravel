@@ -9,6 +9,10 @@
     $method = $order->payment_method;
     $channelLabel = $method?->channelLabel($order->payment_channel);
     $pending = $order->status === \App\Enums\OrderStatus::Pending;
+    $midtrans = $order->metadata['midtrans'] ?? [];
+    $qrUrl = $midtrans['qr_url'] ?? null;
+    $qrString = $midtrans['qr_string'] ?? null;
+    $isQris = $method === \App\Enums\PaymentMethod::Qris;
 @endphp
 
 <div class="d-flex flex-column gap-3">
@@ -34,9 +38,13 @@
             <div class="d-flex flex-column align-items-center gap-2 text-center">
                 <span class="ibox ibox-48 bg-mint-l tx-mintt"><span class="ms">{{ $method?->icon() }}</span></span>
                 @if ($method === \App\Enums\PaymentMethod::Qris)
-                    <div class="r-sm bg-glass d-flex align-items-center justify-content-center" style="width:140px;height:140px">
-                        <span class="ms" style="font-size:64px">qr_code_2</span>
-                    </div>
+                    @if ($qrUrl)
+                        <img src="{{ $qrUrl }}" alt="QRIS" class="r-sm bg-white p-2" style="width:220px;height:220px;object-fit:contain">
+                    @else
+                        <div class="r-sm bg-glass d-flex align-items-center justify-content-center" style="width:140px;height:140px">
+                            <span class="ms" style="font-size:64px">qr_code_2</span>
+                        </div>
+                    @endif
                 @endif
                 <div class="num fw-bold fs-4 tx-tealc">{{ $order->payment_code }}</div>
                 <p class="fs-12 tx-mute m-0">{{ $method?->label() }}@if ($channelLabel) &middot; {{ $channelLabel }}@endif</p>
@@ -47,6 +55,31 @@
                 </form>
             </div>
         </x-ui.card>
+
+        @if ($pending && $isQris && ! config('midtrans.is_production'))
+            <x-ui.card title="Data Testing (Sandbox Midtrans)">
+                <div class="d-flex flex-column gap-3">
+                    <p class="fs-12 tx-mute m-0">
+                        Salin nilai di bawah untuk uji di
+                        <a href="https://simulator.sandbox.midtrans.com/v2/qris/index" target="_blank" rel="noopener" class="tx-skyd fw-semibold">QRIS Simulator</a>,
+                        lalu tekan tombol cek status untuk menarik hasilnya.
+                    </p>
+                    <x-ui.input name="test_order_id" label="Order ID" :value="$order->order_number" readonly />
+                    @if ($qrUrl)
+                        <x-ui.input name="test_qr_url" label="QR Image URL" :value="$qrUrl" readonly />
+                    @endif
+                    @if ($qrString)
+                        <x-ui.textarea name="test_qr_string" label="QR String" :value="$qrString" readonly rows="3" />
+                    @endif
+                    <form method="POST" action="{{ route('orders.sync', $order) }}">
+                        @csrf
+                        <button type="submit" class="btn-ap btn-glass justify-content-center w-100">
+                            <span class="ms align-middle me-1">refresh</span>Cek Status dari Midtrans
+                        </button>
+                    </form>
+                </div>
+            </x-ui.card>
+        @endif
     @endif
 
     @if ($order->status === \App\Enums\OrderStatus::Processing)

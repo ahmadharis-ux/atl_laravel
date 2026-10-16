@@ -21,7 +21,11 @@ a{text-decoration:none;color:inherit}
 .tx-mint{color:var(--mint)}.tx-mintd{color:var(--mintd)}.tx-mintt{color:var(--mintt)}.tx-skyd{color:var(--skyd)}
 .tx-gold{color:var(--goldt)}.tx-err{color:var(--err)}.tx-mute{color:var(--mute)}.tx-deep{color:var(--deep)}
 /* sidebar & header desktop */
-.sidebar{overflow-y:auto;overflow-x:hidden;position:fixed;left:0;top:0;bottom:0;width:14rem;background:var(--navy);z-index:1040;padding:1.25rem .75rem;transition:width .2s ease}
+.sidebar{overflow-y:auto;overflow-x:hidden;position:fixed;left:0;top:0;bottom:0;width:14rem;background:var(--navy);z-index:1040;padding:1.25rem .75rem;transition:width .2s ease,transform .25s ease;transform:translateX(-100%)}
+.sidebar.is-open{transform:translateX(0)}
+.sidebar-backdrop{position:fixed;inset:0;background:rgba(6,40,58,.5);z-index:1035;opacity:0;visibility:hidden;transition:opacity .2s ease,visibility .2s ease}
+.sidebar-backdrop.is-open{opacity:1;visibility:visible}
+@media(min-width:992px){.sidebar{transform:none}.sidebar-backdrop{display:none}}
 .side-link{display:flex;align-items:center;gap:.75rem;padding:.625rem .75rem;border-radius:.5rem;color:var(--skyd);font-weight:600;font-size:.875rem}
 .side-link:hover{background:rgba(255,255,255,.1);color:#fff}
 .side-link.active{background:var(--teal);color:#fff}
@@ -34,7 +38,7 @@ a{text-decoration:none;color:inherit}
 .side-sub-link{display:block;padding:.45rem .75rem;border-radius:.5rem;font-size:.8rem;font-weight:600;color:var(--skyd);text-decoration:none}
 .side-sub-link:hover{background:rgba(255,255,255,.1);color:#fff}
 .side-sub-link.active{background:rgba(255,255,255,.14);color:#fff}
-html.sidebar-collapsed .side-caret,html.sidebar-collapsed .side-sub{display:none}
+@media(min-width:992px){html.sidebar-collapsed .side-caret,html.sidebar-collapsed .side-sub{display:none}}
 .topbar{position:fixed;top:0;left:14rem;right:0;height:4rem;background:rgba(228,242,240,.88);backdrop-filter:blur(16px);box-shadow:0 1px 8px rgba(0,0,0,.04);z-index:1030;padding:0 1.5rem;transition:left .2s ease}
 .sq{width:2.5rem;height:2.5rem;border-radius:.5rem;background:#fff;border:0;display:flex;align-items:center;justify-content:center;position:relative}
 .dot{position:absolute;width:8px;height:8px;border-radius:50%}
@@ -115,25 +119,25 @@ html.sidebar-collapsed .side-caret,html.sidebar-collapsed .side-sub{display:none
 .fab{width:3.5rem;height:3.5rem;border-radius:50%;background:var(--navy);color:var(--mint);box-shadow:0 0 0 4px #fff,0 8px 18px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center}
 .bnav a.mid{margin-top:-1.75rem;color:var(--ink)}
 
-/* sidebar collapsed */
-html.sidebar-collapsed .sidebar{width:4rem;padding-left:.5rem;padding-right:.5rem}
-html:not(.sidebar-collapsed) .brand-logo{display:inline-block !important}
-html:not(.sidebar-collapsed) .brand-logo-sm{display:none !important}
-html.sidebar-collapsed .brand-logo{display:none !important}
-html.sidebar-collapsed .brand-logo-sm{display:inline-block !important}
-html.sidebar-collapsed .side-head{justify-content:center !important;padding-left:.25rem !important;padding-right:.25rem !important;padding-top:.5rem !important;padding-bottom:.5rem !important}
-html.sidebar-collapsed .side-link{justify-content:center;padding-left:.5rem;padding-right:.5rem;gap:0}
-html.sidebar-collapsed .side-label{display:none}
-html.sidebar-collapsed .user-info{display:none !important}
-html.sidebar-collapsed .ms-md.tx-skyd{display:none}
-html.sidebar-collapsed .sidebar > .d-flex.align-items-center:last-child{justify-content:center}
+/* sidebar collapsed (hanya desktop) */
 #sidebar-toggle .ico-collapsed,
 .js-sidebar-toggle .ico-collapsed{display:none}
-html.sidebar-collapsed .js-sidebar-toggle .ico-expanded{display:none}
-html.sidebar-collapsed .js-sidebar-toggle .ico-collapsed{display:inline-block}
-html.sidebar-collapsed #sidebar-toggle .ico-expanded{display:none}
-html.sidebar-collapsed #sidebar-toggle .ico-collapsed{display:inline-block}
-@media (min-width:992px){
+@media(min-width:992px){
+ html.sidebar-collapsed .sidebar{width:4rem;padding-left:.5rem;padding-right:.5rem}
+ html:not(.sidebar-collapsed) .brand-logo{display:inline-block !important}
+ html:not(.sidebar-collapsed) .brand-logo-sm{display:none !important}
+ html.sidebar-collapsed .brand-logo{display:none !important}
+ html.sidebar-collapsed .brand-logo-sm{display:inline-block !important}
+ html.sidebar-collapsed .side-head{justify-content:center !important;padding-left:.25rem !important;padding-right:.25rem !important;padding-top:.5rem !important;padding-bottom:.5rem !important}
+ html.sidebar-collapsed .side-link{justify-content:center;padding-left:.5rem;padding-right:.5rem;gap:0}
+ html.sidebar-collapsed .side-label{display:none}
+ html.sidebar-collapsed .user-info{display:none !important}
+ html.sidebar-collapsed .ms-md.tx-skyd{display:none}
+ html.sidebar-collapsed .sidebar > .d-flex.align-items-center:last-child{justify-content:center}
+ html.sidebar-collapsed .js-sidebar-toggle .ico-expanded{display:none}
+ html.sidebar-collapsed .js-sidebar-toggle .ico-collapsed{display:inline-block}
+ html.sidebar-collapsed #sidebar-toggle .ico-expanded{display:none}
+ html.sidebar-collapsed #sidebar-toggle .ico-collapsed{display:inline-block}
  html.sidebar-collapsed .topbar{left:4rem}
  html.sidebar-collapsed .main{padding-left:5.5rem}
 }

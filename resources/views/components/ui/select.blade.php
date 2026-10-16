@@ -1,12 +1,13 @@
-@props(['name', 'label' => null, 'options' => [], 'value' => null, 'placeholder' => null, 'hint' => null])
+@props(['name', 'label' => null, 'options' => [], 'value' => null, 'placeholder' => null, 'hint' => null, 'id' => null])
 
 @php($selected = $value ?? old($name))
+@php($selectId = $id ?? $name)
 
 <div {{ $attributes->only('class') }}>
-    @if ($label)<label class="ui-label" for="{{ $name }}">{{ $label }}</label>@endif
+    @if ($label)<label class="ui-label" for="{{ $selectId }}">{{ $label }}</label>@endif
     <select
-        {{ $attributes->except('class')->merge(['class' => 'ui-select']) }}
-        id="{{ $name }}"
+        {{ $attributes->except(['class', 'id'])->merge(['class' => 'ui-select']) }}
+        id="{{ $selectId }}"
         name="{{ $name }}"
     >
         @if ($placeholder)<option value="">{{ $placeholder }}</option>@endif

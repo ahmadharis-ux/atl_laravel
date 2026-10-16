@@ -29,6 +29,40 @@
   });
 })();
 
+// Drawer sidebar admin (mobile/tablet)
+(function () {
+  var sidebar = document.querySelector('[data-admin-sidebar]');
+  if (!sidebar) return;
+  var backdrops = document.querySelectorAll('[data-admin-sidebar-close]');
+  var openers = document.querySelectorAll('.js-sidebar-mobile-toggle');
+  function isDesktop() { return window.matchMedia('(min-width: 992px)').matches; }
+  function open() {
+    if (isDesktop()) return;
+    sidebar.classList.add('is-open');
+    backdrops.forEach(function (b) { b.classList.add('is-open'); });
+    document.body.style.overflow = 'hidden';
+    openers.forEach(function (b) { b.setAttribute('aria-expanded', 'true'); });
+  }
+  function close() {
+    sidebar.classList.remove('is-open');
+    backdrops.forEach(function (b) { b.classList.remove('is-open'); });
+    document.body.style.overflow = '';
+    openers.forEach(function (b) { b.setAttribute('aria-expanded', 'false'); });
+  }
+  openers.forEach(function (b) {
+    b.addEventListener('click', function () {
+      if (sidebar.classList.contains('is-open')) close(); else open();
+    });
+  });
+  backdrops.forEach(function (b) { b.addEventListener('click', close); });
+  // Tutup saat menavigasi lewat tautan di dalam drawer.
+  sidebar.addEventListener('click', function (e) {
+    if (e.target.closest('a')) close();
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+  window.addEventListener('resize', close);
+})();
+
 // Sembunyikan / tampilkan saldo
 (function () {
   var btn = document.getElementById('eye');

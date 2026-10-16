@@ -32,9 +32,40 @@
         </div>
     </section>
 
+    @if ($pendingDeposits->isNotEmpty())
+        <div class="card-ap r-card p-3">
+            <div class="d-flex align-items-center gap-2 pb-2">
+                <span class="ibox ibox-40 bg-gold tx-gold"><span class="ms">schedule</span></span>
+                <div>
+                    <div class="fw-semibold fs-13">{{ $pendingDeposits->count() }} top up menunggu pembayaran</div>
+                    <div class="tx-mute fs-12">Selesaikan sebelum kedaluwarsa.</div>
+                </div>
+                <a href="{{ route('deposits.index') }}" class="ms-auto fw-semibold tx-teal fs-12">Lihat semua</a>
+            </div>
+            <ul class="trx list-unstyled m-0">
+                @foreach ($pendingDeposits->take(3) as $d)
+                    @php($method = $d->payment_method)
+                    <li data-row-href="{{ route('deposits.show', $d) }}">
+                        <span class="ibox ibox-44 bg-gold tx-gold"><span class="ms" style="font-size:20px">{{ $method?->icon() }}</span></span>
+                        <div class="t">
+                            <div class="fw-bold text-truncate">{{ $method?->label() }}@if ($d->payment_channel) &middot; {{ $d->payment_channel }}@endif</div>
+                            <div class="fs-12 tx-mute text-truncate">{{ $d->reference }}</div>
+                        </div>
+                        <div class="d-flex flex-column align-items-end gap-1 flex-shrink-0">
+                            <span class="num fw-bold">Rp {{ number_format($d->amount, 0, ',', '.') }}</span>
+                            @if ($d->expires_at)
+                                <span class="fs-11 tx-skyd">s/d {{ $d->expires_at->locale('id')->translatedFormat('d M H:i') }}</span>
+                            @endif
+                        </div>
+                    </li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     <nav class="card-ap r-card p-3 row g-2 m-0 text-center">
         @foreach ($shortcuts as $s)
-            <a href="#" class="col-3 sc d-flex flex-column align-items-center gap-1 p-1 rounded-3">
+            <a href="{{ $s['url'] ?? '#' }}" class="col-3 sc d-flex flex-column align-items-center gap-1 p-1 rounded-3">
                 <span class="ibox ibox-48 {{ $s['tone'] }}"><span class="ms">{{ $s['icon'] }}</span></span>
                 <span class="fs-12 fw-semibold">{{ $s['label'] }}</span>
             </a>

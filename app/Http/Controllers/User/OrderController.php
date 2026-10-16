@@ -3,14 +3,15 @@
 namespace App\Http\Controllers\User;
 
 use App\Enums\OrderStatus;
+use App\Enums\PaymentMethod;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
-use App\Support\OrderFulfillment;
+use App\Services\MidtransService;
+use App\Support\OrderPaymentSettler;
 use App\Support\TransactionLogger;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Throwable;
 
 class OrderController extends Controller
@@ -48,26 +49,16 @@ class OrderController extends Controller
             return redirect()->route('orders.show', $order);
         }
 
+        if ($order->isExpired()) {
+            $order->update(['status' => OrderStatus::Expired]);
+
+            return redirect()
+                ->route('orders.show', $order)
+                ->with('status', 'Kode pembayaran sudah kedaluwarsa. Silakan buat pesanan baru.');
+        }
+
         try {
-            DB::transaction(function () use ($request, $order): void {
-                $locked = $order->newQuery()->whereKey($order->getKey())->lockForUpdate()->firstOrFail();
-
-                if ($locked->status !== OrderStatus::Pending) {
-                    return;
-                }
-
-                $locked->update([
-                    'status' => $locked->usesProviderFulfillment()
-                        ? OrderStatus::Processing
-                        : OrderStatus::Success,
-                    'paid_at' => now(),
-                ]);
-
-                TransactionLogger::info('order.paid', 'Pembayaran dikonfirmasi.', [
-                    'payment_method' => $locked->payment_method->value,
-                    'amount' => $locked->amount,
-                ], $locked, $request->user());
-            });
+            OrderPaymentSettler::settle($order, $request->user());
         } catch (Throwable $e) {
             TransactionLogger::error('order.failed', 'Konfirmasi pembayaran gagal.', $e, [
                 'order_number' => $order->order_number,
@@ -76,14 +67,44 @@ class OrderController extends Controller
             throw $e;
         }
 
-        $order->refresh();
-
-        if ($order->status === OrderStatus::Processing) {
-            OrderFulfillment::start($order);
-        }
-
         return redirect()
             ->route('orders.show', $order)
             ->with('status', 'Pembayaran berhasil dikonfirmasi.');
+    }
+
+    /**
+     * Tarik status pembayaran QRIS terkini dari Midtrans (khusus lingkungan
+     * pengembangan, karena webhook tidak menjangkau server lokal).
+     */
+    public function sync(Request $request, Order $order, MidtransService $midtrans): RedirectResponse
+    {
+        abort_unless($order->user_id === $request->user()->getKey(), 403);
+        abort_if(config('midtrans.is_production'), 404);
+
+        if ($order->payment_method !== PaymentMethod::Qris) {
+            return redirect()->route('orders.show', $order);
+        }
+
+        try {
+            $status = $midtrans->syncOrderStatus($order);
+        } catch (Throwable $e) {
+            TransactionLogger::error('order.failed', 'Sinkronisasi status Midtrans gagal.', $e, [
+                'order_number' => $order->order_number,
+            ], $order, $request->user());
+
+            return redirect()
+                ->route('orders.show', $order)
+                ->with('status', 'Gagal mengambil status dari Midtrans.');
+        }
+
+        $message = match ($status) {
+            null => 'Status tidak dapat diambil dari Midtrans.',
+            'settlement', 'capture' => 'Pembayaran terverifikasi. Pesanan sedang diproses.',
+            'expire' => 'Kode QRIS sudah kedaluwarsa.',
+            'deny', 'cancel', 'failure' => 'Pembayaran ditolak atau dibatalkan.',
+            default => 'Status pembayaran: '.$status.'.',
+        };
+
+        return redirect()->route('orders.show', $order)->with('status', $message);
     }
 }

@@ -208,8 +208,9 @@
   // Enhances <select class="js-search-select"> (via <x-ui.search-select>).
   // With a data-remote-url the options are fetched on demand (server-side
   // search) so large lists never bloat the initial page load.
-  function initSearchSelects() {
-    var els = [...document.querySelectorAll('select.js-search-select')];
+  function initSearchSelects(scope) {
+    var root = (scope && scope.querySelectorAll) ? scope : document;
+    var els = [...root.querySelectorAll('select.js-search-select')].filter(function (el) { return !el.tomselect; });
     if (!els.length) return;
     Promise.all([
       loadStyle('https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css'),
@@ -280,8 +281,9 @@
   // Enhances <select multiple class="js-multi-select"> (via <x-ui.multi-select>).
   // With a data-remote-url the options are fetched on demand as JSON
   // { results: [{ value, text }] }, so large lists stay light.
-  function initMultiSelects() {
-    var els = [...document.querySelectorAll('select.js-multi-select')];
+  function initMultiSelects(scope) {
+    var root = (scope && scope.querySelectorAll) ? scope : document;
+    var els = [...root.querySelectorAll('select.js-multi-select')].filter(function (el) { return !el.tomselect; });
     if (!els.length) return;
     Promise.all([
       loadStyle('https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css'),
@@ -336,6 +338,7 @@
       var rowsEl = root.querySelector('[data-ajax-rows]');
       var tabsEl = root.querySelector('[data-ajax-tabs]');
       var footEl = root.querySelector('[data-ajax-footer]');
+      var modalEl = root.querySelector('[data-ajax-modals]');
       var key = root.dataset.persistKey;
       if (!url || !rowsEl) return;
 
@@ -476,6 +479,12 @@
             }
             if (tabsEl && typeof data.tabs === 'string') tabsEl.innerHTML = data.tabs;
             if (footEl && typeof data.footer === 'string') footEl.innerHTML = data.footer;
+            if (modalEl && typeof data.modals === 'string') modalEl.innerHTML = data.modals;
+            // Baris/modal baru bisa memuat select pencarian; inisialisasi ulang.
+            if (window.AP && typeof window.AP.initSelects === 'function') {
+              window.AP.initSelects(rowsEl);
+              if (modalEl) window.AP.initSelects(modalEl);
+            }
             root.classList.remove('is-loading');
           })
           .catch(function (err) {
@@ -1288,6 +1297,10 @@
     closeModal: function (id) { closeModal(typeof id === 'string' ? document.getElementById(id) : id); },
     confirm: confirmAction,
     showToast: showToast,
+    initSelects: function (scope) {
+      initSearchSelects(scope);
+      initMultiSelects(scope);
+    },
   };
 
   // ---------------- Payment methods (checkout) ----------------

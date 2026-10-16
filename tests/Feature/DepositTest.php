@@ -7,6 +7,7 @@ use App\Enums\PaymentMethod;
 use App\Enums\WalletTransactionDirection;
 use App\Enums\WalletTransactionType;
 use App\Models\Deposit;
+use App\Models\MasterBank;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -14,6 +15,130 @@ use Tests\TestCase;
 class DepositTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_deposit_show_displays_the_master_bank_instructions(): void
+    {
+        $user = User::factory()->create();
+        $bank = MasterBank::factory()->create([
+            'type' => MasterBank::TYPE_BANK,
+            'bank_name' => 'BCA',
+            'account_number' => '1234567890',
+            'account_holder' => 'PT Atlantic Pedia',
+        ]);
+
+        $deposit = Deposit::factory()->create([
+            'user_id' => $user->getKey(),
+            'master_bank_id' => $bank->getKey(),
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('deposits.show', $deposit))
+            ->assertOk()
+            ->assertSee('BCA')
+            ->assertSee('1234567890')
+            ->assertSee('PT Atlantic Pedia');
+    }
+
+    public function test_deposit_show_exposes_sandbox_qris_testing_data(): void
+    {
+        config()->set('midtrans.is_production', false);
+
+        $user = User::factory()->create();
+        $deposit = Deposit::factory()->create([
+            'user_id' => $user->getKey(),
+            'payment_method' => PaymentMethod::Qris,
+            'status' => DepositStatus::Pending,
+            'metadata' => [
+                'midtrans' => [
+                    'qr_url' => 'https://api.sandbox.midtrans.com/v2/qris/qr.png',
+                    'qr_string' => '00020101021226610014ID.CO.QRIS.WWW',
+                ],
+            ],
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('deposits.show', $deposit))
+            ->assertOk()
+            ->assertSee('Data Testing (Sandbox Midtrans)')
+            ->assertSee('https://api.sandbox.midtrans.com/v2/qris/qr.png', false)
+            ->assertSee('00020101021226610014ID.CO.QRIS.WWW', false)
+            ->assertSee('simulator.sandbox.midtrans.com/v2/qris/index', false);
+    }
+
+    public function test_sandbox_testing_data_is_hidden_in_production(): void
+    {
+        config()->set('midtrans.is_production', true);
+
+        $user = User::factory()->create();
+        $deposit = Deposit::factory()->create([
+            'user_id' => $user->getKey(),
+            'payment_method' => PaymentMethod::Qris,
+            'status' => DepositStatus::Pending,
+            'metadata' => [
+                'midtrans' => [
+                    'qr_url' => 'https://api.midtrans.com/v2/qris/qr.png',
+                    'qr_string' => '00020101021226610014ID.CO.QRIS.WWW',
+                ],
+            ],
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('deposits.show', $deposit))
+            ->assertOk()
+            ->assertDontSee('Data Testing (Sandbox Midtrans)')
+            ->assertDontSee('00020101021226610014ID.CO.QRIS.WWW', false);
+    }
+
+    public function test_top_up_history_lists_all_deposits_for_the_user(): void
+    {
+        $user = User::factory()->create();
+        $pending = Deposit::factory()->create([
+            'user_id' => $user->getKey(),
+            'payment_method' => PaymentMethod::Qris,
+            'expires_at' => now()->addHour(),
+        ]);
+        $paid = Deposit::factory()->paid()->create([
+            'user_id' => $user->getKey(),
+            'payment_method' => PaymentMethod::VirtualAccount,
+        ]);
+        $expired = Deposit::factory()->create([
+            'user_id' => $user->getKey(),
+            'status' => DepositStatus::Expired,
+            'expires_at' => now()->subHour(),
+        ]);
+        $foreign = Deposit::factory()->create();
+
+        $this->actingAs($user)
+            ->get(route('deposits.index'))
+            ->assertOk()
+            ->assertSee('Riwayat Top Up')
+            ->assertSee($pending->reference)
+            ->assertSee($paid->reference)
+            ->assertSee($expired->reference)
+            ->assertSee('Lanjutkan bayar')
+            ->assertDontSee($foreign->reference);
+    }
+
+    public function test_saldo_page_shows_a_callout_for_unexpired_pending_top_ups(): void
+    {
+        $user = User::factory()->create();
+        $pending = Deposit::factory()->create([
+            'user_id' => $user->getKey(),
+            'expires_at' => now()->addHour(),
+        ]);
+        $stale = Deposit::factory()->create([
+            'user_id' => $user->getKey(),
+            'status' => DepositStatus::Pending,
+            'expires_at' => now()->subHour(),
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('saldo.index'))
+            ->assertOk()
+            ->assertSee('menunggu pembayaran')
+            ->assertSee($pending->reference)
+            ->assertDontSee($stale->reference);
+    }
 
     public function test_top_up_page_shows_the_available_methods_and_presets(): void
     {
@@ -23,7 +148,7 @@ class DepositTest extends TestCase
             ->get(route('deposits.create'))
             ->assertOk()
             ->assertSee('QRIS')
-            ->assertSee('Transfer Bank / VA')
+            ->assertSee('Transfer Bank')
             ->assertSee('E-Wallet')
             ->assertSee('Rp 100.000')
             ->assertSee('data-amount-set="100000"', false);
@@ -66,7 +191,7 @@ class DepositTest extends TestCase
         $this->assertSame(0, Deposit::query()->count());
     }
 
-    public function test_virtual_account_requires_a_channel(): void
+    public function test_virtual_account_requires_a_bank_target(): void
     {
         $user = User::factory()->create();
 
@@ -75,7 +200,47 @@ class DepositTest extends TestCase
                 'amount' => 50_000,
                 'payment_method' => PaymentMethod::VirtualAccount->value,
             ])
-            ->assertSessionHasErrors('payment_channel');
+            ->assertSessionHasErrors('master_bank_id');
+
+        $this->assertSame(0, Deposit::query()->count());
+    }
+
+    public function test_transfer_bank_uses_the_selected_master_bank(): void
+    {
+        $user = User::factory()->create();
+        $bank = MasterBank::factory()->create([
+            'type' => MasterBank::TYPE_BANK,
+            'bank_name' => 'BCA',
+            'account_number' => '1234567890',
+            'account_holder' => 'PT Atlantic Pedia',
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('deposits.store'), [
+                'amount' => 50_000,
+                'payment_method' => PaymentMethod::VirtualAccount->value,
+                'master_bank_id' => $bank->getKey(),
+            ])
+            ->assertRedirect();
+
+        $deposit = Deposit::query()->sole();
+        $this->assertSame($bank->getKey(), $deposit->master_bank_id);
+        $this->assertSame('BCA', $deposit->payment_channel);
+        $this->assertSame('1234567890', $deposit->payment_code);
+    }
+
+    public function test_ewallet_rejects_a_bank_type_target(): void
+    {
+        $user = User::factory()->create();
+        $bank = MasterBank::factory()->create(['type' => MasterBank::TYPE_BANK]);
+
+        $this->actingAs($user)
+            ->post(route('deposits.store'), [
+                'amount' => 50_000,
+                'payment_method' => PaymentMethod::EWallet->value,
+                'master_bank_id' => $bank->getKey(),
+            ])
+            ->assertSessionHasErrors('master_bank_id');
 
         $this->assertSame(0, Deposit::query()->count());
     }

@@ -58,16 +58,36 @@
                             />
                         @endforeach
 
-                        <div data-payment-channel="va ewallet" class="mt-1">
-                            <x-ui.select
-                                name="payment_channel"
-                                label="Pilih Bank / E-Wallet"
-                                :options="$channels"
-                                placeholder="Pilih salah satu"
-                            />
+                        <div data-payment-channel="va" class="mt-1">
+                            @if ($bankTargets->isEmpty())
+                                <div class="alert-ap r-sm bg-errc-l tx-err fs-12 px-3 py-2">Belum ada rekening bank tujuan. Silakan hubungi admin.</div>
+                            @else
+                                <x-ui.select
+                                    name="master_bank_id"
+                                    id="master_bank_id_bank"
+                                    label="Pilih Bank Tujuan"
+                                    :options="$bankTargets->mapWithKeys(fn ($bank) => [$bank->getKey() => $bank->bank_name.' — '.$bank->account_number])->all()"
+                                    placeholder="Pilih bank tujuan"
+                                />
+                            @endif
+                        </div>
+
+                        <div data-payment-channel="ewallet" class="mt-1">
+                            @if ($ewalletTargets->isEmpty())
+                                <div class="alert-ap r-sm bg-errc-l tx-err fs-12 px-3 py-2">Belum ada e-wallet tujuan. Silakan hubungi admin.</div>
+                            @else
+                                <x-ui.select
+                                    name="master_bank_id"
+                                    id="master_bank_id_ewallet"
+                                    label="Pilih E-Wallet Tujuan"
+                                    :options="$ewalletTargets->mapWithKeys(fn ($wallet) => [$wallet->getKey() => $wallet->bank_name.' — '.$wallet->account_number])->all()"
+                                    placeholder="Pilih e-wallet tujuan"
+                                />
+                            @endif
                         </div>
 
                         @error('payment_method')<div class="err show">{{ $message }}</div>@enderror
+                        @error('master_bank_id')<div class="err show">{{ $message }}</div>@enderror
                     </div>
                 </x-ui.card>
 
