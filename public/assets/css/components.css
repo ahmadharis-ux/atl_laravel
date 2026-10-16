@@ -19,6 +19,11 @@
 .pill-opt:hover{border-color:var(--mintt)}
 .pill-opt:has(input:checked){background:var(--navy);color:#fff}
 
+/* Utilities */
+.min-w-0{min-width:0}
+
+.crumb-wrap{min-width:0;max-width:26rem}
+
 /* Section head (judul blok dalam satu halaman) */
 .sec{scroll-margin-top:6rem}
 .sec-head{display:flex;align-items:center;gap:.65rem;margin-bottom:1rem}
