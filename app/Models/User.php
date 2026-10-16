@@ -13,7 +13,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'phone', 'password', 'is_admin'])]
+#[Fillable(['name', 'email', 'phone', 'password', 'is_admin', 'points'])]
 #[Hidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -53,6 +53,16 @@ class User extends Authenticatable implements MustVerifyEmail
     public function walletTransactions(): HasMany
     {
         return $this->hasMany(WalletTransaction::class)->latest('id');
+    }
+
+    public function points(): int
+    {
+        return (int) data_get($this, 'points', 0);
+    }
+
+    public function addPoint(): void
+    {
+        $this->forceFill(['points' => $this->points + 1])->save();
     }
 
     public function bankAccounts(): HasMany

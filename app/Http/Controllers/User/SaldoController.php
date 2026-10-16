@@ -21,7 +21,7 @@ class SaldoController extends Controller
 
         return view('user.saldo.index', [
             'balance' => (int) $request->user()->balance,
-            'points' => Wallet::POINTS,
+            'points' => $request->user()->points,
             'adminFee' => Wallet::ADMIN_FEE,
             'shortcuts' => [
                 ['label' => 'Transfer', 'icon' => 'swap_horiz',    'tone' => 'bg-tealc-m tx-tealt', 'url' => null],

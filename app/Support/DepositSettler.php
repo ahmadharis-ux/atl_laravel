@@ -6,6 +6,7 @@ use App\Enums\DepositStatus;
 use App\Enums\WalletTransactionType;
 use App\Models\Deposit;
 use App\Models\User;
+use App\Support\Wallet;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -40,6 +41,8 @@ final class DepositSettler
                 $locked,
                 'Top up saldo '.$locked->reference,
             );
+
+            $owner->addPoint();
 
             TransactionLogger::info('deposit.paid', 'Top up saldo berhasil dilunasi.', [
                 'reference' => $locked->reference,
