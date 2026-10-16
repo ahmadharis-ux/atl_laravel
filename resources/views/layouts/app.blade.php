@@ -9,8 +9,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="{{ asset('assets/css/atlantic.css') }}" rel="stylesheet">
-    <link href="{{ asset('assets/css/components.css') }}" rel="stylesheet">
+    <link href="{{ asset('assets/css/atlantic.css') }}?v={{ filemtime(public_path('assets/css/atlantic.css')) }}" rel="stylesheet">
+    <link href="{{ asset('assets/css/components.css') }}?v={{ filemtime(public_path('assets/css/components.css')) }}" rel="stylesheet">
     <link rel="icon" href="{{ asset('assets/images/6.png') }}">
     <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('assets/images/6.png') }}">
     <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('assets/images/6.png') }}">
