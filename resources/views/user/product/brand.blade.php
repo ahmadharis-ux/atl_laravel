@@ -24,42 +24,42 @@
         </x-ui.card>
     @endif
 
-    @if ($regions->isNotEmpty())
-        <div class="d-flex flex-wrap gap-2">
-            <a href="{{ route('products.brand', $brand) }}"
-               class="pill {{ $selectedRegion === '' ? 'bg-navy text-white' : 'bg-glass tx-mute' }} text-decoration-none">
-                Semua
-            </a>
-            @foreach ($regions as $region)
-                <a href="{{ route('products.brand', $brand).'?region='.urlencode($region) }}"
-                   class="pill {{ $selectedRegion === $region ? 'bg-navy text-white' : 'bg-glass tx-mute' }} text-decoration-none">
-                    {{ ProductRegion::label($region) }}
-                </a>
-            @endforeach
-        </div>
-    @endif
+    <div data-ajax
+         data-ajax-url="{{ route('products.brand', $brand) }}"
+         data-persist-key="user.brand.{{ $brand->slug }}">
+        <form data-ajax-form class="d-flex flex-column gap-3">
+            @if ($regions->isNotEmpty())
+                <div class="d-flex flex-wrap gap-2" role="group" aria-label="Filter wilayah">
+                    <label class="pill pill-opt {{ $selectedRegion === '' ? 'bg-navy text-white' : 'bg-glass tx-mute' }}">
+                        <input type="radio" name="region" value="" @checked($selectedRegion === '')>Semua
+                    </label>
+                    @foreach ($regions as $region)
+                        <label class="pill pill-opt {{ $selectedRegion === $region ? 'bg-navy text-white' : 'bg-glass tx-mute' }}">
+                            <input type="radio" name="region" value="{{ $region }}" @checked($selectedRegion === $region)>{{ ProductRegion::label($region) }}
+                        </label>
+                    @endforeach
+                </div>
+            @endif
 
-    <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-8 g-2 g-sm-3">
-        @forelse ($products as $p)
-            @include('user.product._card', [
-                'p' => $p,
-                'href' => route('checkout.show', $p),
-                'checkout' => $canValidateNickname,
-            ])
-        @empty
-            <x-ui.empty-state
-                class="empty-state-fill"
-                icon="search_off"
-                title="Produk tidak ditemukan"
-                description="Tidak ada produk dari brand ini yang cocok dengan filter wilayah."
-            >
-                <a href="{{ route('products.brand', $brand) }}" class="btn-ap btn-navy"><span class="ms ms-sm">restart_alt</span>Lihat Semua Produk</a>
-            </x-ui.empty-state>
-        @endforelse
-    </div>
+            <div class="d-flex flex-wrap align-items-end gap-2">
+                <div style="min-width:9rem">
+                    <x-ui.currency-input name="min_price" label="Harga Min" :value="request('min_price')" />
+                </div>
+                <div style="min-width:9rem">
+                    <x-ui.currency-input name="max_price" label="Harga Maks" :value="request('max_price')" />
+                </div>
+                <button type="submit" class="btn-navy"><span class="ms ms-sm align-middle me-1">tune</span>Terapkan</button>
+                <button type="button" class="btn-soft" data-ajax-reset data-tip="Reset filter"><span class="ms ms-sm align-middle">restart_alt</span></button>
+            </div>
 
-    <div class="mt-3">
-        {{ $products->links() }}
+            <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-8 g-2 g-sm-3" data-ajax-rows>
+                @include('user.product._brand_rows')
+            </div>
+
+            <div class="mt-3" data-ajax-footer>
+                @include('user.product._brand_footer')
+            </div>
+        </form>
     </div>
 </div>
 @endsection

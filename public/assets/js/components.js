@@ -580,10 +580,31 @@
       if (footEl) {
         footEl.addEventListener('click', function (e) {
           var more = e.target.closest('[data-ajax-more]');
-          if (!more || !root.contains(more)) return;
+          if (more && root.contains(more)) {
+            e.preventDefault();
+            if (root.classList.contains('is-loading')) return;
+            load(more.dataset.page, true);
+            return;
+          }
+          // Link paginasi bernomor (?page=N) dimuat via AJAX tanpa reload halaman,
+          // supaya isian form di luar daftar (mis. ID/Zone) tidak hilang.
+          var link = e.target.closest('a[href]');
+          if (!link || !footEl.contains(link) || !root.contains(link)) return;
+          if (link.closest('.disabled') || link.getAttribute('aria-disabled') === 'true') {
+            e.preventDefault();
+            return;
+          }
+          var page = null;
+          try {
+            page = new URL(link.getAttribute('href'), window.location.href).searchParams.get('page');
+          } catch (err) {
+            return;
+          }
+          if (!page) return;
           e.preventDefault();
           if (root.classList.contains('is-loading')) return;
-          load(more.dataset.page, true);
+          load(page, false);
+          if (rowsEl.scrollIntoView) rowsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
       }
 

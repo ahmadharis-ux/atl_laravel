@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\MarkupType;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
@@ -72,6 +73,58 @@ class ProductBrandPageTest extends TestCase
             ->get(route('products.brand', $brand).'?region=Malaysia');
 
         $response->assertOk()->assertSee('Diamonds Malaysia')->assertDontSee('Diamonds Global');
+    }
+
+    public function test_brand_page_filters_by_price_range(): void
+    {
+        $user = $this->user();
+        $brand = Brand::factory()->create();
+        $category = Category::factory()->create();
+
+        Product::factory()->create([
+            'brand_id' => $brand->getKey(),
+            'category_id' => $category->getKey(),
+            'name' => 'Paket Murah',
+            'status' => true,
+            'cost_price' => 10_000,
+            'markup_type' => MarkupType::Fixed,
+            'markup_value' => 0,
+        ]);
+
+        Product::factory()->create([
+            'brand_id' => $brand->getKey(),
+            'category_id' => $category->getKey(),
+            'name' => 'Paket Mahal',
+            'status' => true,
+            'cost_price' => 100_000,
+            'markup_type' => MarkupType::Fixed,
+            'markup_value' => 0,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('products.brand', $brand).'?min_price=50.000&max_price=200.000')
+            ->assertOk()
+            ->assertSee('Paket Mahal')
+            ->assertDontSee('Paket Murah');
+    }
+
+    public function test_brand_page_returns_json_rows_for_ajax_pagination(): void
+    {
+        $user = $this->user();
+        $brand = Brand::factory()->create();
+        $category = Category::factory()->create();
+
+        Product::factory()->count(45)->create([
+            'brand_id' => $brand->getKey(),
+            'category_id' => $category->getKey(),
+            'status' => true,
+        ]);
+
+        $this->actingAs($user)
+            ->withHeaders(['X-Requested-With' => 'XMLHttpRequest'])
+            ->getJson(route('products.brand', $brand).'?page=2')
+            ->assertOk()
+            ->assertJsonStructure(['rows', 'footer']);
     }
 
     public function test_product_tab_is_the_default_and_hides_the_brand_directory(): void

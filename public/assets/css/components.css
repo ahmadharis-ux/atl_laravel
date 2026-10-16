@@ -1,5 +1,11 @@
 /* Atlantic Pedia - reusable UI component styles (di atas Bootstrap 5.3 + atlantic.css) */
 
+/* Pilihan pill berbasis radio (filter wilayah di halaman brand) */
+.pill-opt{cursor:pointer;user-select:none}
+.pill-opt input{position:absolute;opacity:0;pointer-events:none}
+.pill-opt:hover{border-color:var(--mintt)}
+.pill-opt:has(input:checked){background:var(--navy);color:#fff}
+
 /* Section head (judul blok dalam satu halaman) */
 .sec{scroll-margin-top:6rem}
 .sec-head{display:flex;align-items:center;gap:.65rem;margin-bottom:1rem}

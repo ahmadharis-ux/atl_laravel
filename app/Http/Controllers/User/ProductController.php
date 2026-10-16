@@ -121,9 +121,11 @@ class ProductController extends Controller
         ]);
     }
 
-    public function brand(Request $request, Brand $brand): View
+    public function brand(Request $request, Brand $brand): View|JsonResponse
     {
-        $selectedRegion = (string) $request->query('region', '');
+        $selectedRegion = (string) $request->input('region', '');
+        $minPrice = ProductFilters::priceBound($request, 'min_price');
+        $maxPrice = ProductFilters::priceBound($request, 'max_price');
 
         $regions = Product::query()
             ->where('brand_id', $brand->getKey())
@@ -146,12 +148,13 @@ class ProductController extends Controller
         }
 
         $products = $query
+            ->priceBetween($minPrice, $maxPrice)
             ->orderBy('sort_order')
             ->orderBy('name')
             ->paginate(40)
             ->withQueryString();
 
-        return view('user.product.brand', [
+        $data = [
             'brand' => $brand,
             'products' => $products,
             'regions' => $regions,
@@ -160,7 +163,16 @@ class ProductController extends Controller
             'term' => '',
             'requiresZone' => GameNickname::requiresZone((string) $brand->slug),
             'canValidateNickname' => GameNickname::supports((string) $brand->slug),
-        ]);
+        ];
+
+        if ($request->ajax()) {
+            return response()->json([
+                'rows' => view('user.product._brand_rows', $data)->render(),
+                'footer' => view('user.product._brand_footer', $data)->render(),
+            ]);
+        }
+
+        return view('user.product.brand', $data);
     }
 
     public function show(Product $product): View
