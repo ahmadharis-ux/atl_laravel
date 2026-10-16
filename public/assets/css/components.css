@@ -5,7 +5,7 @@
 .crumb-list{display:flex;align-items:center;margin:0;padding:0;list-style:none;min-width:0}
 .crumb-item{display:flex;align-items:center;min-width:0}
 .crumb-item + .crumb-item::before{content:'/';margin:0 .4rem;color:var(--mute);opacity:.55;flex:none;font-size:.75rem}
-.crumb-label{display:inline-block;max-width:12rem;overflow:hidden;white-space:nowrap;vertical-align:bottom}
+.crumb-label{display:inline-block;max-width:8rem;overflow:hidden;white-space:nowrap;vertical-align:bottom}
 .crumb-label-text{display:inline-block;white-space:nowrap}
 .crumb-link{color:var(--mute);text-decoration:none;font-size:.75rem;font-weight:600}
 .crumb-link:hover{color:var(--teal)}
@@ -22,7 +22,24 @@
 /* Utilities */
 .min-w-0{min-width:0}
 
-.crumb-wrap{min-width:0;max-width:26rem}
+.crumb-wrap{min-width:0;max-width:14rem}
+
+@media (min-width:576px){
+  .crumb-label{max-width:12rem}
+  .crumb-wrap{max-width:20rem}
+}
+@media (min-width:768px){
+  .crumb-label{max-width:16rem}
+  .crumb-wrap{max-width:28rem}
+}
+@media (min-width:992px){
+  .crumb-label{max-width:18rem}
+  .crumb-wrap{max-width:32rem}
+}
+@media (min-width:1200px){
+  .crumb-label{max-width:22rem}
+  .crumb-wrap{max-width:38rem}
+}
 
 /* Section head (judul blok dalam satu halaman) */
 .sec{scroll-margin-top:6rem}
