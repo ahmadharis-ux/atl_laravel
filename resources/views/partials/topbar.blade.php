@@ -22,8 +22,15 @@
             <span class="ms ico-expanded">menu_open</span>
             <span class="ms ico-collapsed">menu</span>
         </button>
+        @hasSection('breadcrumb')
+            @yield('breadcrumb')
+        @else
+            <x-ui.breadcrumb :items="$pageTitle === 'Beranda'
+                ? [['label' => 'Beranda']]
+                : [['label' => 'Beranda', 'url' => route('dashboard')], ['label' => $pageTitle]]" />
+        @endif
     </div>
-    <div class="d-flex align-items-center gap-3 flex-shrink-0 ms-auto">
+    <div class="d-flex align-items-center gap-3 flex-shrink-0">
         <div class="crumb-wrap d-none d-lg-block">
             @hasSection('breadcrumb')
                 @yield('breadcrumb')
@@ -49,17 +56,20 @@
 
 {{-- Header mobile --}}
 <header class="d-flex d-lg-none align-items-center gap-3 px-3 pt-3 pb-2">
-    <div class="d-flex align-items-center gap-3 min-w-0"></div>
-    <div class="d-flex align-items-center gap-3 flex-shrink-0 ms-auto">
-        <div class="crumb-wrap">
-            @hasSection('breadcrumb')
-                @yield('breadcrumb')
-            @else
-                <x-ui.breadcrumb :items="$pageTitle === 'Beranda'
-                    ? [['label' => 'Beranda']]
-                    : [['label' => 'Beranda', 'url' => route('dashboard')], ['label' => $pageTitle]]" />
-            @endif
-        </div>
+    <div class="d-flex align-items-center gap-3 min-w-0">
+        <button class="sq js-sidebar-toggle flex-shrink-0" type="button" aria-label="Perluas / perkecil sidebar" title="Perluas / perkecil sidebar">
+            <span class="ms ico-expanded">menu_open</span>
+            <span class="ms ico-collapsed">menu</span>
+        </button>
+        @hasSection('breadcrumb')
+            @yield('breadcrumb')
+        @else
+            <x-ui.breadcrumb :items="$pageTitle === 'Beranda'
+                ? [['label' => 'Beranda']]
+                : [['label' => 'Beranda', 'url' => route('dashboard')], ['label' => $pageTitle]]" />
+        @endif
+    </div>
+    <div class="d-flex align-items-center gap-3 flex-shrink-0">
         <button class="sq rounded-circle shadow-sm flex-shrink-0" style="width:2.75rem;height:2.75rem" aria-label="Notifikasi">
             <span class="ms">notifications</span>
             <span class="dot bg-mintt" style="top:.65rem;right:.8rem"></span>
