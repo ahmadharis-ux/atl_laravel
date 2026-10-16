@@ -1429,36 +1429,56 @@
     });
   }
 
-  // ---------------- Checkout target hand-off (pulsa/data) ----------------
-  // Kartu paket di halaman pulsa menaut ke checkout; nomor tujuan yang sudah
-  // dideteksi di kolom operator dibawa serta ke halaman checkout.
+  // ---------------- Checkout target hand-off (pulsa/data & game) ----------------
+  // Kartu paket di halaman pulsa/game menaut ke checkout; tujuan yang sudah
+  // diisi di kolom deteksi (nomor HP operator, atau ID + Zone nickname game)
+  // dibawa serta ke halaman checkout.
   function initCheckoutTargets() {
     document.addEventListener('click', function (e) {
       var link = e.target.closest('[data-checkout-link]');
       if (!link) return;
 
-      var root = document.querySelector('[data-operator-check]');
-      var input = root ? root.querySelector('[data-operator-number]') : null;
-      var number = input ? input.value.trim() : '';
+      var operatorRoot = document.querySelector('[data-operator-check]');
+      var nicknameRoot = document.querySelector('[data-nickname-check]');
+      var root = operatorRoot || nicknameRoot;
+      if (!root) return;
+
+      var number = '';
+      var zone = '';
+
+      if (root === operatorRoot) {
+        var input = root.querySelector('[data-operator-number]');
+        number = input ? input.value.trim() : '';
+      } else {
+        var targetInput = root.querySelector('[data-nickname-target]');
+        var zoneInput = root.querySelector('[data-nickname-zone]');
+        number = targetInput ? targetInput.value.trim() : '';
+        zone = zoneInput ? zoneInput.value.trim() : '';
+      }
+
       var base = link.getAttribute('data-checkout-base') || link.getAttribute('href');
       if (!base) return;
 
       e.preventDefault();
 
       if (number === '') {
-        if (input) {
-          input.focus();
-          input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        var focusEl = root === operatorRoot
+          ? root.querySelector('[data-operator-number]')
+          : root.querySelector('[data-nickname-target]');
+        if (focusEl) {
+          focusEl.focus();
+          focusEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
-        var resultEl = root ? root.querySelector('[data-operator-result]') : null;
+        var resultEl = root.querySelector('[data-operator-result], [data-nickname-result]');
         if (resultEl) {
-          resultEl.innerHTML = '<span class="tx-err fw-bold">Isi Nomor Tujuan dulu ya.</span>';
+          resultEl.innerHTML = '<span class="tx-err fw-bold">Isi Tujuan dulu ya.</span>';
         }
         return;
       }
 
       var url = new URL(base, window.location.origin);
       url.searchParams.set('target', number);
+      if (zone) url.searchParams.set('zone', zone);
       window.location.href = url.toString();
     });
   }

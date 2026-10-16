@@ -13,6 +13,17 @@
         </div>
     </div>
 
+    @if ($canValidateNickname)
+        <x-ui.card title="Cek ID Akun">
+            @include('user.product._nickname', [
+                'brand' => $brand->slug,
+                'requiresZone' => $requiresZone,
+                'target' => '',
+                'zone' => '',
+            ])
+        </x-ui.card>
+    @endif
+
     @if ($regions->isNotEmpty())
         <div class="d-flex flex-wrap gap-2">
             <a href="{{ route('products.brand', $brand) }}"
@@ -30,7 +41,11 @@
 
     <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-8 g-2 g-sm-3">
         @forelse ($products as $p)
-            @include('user.product._card', ['p' => $p, 'href' => route('checkout.show', $p)])
+            @include('user.product._card', [
+                'p' => $p,
+                'href' => route('checkout.show', $p),
+                'checkout' => $canValidateNickname,
+            ])
         @empty
             <x-ui.empty-state
                 class="empty-state-fill"

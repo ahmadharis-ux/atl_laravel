@@ -9,7 +9,6 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\SearchHistory;
 use App\Support\GameNickname;
-use App\Support\OrderTarget;
 use App\Support\ProductFilters;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
@@ -127,8 +126,6 @@ class ProductController extends Controller
             'searching' => false,
             'term' => '',
             'requiresZone' => GameNickname::requiresZone((string) $brand->slug),
-            'targetLabel' => OrderTarget::label($brand->category?->slug),
-            'targetPlaceholder' => OrderTarget::placeholder($brand->category?->slug),
             'canValidateNickname' => GameNickname::supports((string) $brand->slug),
         ]);
     }

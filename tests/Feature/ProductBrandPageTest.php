@@ -92,4 +92,44 @@ class ProductBrandPageTest extends TestCase
             ->assertSee($brand->name)
             ->assertSee(route('products.brand', $brand), false);
     }
+
+    public function test_brand_page_shows_nickname_check_and_checkout_links_for_validated_brand(): void
+    {
+        $user = $this->user();
+        $brand = Brand::factory()->create(['slug' => 'mobile-legends']);
+        $category = Category::factory()->create(['slug' => 'games']);
+
+        Product::factory()->create([
+            'brand_id' => $brand->getKey(),
+            'category_id' => $category->getKey(),
+            'name' => 'ML 112 Diamonds (Malaysia)',
+            'status' => true,
+            'region' => 'Malaysia',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('products.brand', $brand))
+            ->assertOk()
+            ->assertSee('Cek ID Akun')
+            ->assertSee('data-nickname-check', false)
+            ->assertSee('data-checkout-link', false);
+    }
+
+    public function test_brand_page_without_validation_has_no_nickname_check(): void
+    {
+        $user = $this->user();
+        $brand = Brand::factory()->create(['slug' => 'voucher-biasa-'.uniqid()]);
+
+        Product::factory()->create([
+            'brand_id' => $brand->getKey(),
+            'name' => 'Voucher Nonton',
+            'status' => true,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('products.brand', $brand))
+            ->assertOk()
+            ->assertDontSee('data-nickname-check', false)
+            ->assertDontSee('data-checkout-link', false);
+    }
 }
