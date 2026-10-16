@@ -1492,13 +1492,14 @@
   }
 
   // ---------------- Auto-refresh status (polling) ----------------
-  // Elemen dengan [data-poll-url] dicek berkala; server membalas JSON
-  // { "active": bool }. Saat "active" jadi false (mis. pembayaran lunas),
-  // halaman dimuat ulang untuk menampilkan status terbaru.
+  // Elemen dengan [data-poll-url] dicek berkala. Server membalas JSON
+  // { "status": "..." }. Halaman dimuat ulang begitu status berbeda dari
+  // data-poll-status yang dirender (mis. pending -> processing -> success).
   function initPollers() {
     document.querySelectorAll('[data-poll-url]').forEach(function (el) {
       var url = el.getAttribute('data-poll-url');
       if (!url) return;
+      var initialStatus = el.getAttribute('data-poll-status');
       var interval = parseInt(el.getAttribute('data-poll-interval'), 10) || 5000;
       var timer = null;
       var stopped = false;
@@ -1520,7 +1521,8 @@
         })
           .then(function (r) { return r.json(); })
           .then(function (data) {
-            if (data && data.active === false) {
+            if (!data || typeof data.status === 'undefined') return;
+            if (initialStatus !== null && data.status !== initialStatus) {
               stopped = true;
               stop();
               window.location.reload();

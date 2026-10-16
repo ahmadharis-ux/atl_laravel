@@ -17,7 +17,7 @@
 @endphp
 
 <div class="d-flex flex-column gap-3"
-     @if ($pending || $processing) data-poll-url="{{ route('orders.show', $order) }}" data-poll-interval="4000" @endif>
+     @if ($pending || $processing) data-poll-url="{{ route('orders.show', $order) }}" data-poll-status="{{ $order->status->value }}" data-poll-interval="4000" @endif>
 
     <div class="d-flex align-items-center gap-2">
         <a href="{{ route('orders.index') }}" class="ap-icon-btn" data-tip="Kembali"><span class="ms ms-md">arrow_back</span></a>

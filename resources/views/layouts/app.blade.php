@@ -31,8 +31,8 @@
     <x-ui.loader />
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{{ asset('assets/js/atlantic.js') }}"></script>
-    <script src="{{ asset('assets/js/components.js') }}"></script>
+    <script src="{{ asset('assets/js/atlantic.js') }}?v={{ filemtime(public_path('assets/js/atlantic.js')) }}"></script>
+    <script src="{{ asset('assets/js/components.js') }}?v={{ filemtime(public_path('assets/js/components.js')) }}"></script>
     @stack('scripts')
 </body>
 </html>

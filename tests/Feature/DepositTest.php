@@ -351,6 +351,7 @@ class DepositTest extends TestCase
             ->get(route('deposits.show', $deposit))
             ->assertOk()
             ->assertSee('data-poll-url="'.route('deposits.show', $deposit).'"', false)
+            ->assertSee('data-poll-status="pending"', false)
             ->assertSee('menyegarkan otomatis');
     }
 

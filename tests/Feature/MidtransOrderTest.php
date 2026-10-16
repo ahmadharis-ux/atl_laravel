@@ -208,6 +208,7 @@ class MidtransOrderTest extends TestCase
             ->get(route('orders.show', $order))
             ->assertOk()
             ->assertSee('data-poll-url="'.route('orders.show', $order).'"', false)
+            ->assertSee('data-poll-status="pending"', false)
             ->assertSee('menyegarkan otomatis');
     }
 
@@ -237,6 +238,7 @@ class MidtransOrderTest extends TestCase
             ->get(route('orders.show', $order))
             ->assertOk()
             ->assertSee('data-poll-url="'.route('orders.show', $order).'"', false)
+            ->assertSee('data-poll-status="processing"', false)
             ->assertSee('menyegarkan otomatis');
     }
 }

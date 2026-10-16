@@ -16,7 +16,7 @@
 @endphp
 
 <div class="d-flex flex-column gap-3"
-     @if ($pending) data-poll-url="{{ route('deposits.show', $deposit) }}" data-poll-interval="4000" @endif>
+     @if ($pending) data-poll-url="{{ route('deposits.show', $deposit) }}" data-poll-status="{{ $deposit->status->value }}" data-poll-interval="4000" @endif>
 
     <div class="d-flex align-items-center gap-2">
         <a href="{{ route('saldo.index') }}" class="ap-icon-btn" data-tip="Kembali"><span class="ms ms-md">arrow_back</span></a>
