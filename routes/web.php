@@ -71,6 +71,7 @@ Route::middleware(['auth', 'non-admin', 'verified'])->group(function () {
     Route::get('/produk/cek-nickname', UserNicknameController::class)->name('products.nickname');
     Route::get('/produk/deteksi-nomor', UserPhoneOperatorController::class)->name('products.detect-operator');
     Route::get('/produk', [UserProductController::class, 'index'])->name('products.index');
+    Route::get('/produk/brand/{brand:slug}', [UserProductController::class, 'brand'])->name('products.brand');
     Route::get('/produk/{product}', [UserProductController::class, 'show'])->name('products.show');
 
     Route::get('/checkout/{product}', [UserCheckoutController::class, 'show'])->name('checkout.show');

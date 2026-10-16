@@ -49,11 +49,12 @@ class Order extends Model
     /**
      * Nomor tujuan yang dikirim ke Digiflazz. Untuk produk yang butuh server
      * /zona (mis. game), Digiflazz memakai satu kolom `customer_no` dengan
-     * zona ditempelkan di belakang nomor tujuan tanpa pemisah.
+     * zona ditempelkan di belakang nomor tujuan dipisah titik, mis. ID + Zone
+     * ML dikirim sebagai `userId.zoneId`. Lihat `allow_dot` di Digiflazz::topup.
      */
     public function providerCustomerNo(): string
     {
-        return $this->target.($this->target_zone !== null ? $this->target_zone : '');
+        return $this->target.($this->target_zone !== null && $this->target_zone !== '' ? '.'.$this->target_zone : '');
     }
 
     /**

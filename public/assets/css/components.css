@@ -1,5 +1,9 @@
 /* Atlantic Pedia - reusable UI component styles (di atas Bootstrap 5.3 + atlantic.css) */
 
+/* Brand card (katalog produk) */
+.bcard{position:relative;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid transparent;transition:transform .15s,box-shadow .15s,border-color .15s;color:inherit;overflow:hidden;min-width:0}
+.bcard:hover,.bcard:focus-visible{border-color:rgba(0,160,108,.45);box-shadow:0 6px 16px rgba(0,0,0,.06);transform:translateY(-2px);outline:0;color:inherit}
+
 /* Form controls */
 .ui-input,.ui-select,.ui-textarea{width:100%;border:1px solid #d3e3e1;border-radius:.75rem;background:#f6fbfa;padding:.6rem .85rem;font-size:.875rem;color:var(--ink);transition:border-color .15s,box-shadow .15s}
 .ui-input:focus,.ui-select:focus,.ui-textarea:focus{outline:0;border-color:var(--mintt);background:#fff;box-shadow:0 0 0 3px rgba(0,160,108,.15)}

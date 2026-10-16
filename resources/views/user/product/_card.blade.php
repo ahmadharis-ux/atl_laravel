@@ -11,6 +11,7 @@
     $isCheckout = $checkout ?? false;
     $href = $href ?? route('products.show', $p);
     $brandLogo = $p->brand?->logoUrl();
+    $region = $p->region ?? null;
 @endphp
 <div class="col">
     <a href="{{ $href }}" class="pcard r-card h-100 d-flex flex-column"@if ($isCheckout) data-checkout-link data-checkout-base="{{ route('checkout.show', $p) }}" data-tip="Beli"@endif>
@@ -19,6 +20,9 @@
                 <img src="{{ $brandLogo }}" alt="{{ $p->brand->name }}" class="pcard-logo" loading="lazy">
             @else
                 <span class="ms {{ $thumb['tx'] }}">{{ $thumb['icon'] }}</span>
+            @endif
+            @if ($region)
+                <span class="pill bg-glass tx-mute pcard-badge">{{ $region }}</span>
             @endif
             @if ($isOutOfStock)
                 <span class="pill bg-errc-l tx-err pcard-badge">Habis</span>

@@ -12,6 +12,7 @@ use App\Services\MidtransService;
 use App\Support\OrderFulfillment;
 use App\Support\OrderTarget;
 use App\Support\PaymentInstruction;
+use App\Support\PhoneOperator;
 use App\Support\TransactionLogger;
 use App\Support\Wallet as WalletSupport;
 use App\Support\WalletLedger;
@@ -55,6 +56,8 @@ class CheckoutController extends Controller
             'payment_method' => ['required', Rule::enum(PaymentMethod::class)],
             'payment_channel' => ['nullable', 'string', Rule::in(array_keys(PaymentMethod::channelOptions()))],
         ]);
+
+        $this->ensureOperatorMatches($product, (string) $validated['target']);
 
         $method = PaymentMethod::from($validated['payment_method']);
         $channel = PaymentInstruction::channel($method, $validated['payment_channel'] ?? null);
@@ -184,6 +187,28 @@ class CheckoutController extends Controller
     private function ensurePurchasable(Product $product): void
     {
         abort_unless($product->status, 404);
+    }
+
+    /**
+     * Untuk produk pulsa/paket data, operator nomor tujuan wajib sama dengan
+     * brand produk. Mencegah user membeli paket Telkomsel untuk nomor Indosat.
+     */
+    private function ensureOperatorMatches(Product $product, string $target): void
+    {
+        $categorySlug = (string) $product->category?->slug;
+
+        if (! in_array($categorySlug, Product::OPERATOR_CATEGORY_SLUGS, true)) {
+            return;
+        }
+
+        $detected = PhoneOperator::detect($target);
+        $productBrandSlug = (string) $product->brand?->slug;
+
+        if ($detected !== null && $productBrandSlug !== '' && $detected['brand_slug'] !== $productBrandSlug) {
+            throw ValidationException::withMessages([
+                'target' => 'Nomor ini terdeteksi operator '.$detected['operator'].'. Silakan pilih produk yang sesuai.',
+            ]);
+        }
     }
 
     private function generateOrderNumber(): string

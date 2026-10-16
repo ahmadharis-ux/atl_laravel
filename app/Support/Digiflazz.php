@@ -86,6 +86,10 @@ final class Digiflazz
     /**
      * Kirim transaksi prabayar/pascabayar.
      *
+     * `allow_dot` wajib true bila `customer_no` mengandung titik (mis. ID + Zone
+     * Mobile Legends: `userId.zoneId`). Dokumen Digiflazz: parameter `customer_no`
+     * berisi titik optimal dipakai dengan `allow_dot: true`.
+     *
      * @return array<string, mixed>
      */
     public function topup(string $skuCode, string $customerNo, string $refId, bool $testing = false): array
@@ -96,6 +100,10 @@ final class Digiflazz
             'ref_id' => $refId,
             'sign' => $this->sign($refId),
         ];
+
+        if (str_contains($customerNo, '.')) {
+            $payload['allow_dot'] = true;
+        }
 
         if ($testing) {
             $payload['testing'] = true;

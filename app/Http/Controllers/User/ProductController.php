@@ -9,6 +9,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\SearchHistory;
 use App\Support\GameNickname;
+use App\Support\OrderTarget;
 use App\Support\ProductFilters;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
@@ -64,6 +65,10 @@ class ProductController extends Controller
             'searching' => $searching,
             'term' => $term,
             'searchHistory' => SearchHistory::topQueries((int) $request->user()->getKey(), 3),
+            'brands' => Brand::query()
+                ->whereHas('products', fn ($q) => $q->where('status', true)->forCatalog())
+                ->orderBy('name')
+                ->get(),
         ];
 
         if ($request->ajax()) {
@@ -81,6 +86,50 @@ class ProductController extends Controller
             'selectedBrand' => $request->filled('brand')
                 ? Brand::whereKey($request->integer('brand'))->value('name')
                 : null,
+        ]);
+    }
+
+    public function brand(Request $request, Brand $brand): View
+    {
+        $selectedRegion = (string) $request->query('region', '');
+
+        $regions = Product::query()
+            ->where('brand_id', $brand->getKey())
+            ->where('status', true)
+            ->forCatalog()
+            ->whereNotNull('region')
+            ->orderBy('region')
+            ->pluck('region')
+            ->unique()
+            ->values();
+
+        $query = Product::query()
+            ->with('category')
+            ->where('brand_id', $brand->getKey())
+            ->where('status', true)
+            ->forCatalog();
+
+        if ($selectedRegion !== '') {
+            $query->where('region', $selectedRegion);
+        }
+
+        $products = $query
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->paginate(40)
+            ->withQueryString();
+
+        return view('user.product.brand', [
+            'brand' => $brand,
+            'products' => $products,
+            'regions' => $regions,
+            'selectedRegion' => $selectedRegion,
+            'searching' => false,
+            'term' => '',
+            'requiresZone' => GameNickname::requiresZone((string) $brand->slug),
+            'targetLabel' => OrderTarget::label($brand->category?->slug),
+            'targetPlaceholder' => OrderTarget::placeholder($brand->category?->slug),
+            'canValidateNickname' => GameNickname::supports((string) $brand->slug),
         ]);
     }
 

@@ -25,9 +25,12 @@
         @endif
         <div>
             <h1 class="fw-bold fs-5 m-0">{{ $product->name }}</h1>
-            <div class="d-flex align-items-center gap-2 mt-1">
+            <div class="d-flex align-items-center gap-2 mt-1 flex-wrap">
                 <span class="pill bg-tealc-m tx-tealt">{{ $product->code }}</span>
                 <span class="pill {{ $product->payment_type === \App\Enums\ProductPaymentType::Prabayar ? 'bg-tealc-m tx-tealt' : 'bg-sky-l tx-navy' }}">{{ $product->payment_type->label() }}</span>
+                @if ($product->region)
+                    <span class="pill bg-glass tx-mute">{{ $product->region }}</span>
+                @endif
             </div>
         </div>
     </div>
@@ -40,6 +43,7 @@
                         @include('user.product._field', ['label' => 'Brand', 'value' => $product->brand?->name ?? '-'])
                         @include('user.product._field', ['label' => 'Kategori', 'value' => $product->category?->name ?? '-'])
                         @include('user.product._field', ['label' => 'Tipe', 'value' => $product->productType?->name ?? '-'])
+                        @include('user.product._field', ['label' => 'Wilayah', 'value' => \App\Support\ProductRegion::label($product->region)])
                     </div>
                     <div class="col-sm-6">
                         @include('user.product._field', ['label' => 'Stok', 'value' => $product->unlimited_stock ? 'Unlimited' : number_format($product->stock, 0, ',', '.')])

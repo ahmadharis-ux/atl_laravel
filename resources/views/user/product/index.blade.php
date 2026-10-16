@@ -32,6 +32,8 @@
             </button>
         </div>
 
+        @include('user.product._brands')
+
         <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-8 g-2 g-sm-3" data-ajax-rows>
             @include('user.product._cards')
         </div>
