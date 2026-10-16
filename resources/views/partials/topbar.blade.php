@@ -1,19 +1,39 @@
+@php
+    use Illuminate\Support\Facades\View;
+
+    $titleSection = trim((string) View::yieldContent('title', ''));
+    $pageTitle = trim((string) View::yieldContent('page-title', ''));
+
+    if ($pageTitle === '') {
+        $pageTitle = $titleSection !== ''
+            ? trim(preg_replace('/\s*[-\x{2013}]\s*Atlantic Pedia Tab\s*$/u', '', $titleSection))
+            : 'Beranda';
+    }
+
+    if ($pageTitle === '') {
+        $pageTitle = 'Beranda';
+    }
+@endphp
+
 {{-- Header desktop --}}
 <header class="topbar d-none d-lg-flex align-items-center justify-content-between">
-    <div class="d-flex align-items-center gap-3">
-        <button class="sq js-sidebar-toggle" type="button" aria-label="Perluas / perkecil sidebar" title="Perluas / perkecil sidebar">
+    <div class="d-flex align-items-center gap-3 min-w-0">
+        <button class="sq js-sidebar-toggle flex-shrink-0" type="button" aria-label="Perluas / perkecil sidebar" title="Perluas / perkecil sidebar">
             <span class="ms ico-expanded">menu_open</span>
             <span class="ms ico-collapsed">menu</span>
         </button>
-        <div>
-            <div class="d-flex align-items-center gap-2">
-                <h1 class="fs-5 fw-semibold m-0">Halo, {{ $user['name'] }}</h1>
-                <span class="pill bg-tealc tx-tealt fs-11">Online</span>
-            </div>
-            <span class="fs-11 fw-bold tx-mute">{{ $dateLong }}</span>
-        </div>
+        <h1 class="fs-5 fw-semibold m-0 text-truncate">{{ $pageTitle }}</h1>
     </div>
-    <div class="d-flex align-items-center gap-3">
+    <div class="d-flex align-items-center gap-3 flex-shrink-0">
+        <div class="crumb-wrap d-none d-xl-block">
+            @hasSection('breadcrumb')
+                @yield('breadcrumb')
+            @else
+                <x-ui.breadcrumb :items="$pageTitle === 'Beranda'
+                    ? [['label' => 'Beranda']]
+                    : [['label' => 'Beranda', 'url' => route('dashboard')], ['label' => $pageTitle]]" />
+            @endif
+        </div>
         <button class="sq" aria-label="Notifikasi">
             <span class="ms">notifications</span>
             <span class="dot" style="top:.5rem;right:.5rem;background:var(--err)"></span>
@@ -30,12 +50,11 @@
 
 {{-- Header mobile --}}
 <header class="d-flex d-lg-none align-items-center gap-3 px-3 pt-3 pb-2">
-    <div class="ibox bg-navy text-white fw-bold fs-5 rounded-circle" style="width:3rem;height:3rem">{{ strtoupper(substr($user['name'], 0, 1)) }}</div>
-    <div class="flex-fill text-truncate">
-        <div class="fs-12 fw-semibold tx-mute text-truncate">{{ $dateShort }}</div>
-        <div class="fw-bold fs-5 lh-sm text-truncate">Halo, {{ $user['name'] }} 👋</div>
+    <div class="flex-fill min-w-0">
+        <div class="fs-12 fw-semibold tx-mute text-truncate">Atlantic Pedia</div>
+        <h1 class="fw-bold fs-5 lh-sm m-0 text-truncate">{{ $pageTitle }}</h1>
     </div>
-    <button class="sq rounded-circle shadow-sm" style="width:2.75rem;height:2.75rem" aria-label="Notifikasi">
+    <button class="sq rounded-circle shadow-sm flex-shrink-0" style="width:2.75rem;height:2.75rem" aria-label="Notifikasi">
         <span class="ms">notifications</span>
         <span class="dot bg-mintt" style="top:.65rem;right:.8rem"></span>
     </button>

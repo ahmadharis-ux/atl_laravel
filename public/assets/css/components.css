@@ -1,5 +1,18 @@
 /* Atlantic Pedia - reusable UI component styles (di atas Bootstrap 5.3 + atlantic.css) */
 
+/* Breadcrumb (topbar). Item panjang dipotong; saat hover teks berjalan (marquee). */
+.crumb{min-width:0;max-width:100%}
+.crumb-list{display:flex;align-items:center;margin:0;padding:0;list-style:none;min-width:0}
+.crumb-item{display:flex;align-items:center;min-width:0}
+.crumb-item + .crumb-item::before{content:'/';margin:0 .4rem;color:var(--mute);opacity:.55;flex:none;font-size:.75rem}
+.crumb-label{display:inline-block;max-width:12rem;overflow:hidden;white-space:nowrap;vertical-align:bottom}
+.crumb-label-text{display:inline-block;white-space:nowrap}
+.crumb-link{color:var(--mute);text-decoration:none;font-size:.75rem;font-weight:600}
+.crumb-link:hover{color:var(--teal)}
+.crumb-current{color:var(--navy);font-size:.75rem;font-weight:700}
+.crumb-label.is-truncated:hover .crumb-label-text{animation:crumb-scroll 3.5s linear infinite alternate}
+@keyframes crumb-scroll{from{transform:translateX(0)}to{transform:translateX(calc(-1 * var(--crumb-shift,0px)))}}
+
 /* Pilihan pill berbasis radio (filter wilayah di halaman brand) */
 .pill-opt{cursor:pointer;user-select:none}
 .pill-opt input{position:absolute;opacity:0;pointer-events:none}

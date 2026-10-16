@@ -1592,6 +1592,28 @@
     });
   }
 
+  // Breadcrumb: tandai item yang kepanjangan lalu jalankan teks berjalan saat hover.
+  function initBreadcrumbs() {
+    document.querySelectorAll('.crumb-label').forEach(function (label) {
+      var text = label.querySelector('.crumb-label-text');
+      if (!text) return;
+
+      var check = function () {
+        var shift = text.scrollWidth - label.clientWidth;
+        if (shift > 1) {
+          label.classList.add('is-truncated');
+          label.style.setProperty('--crumb-shift', shift + 'px');
+        } else {
+          label.classList.remove('is-truncated');
+          label.style.removeProperty('--crumb-shift');
+        }
+      };
+
+      check();
+      if (window.ResizeObserver) new ResizeObserver(check).observe(label);
+    });
+  }
+
   function boot() {
     initTables();
     initWizards();
@@ -1615,6 +1637,7 @@
     initModals();
     initLoader();
     initPollers();
+    initBreadcrumbs();
   }
 
   if (document.readyState !== 'loading') boot();
