@@ -179,6 +179,14 @@ class MidtransOrderTest extends TestCase
             ->assertOk()
             ->assertJson(['active' => true, 'status' => 'pending']);
 
+        $order->update(['status' => OrderStatus::Processing]);
+
+        $this->actingAs($user)
+            ->withHeaders(['X-Requested-With' => 'XMLHttpRequest'])
+            ->getJson(route('orders.show', $order))
+            ->assertOk()
+            ->assertJson(['active' => true, 'status' => 'processing']);
+
         $order->update(['status' => OrderStatus::Success]);
 
         $this->actingAs($user)
@@ -215,5 +223,20 @@ class MidtransOrderTest extends TestCase
             ->get(route('orders.show', $order))
             ->assertOk()
             ->assertDontSee('data-poll-url', false);
+    }
+
+    public function test_processing_order_page_renders_the_poll_hook(): void
+    {
+        $user = User::factory()->create();
+        $order = Order::factory()->create([
+            'user_id' => $user->getKey(),
+            'status' => OrderStatus::Processing,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('orders.show', $order))
+            ->assertOk()
+            ->assertSee('data-poll-url="'.route('orders.show', $order).'"', false)
+            ->assertSee('menyegarkan otomatis');
     }
 }

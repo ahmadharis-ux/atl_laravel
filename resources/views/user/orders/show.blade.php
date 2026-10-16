@@ -9,6 +9,7 @@
     $method = $order->payment_method;
     $channelLabel = $method?->channelLabel($order->payment_channel);
     $pending = $order->status === \App\Enums\OrderStatus::Pending;
+    $processing = $order->status === \App\Enums\OrderStatus::Processing;
     $midtrans = $order->metadata['midtrans'] ?? [];
     $qrUrl = $midtrans['qr_url'] ?? null;
     $qrString = $midtrans['qr_string'] ?? null;
@@ -16,7 +17,7 @@
 @endphp
 
 <div class="d-flex flex-column gap-3"
-     @if ($pending) data-poll-url="{{ route('orders.show', $order) }}" data-poll-interval="4000" @endif>
+     @if ($pending || $processing) data-poll-url="{{ route('orders.show', $order) }}" data-poll-interval="4000" @endif>
 
     <div class="d-flex align-items-center gap-2">
         <a href="{{ route('orders.index') }}" class="ap-icon-btn" data-tip="Kembali"><span class="ms ms-md">arrow_back</span></a>
@@ -88,10 +89,10 @@
         @endif
     @endif
 
-    @if ($order->status === \App\Enums\OrderStatus::Processing)
+    @if ($processing)
         <div class="alert-ap r-sm bg-glass d-flex align-items-center gap-2">
-            <span class="ms tx-teal">hourglass_top</span>
-            <span class="fs-13">Pesanan kamu sedang diproses. Muat ulang halaman ini beberapa saat lagi untuk melihat hasilnya.</span>
+            <span class="ms tx-teal">autorenew</span>
+            <span class="fs-13">Pesanan kamu sedang diproses. Halaman ini menyegarkan otomatis saat pesanan selesai.</span>
         </div>
     @endif
 

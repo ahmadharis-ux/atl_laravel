@@ -35,7 +35,7 @@ class OrderController extends Controller
 
         if ($request->ajax()) {
             return response()->json([
-                'active' => $order->status === OrderStatus::Pending,
+                'active' => in_array($order->status, [OrderStatus::Pending, OrderStatus::Processing], true),
                 'status' => $order->status->value,
             ]);
         }
