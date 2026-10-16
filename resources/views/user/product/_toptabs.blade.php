@@ -1,4 +1,4 @@
-<nav class="ptabs" role="tablist" aria-label="Mode katalog">
+<nav class="ptabs ptabs-full" role="tablist" aria-label="Mode katalog">
     <a href="{{ route('products.index') }}" role="tab"
        class="{{ $tab === 'product' ? 'active' : '' }}"
        @if ($tab === 'product') aria-current="page" @endif>

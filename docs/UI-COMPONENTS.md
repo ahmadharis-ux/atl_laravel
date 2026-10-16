@@ -136,7 +136,8 @@ Untuk memisahkan beberapa "mode" pada satu halaman, pakai navigasi tab bersegmen
 />
 ```
 
-  - Props: `action`, `name` (default `q`), `value`, `placeholder`, `label` (teks tombol, kosongkan untuk tanpa tombol), `method` (default `GET`), `history` (array kata kunci milik user), `suggestUrl`, `clearUrl`, `suggestLabel` (judul dropdown saran, default `Saran Produk`), `showHistory` (default `true`).
+  - Props: `action`, `name` (default `q`), `value`, `placeholder`, `label` (teks tombol, kosongkan untuk tanpa tombol), `method` (default `GET`), `history` (array kata kunci milik user), `suggestUrl`, `clearUrl`, `suggestLabel` (judul dropdown saran, default `Saran Produk`), `showHistory` (default `true`), `params` (array nama=>nilai untuk hidden input).
+  - `params` wajib diisi untuk parameter yang harus ikut saat submit (mis. `['tab' => 'brand']`), karena form `GET` mengganti query string action dengan data form. Contoh: `<x-ui.searchbox :action="route('products.index', ['tab' => 'brand'])" :params="['tab' => 'brand']" ... />`.
   - `showHistory="false"` menyembunyikan bagian riwayat/kosong — dipakai kotak pencarian yang bukan pencarian produk (mis. pencarian brand di tab **Brand**).
   - Saat kosong: tampil "Sering Dicari" (**3 teratas** berdasarkan `hits` — pakai `SearchHistory::topQueries($id, 3)`) + tombol "Hapus". Saat mengetik: riwayat yang cocok difilter + baris "Cari …" + saran produk dengan harga (dari lookup `type=products`, `{value, text, url, hint}`). ↩/klik baris apa pun membuka `url` baris.
   - Riwayat disimpan **di DB** (`search_histories` per `user_id`, dengan kolom `hits`, maks 10, di-prune), dicatat oleh `ProductController::index` hanya untuk navigasi penuh non-AJAX (penyaring AJAX tidak ikut tercatat), dihapus lewat `DELETE /search-history`. Menghapus riwayat **hanya mengosongkan dropdown di bawah input** — section "Sesuai Pencarianmu" di beranda tetap tampil karena kata kunci terakhir diingat di sesi (`DashboardController`).

@@ -94,7 +94,7 @@
             <div class="row row-cols-3 row-cols-sm-4 row-cols-lg-6 g-2 g-sm-3">
                 @foreach ($brands as $b)
                     <div class="col">
-                        <a href="{{ route('products.index', ['brand' => $b->id]) }}" class="cat" data-tip="{{ $b->name }}">
+                        <a href="{{ route('products.brand', $b) }}" class="cat" data-tip="{{ $b->name }}">
                             <span class="ibox ibox-48 cat-ic mb-2">
                                 @if ($logo = $b->logoUrl())
                                     <img src="{{ $logo }}" alt="{{ $b->name }}" class="brand-logo-img" loading="lazy">

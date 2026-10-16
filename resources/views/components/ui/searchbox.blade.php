@@ -10,6 +10,7 @@
     'clearUrl' => null,
     'suggestLabel' => 'Saran Produk',
     'showHistory' => true,
+    'params' => [],
 ])
 
 <form {{ $attributes->merge(['class' => 'ui-search']) }}
@@ -34,6 +35,10 @@
     @if ($label)
         <button type="submit" class="ui-search-go">{{ $label }}</button>
     @endif
+
+    @foreach ($params as $paramName => $paramValue)
+        <input type="hidden" name="{{ $paramName }}" value="{{ $paramValue }}">
+    @endforeach
 
     <div class="ui-search-pop" data-role="pop" hidden>
         @if ($showHistory)

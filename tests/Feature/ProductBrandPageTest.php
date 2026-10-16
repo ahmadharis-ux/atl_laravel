@@ -114,6 +114,19 @@ class ProductBrandPageTest extends TestCase
             ->assertDontSee('Cari produk');
     }
 
+    public function test_brand_tab_searchbox_keeps_the_brand_tab_on_submit(): void
+    {
+        $user = $this->user();
+        $brand = Brand::factory()->create(['name' => 'Mobile Legends']);
+        Product::factory()->create(['brand_id' => $brand->getKey(), 'name' => 'ML Diamonds', 'status' => true]);
+
+        $this->actingAs($user)
+            ->get(route('products.index', ['tab' => 'brand']))
+            ->assertOk()
+            ->assertSee('name="tab" value="brand"', false)
+            ->assertSee(route('products.index', ['tab' => 'brand']), false);
+    }
+
     public function test_brand_tab_searches_brands_by_name(): void
     {
         $user = $this->user();
