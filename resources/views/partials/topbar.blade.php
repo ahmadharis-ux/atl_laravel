@@ -48,10 +48,6 @@
 {{-- Header mobile --}}
 <header class="d-flex d-lg-none align-items-center gap-3 px-3 pt-3 pb-2">
     <div class="d-flex align-items-center gap-3 min-w-0">
-        <button class="sq js-sidebar-toggle flex-shrink-0" type="button" aria-label="Perluas / perkecil sidebar" title="Perluas / perkecil sidebar">
-            <span class="ms ico-expanded">menu_open</span>
-            <span class="ms ico-collapsed">menu</span>
-        </button>
         @hasSection('breadcrumb')
             @yield('breadcrumb')
         @else
