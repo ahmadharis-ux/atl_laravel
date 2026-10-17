@@ -8,7 +8,6 @@ use App\Models\DashboardBanner;
 use App\Models\LoginBanner;
 use App\Models\Product;
 use App\Models\SearchHistory;
-use App\Support\Wallet;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -47,7 +46,7 @@ class DashboardController extends Controller
             'dateLong' => $now->translatedFormat('l, d F Y'),
             'dateShort' => $now->translatedFormat('l, d F'),
             'balance' => (int) $authUser->balance,
-            'points' => Wallet::POINTS,
+            'points' => (int) $authUser->points,
             'searchHistory' => $history,
             'topQueries' => $topQueries,
             'recommended' => $this->recommendedFor($topQueries),

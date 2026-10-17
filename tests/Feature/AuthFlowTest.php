@@ -44,6 +44,24 @@ class AuthFlowTest extends TestCase
         Notification::assertSentTo($user, VerifyEmailNotification::class);
     }
 
+    public function test_registration_starts_with_zero_balance_and_points(): void
+    {
+        Notification::fake();
+
+        $this->post(route('register'), [
+            'name' => 'Budi Santoso',
+            'phone' => '081234567890',
+            'email' => 'budi@example.com',
+            'password' => 'rahasia123',
+            'password_confirmation' => 'rahasia123',
+        ]);
+
+        $user = User::query()->where('email', 'budi@example.com')->sole()->fresh();
+
+        $this->assertSame(0, $user->balance);
+        $this->assertSame(0, $user->points);
+    }
+
     public function test_unverified_user_is_redirected_to_the_verification_notice(): void
     {
         $user = User::factory()->unverified()->create();

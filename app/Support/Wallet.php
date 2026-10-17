@@ -3,24 +3,13 @@
 namespace App\Support;
 
 /**
- * Sumber nilai dompet untuk sisi user (saldo, poin, biaya admin).
+ * Sumber nilai dompet untuk sisi user.
  *
- * Selama belum ada tabel saldo/deposit, nilainya masih statis — begitu
- * modul deposit masuk, pindahkan ke query model tanpa mengubah pemakaian
- * di controller.
+ * Saldo & poin reward kini berasal dari kolom `users` (lihat WalletLedger),
+ * jadi kelas ini hanya menyisakan konfigurasi statis yang belum punya tabel.
  */
 final class Wallet
 {
-    /**
-     * Saldo tersedia, dalam rupiah.
-     */
-    public const BALANCE = 1250000;
-
-    /**
-     * Poin reward yang belum ditukar.
-     */
-    public const POINTS = 480;
-
     /**
      * Biaya admin per transaksi (0 = gratis).
      */
