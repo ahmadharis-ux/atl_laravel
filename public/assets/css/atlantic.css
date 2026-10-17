@@ -62,6 +62,7 @@ a{text-decoration:none;color:inherit}
 .btn-ap:active{transform:scale(.98)}
 @media(min-width:992px){.btn-ap{border-radius:50rem}}
 .btn-mint{background:var(--mint);color:var(--mintd)}
+.btn-err{background:var(--err);color:#fff}
 .btn-glass{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.1)}
 .pill{display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .65rem;border-radius:50rem;font-size:.75rem;font-weight:700;white-space:nowrap}
 .pulse{width:6px;height:6px;border-radius:50%;background:var(--mint);animation:p 1.6s infinite}

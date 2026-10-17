@@ -6,7 +6,7 @@ use App\Enums\DepositStatus;
 use App\Enums\WalletTransactionType;
 use App\Models\Deposit;
 use App\Models\User;
-use App\Support\Wallet;
+use App\Notifications\TransactionResult;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -43,6 +43,15 @@ final class DepositSettler
             );
 
             $owner->addPoint();
+
+            $owner->notify(new TransactionResult(
+                title: 'Top up berhasil',
+                body: 'Saldo Rp '.number_format((int) $locked->amount, 0, ',', '.').' telah ditambahkan ke akunmu.',
+                level: 'success',
+                icon: 'account_balance_wallet',
+                url: route('deposits.show', $locked),
+                context: ['type' => 'deposit', 'reference' => $locked->reference],
+            ));
 
             TransactionLogger::info('deposit.paid', 'Top up saldo berhasil dilunasi.', [
                 'reference' => $locked->reference,

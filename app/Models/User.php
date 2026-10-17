@@ -55,14 +55,9 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(WalletTransaction::class)->latest('id');
     }
 
-    public function points(): int
-    {
-        return (int) data_get($this, 'points', 0);
-    }
-
     public function addPoint(): void
     {
-        $this->forceFill(['points' => $this->points + 1])->save();
+        $this->forceFill(['points' => ($this->points ?? 0) + 1])->save();
     }
 
     public function bankAccounts(): HasMany
@@ -70,9 +65,19 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(BankAccount::class);
     }
 
+    public function contacts(): HasMany
+    {
+        return $this->hasMany(Contact::class);
+    }
+
     public function paymentTokens(): HasMany
     {
         return $this->hasMany(PaymentToken::class);
+    }
+
+    public function deviceTokens(): HasMany
+    {
+        return $this->hasMany(DeviceToken::class);
     }
 
     /**

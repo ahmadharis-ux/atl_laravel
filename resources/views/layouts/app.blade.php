@@ -32,6 +32,34 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ asset('assets/js/atlantic.js') }}?v={{ filemtime(public_path('assets/js/atlantic.js')) }}"></script>
+
+    @php
+        $firebaseClient = config('firebase.client');
+        $firebaseConfig = array_filter([
+            'apiKey' => $firebaseClient['api_key'] ?? null,
+            'authDomain' => $firebaseClient['auth_domain'] ?? null,
+            'projectId' => $firebaseClient['project_id'] ?? null,
+            'storageBucket' => $firebaseClient['storage_bucket'] ?? null,
+            'messagingSenderId' => $firebaseClient['messaging_sender_id'] ?? null,
+            'appId' => $firebaseClient['app_id'] ?? null,
+        ], fn ($value) => filled($value));
+    @endphp
+    <script>
+        window.ATL_PUSH = {
+            configured: {{ $firebaseConfig !== [] && filled(config('firebase.client.vapid_key')) ? 'true' : 'false' }},
+            config: @json($firebaseConfig),
+            vapidKey: @json(config('firebase.client.vapid_key')),
+            tokenUrl: @json(route('notifications.token.store')),
+            deleteUrl: @json(route('notifications.token.destroy')),
+            swUrl: @json(route('firebase.sw')),
+        };
+    </script>
+    @if ($firebaseConfig !== [])
+        <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-app-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-messaging-compat.js"></script>
+    @endif
+    <script src="{{ asset('assets/js/push.js') }}?v={{ filemtime(public_path('assets/js/push.js')) }}"></script>
+
     <script src="{{ asset('assets/js/components.js') }}?v={{ filemtime(public_path('assets/js/components.js')) }}"></script>
     @stack('scripts')
 </body>

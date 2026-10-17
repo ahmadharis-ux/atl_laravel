@@ -48,6 +48,8 @@
         ['label' => 'Komponen',          'icon' => 'widgets',            'url' => route('admin.components'),  'active' => request()->routeIs('admin.components'), 'show' => true],
         ['label' => 'Master Brand',      'icon' => 'branding_watermark',  'url' => route('admin.master-brands.index'), 'active' => request()->routeIs('admin.master-brands.*'), 'show' => $auth?->can('master-brands.view') ?? false],
         ['label' => 'Master Bank',       'icon' => 'account_balance',     'url' => route('admin.master-banks.index'), 'active' => request()->routeIs('admin.master-banks.*'), 'show' => $auth?->can('master-banks.view') ?? false],
+        ['label' => 'Banner Login',      'icon' => 'campaign',            'url' => route('admin.login-banners.index'), 'active' => request()->routeIs('admin.login-banners.*'), 'show' => $auth?->can('login-banners.view') ?? false],
+        ['label' => 'Banner Dashboard',  'icon' => 'view_carousel',       'url' => route('admin.dashboard-banners.index'), 'active' => request()->routeIs('admin.dashboard-banners.*'), 'show' => $auth?->can('dashboard-banners.view') ?? false],
     ];
 @endphp
 
@@ -55,16 +57,13 @@
     <div class="d-flex flex-column gap-4">
         <div class="side-head d-flex align-items-center justify-content-between gap-2 px-3 py-2">
             <div class="d-flex align-items-center gap-2 brand">
-                <div class="ibox bg-tealc tx-teal" style="width:2.25rem;height:2.25rem;border-radius:.75rem"><span class="ms">shield_person</span></div>
-                <div class="d-flex flex-column brand-text">
-                    <span class="fw-bold text-white lh-1">Atlantic</span>
-                    <span class="fs-11 fw-bold tx-mint text-uppercase mt-1" style="letter-spacing:.1em">Admin</span>
-                </div>
+                <img src="{{ asset('assets/images/9.png') }}" alt="Atlantic Pedia" class="brand-logo" style="width:7.5rem;height:3.25rem;border-radius:.75rem;object-fit:cover">
+                <img src="{{ asset('assets/images/8.png') }}" alt="Atlantic Pedia" class="brand-logo-sm" style="width:2.25rem;height:2.25rem;border-radius:.75rem;object-fit:cover">
             </div>
-            <button class="btn btn-sm text-white border-0 d-none d-lg-flex align-items-center justify-content-center js-sidebar-toggle" type="button" aria-label="Perluas / perkecil sidebar" title="Perluas / perkecil sidebar" style="cursor:pointer;width:2rem;height:2rem;background:rgba(255,255,255,.1);border-radius:.5rem">
+            {{-- <button class="btn btn-sm text-white border-0 d-none d-lg-flex align-items-center justify-content-center js-sidebar-toggle" type="button" aria-label="Perluas / perkecil sidebar" title="Perluas / perkecil sidebar" style="cursor:pointer;width:2rem;height:2rem;background:rgba(255,255,255,.1);border-radius:.5rem">
                 <span class="ms ms-sm ico-expanded">menu_open</span>
                 <span class="ms ms-sm ico-collapsed">menu</span>
-            </button>
+            </button> --}}
         </div>
         <nav class="d-flex flex-column gap-1">
             @foreach ($menu as $item)

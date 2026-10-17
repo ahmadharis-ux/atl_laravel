@@ -152,11 +152,22 @@ final class BrandLogoFetcher
     }
 
     /**
-     * Tulis berkas ke disk dan perbarui kolom logo brand.
+     * Tulis berkas ke disk dan perbarui kolom logo brand. Gambar raster
+     * (png/jpg/gif/webp) diperkecil dan diubah ke WebP; SVG/ICO dibiarkan.
      */
     public function store(Brand $brand, string $bytes, string $extension): string
     {
         $disk = (string) config('brand-logos.disk', 'brands');
+
+        if (in_array($extension, ['png', 'jpg', 'jpeg', 'gif', 'webp'], true)) {
+            $webp = ImageProcessor::toWebp($bytes, 400, 400);
+
+            if ($webp !== null) {
+                $bytes = $webp;
+                $extension = 'webp';
+            }
+        }
+
         $path = $brand->slug.'.'.$extension;
 
         if ($brand->logo !== null && $brand->logo !== $path) {

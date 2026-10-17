@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Brand;
+use App\Support\ImageProcessor;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -51,14 +52,21 @@ class BrandController extends Controller
         ]);
 
         $disk = (string) config('brand-logos.disk', 'brands');
-        $extension = strtolower((string) $request->file('logo')->extension());
+        $file = $request->file('logo');
+
+        $webp = ImageProcessor::toWebp((string) $file->get(), 400, 400);
+        $extension = $webp !== null ? 'webp' : strtolower((string) $file->extension());
         $path = $brand->slug.'.'.$extension;
 
         if ($brand->logo !== null && $brand->logo !== $path) {
             Storage::disk($disk)->delete($brand->logo);
         }
 
-        $request->file('logo')->storeAs('/', $path, ['disk' => $disk]);
+        if ($webp !== null) {
+            Storage::disk($disk)->put($path, $webp);
+        } else {
+            $file->storeAs('/', $path, ['disk' => $disk]);
+        }
 
         $brand->forceFill(['logo' => $path])->save();
 

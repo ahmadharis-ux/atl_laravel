@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\DashboardBanner;
+use App\Models\LoginBanner;
 use App\Models\Product;
 use App\Models\SearchHistory;
 use App\Support\Wallet;
@@ -33,6 +35,10 @@ class DashboardController extends Controller
             $request->session()->put('search.recommendations', $history);
         }
 
+        $loginBanner = $request->session()->get('show_login_banner')
+            ? LoginBanner::query()->active()->orderBy('sort_order')->first()
+            : null;
+
         return view('dashboard.index', [
             'user' => [
                 'name' => $authUser->name,
@@ -47,6 +53,8 @@ class DashboardController extends Controller
             'recommended' => $this->recommendedFor($topQueries),
             'catalog' => $this->catalog(),
             'brands' => $this->popularBrands(),
+            'banners' => DashboardBanner::query()->active()->orderBy('sort_order')->orderByDesc('id')->get(),
+            'loginBanner' => $loginBanner,
             'bestSellers' => Product::query()
                 ->with(['brand', 'category'])
                 ->where('status', true)

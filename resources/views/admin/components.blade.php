@@ -410,6 +410,9 @@
                 <button type="button" class="btn-soft tx-err fw-bold" data-confirm="Data yang dihapus tidak dapat dikembalikan. Lanjutkan?" data-confirm-title="Hapus Data" data-confirm-ok="Hapus" data-confirm-danger>
                     <span class="ms ms-md align-middle me-1">delete</span>Hapus dengan Konfirmasi
                 </button>
+                <button type="button" class="btn-soft" data-modal-open="modalBannerDemo">
+                    <span class="ms ms-md align-middle me-1">web_asset</span>Banner Popup
+                </button>
             </div>
         </x-ui.card>
 
@@ -449,6 +452,13 @@
                 <button type="button" class="btn-navy" data-modal-close>Ya</button>
             </x-slot:footer>
         </x-ui.modal>
+
+        <x-ui.banner-popup
+            id="modalBannerDemo"
+            :image="asset('assets/images/9.png')"
+            title="Promo Spesial"
+            body="Overlay transparan — hanya banner yang tampil, tanpa kotak modal."
+        />
     </section>
 
     {{-- ================= EMPTY STATE ================= --}}

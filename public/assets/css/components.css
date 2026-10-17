@@ -66,6 +66,12 @@
 .ui-currency-prefix{flex:none;font-size:.875rem;font-weight:700;color:var(--mute)}
 .ui-currency-input{flex:1;min-width:0;border:0;background:transparent;outline:0;padding:0;font-size:.875rem;color:var(--ink);text-align:right;font-variant-numeric:tabular-nums}
 
+/* Shortcut nominal (preset top up) — chip yang dapat diklik */
+.amt-chip{cursor:pointer;border:1px solid #d3e3e1;background:#fff;color:var(--navy);font-weight:700;font-size:.8125rem;line-height:1;padding:.5rem .95rem;border-radius:50rem;transition:border-color .15s,background .15s,color .15s,transform .15s}
+.amt-chip:hover{border-color:var(--mintt);background:#f2fbf8;color:var(--tealt)}
+.amt-chip:active{transform:scale(.97)}
+.amt-chip:focus-visible{outline:0;box-shadow:0 0 0 3px rgba(0,160,108,.18)}
+
 /* Searchbox (khusus produk) */
 .ui-search{display:flex;align-items:center;gap:.5rem;width:100%;min-height:3.5rem;background:#fff;border:1px solid #d3e3e1;border-radius:.75rem;padding:.45rem .5rem .45rem .85rem;transition:border-color .15s,box-shadow .15s}
 .ui-search:focus-within{border-color:var(--mintt);box-shadow:0 0 0 3px rgba(0,160,108,.15)}
@@ -169,6 +175,20 @@ body.ap-modal-open{overflow:hidden}
 @keyframes apFade{from{opacity:0}to{opacity:1}}
 @keyframes apPop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
 
+/* Banner popup — overlay transparan, hanya banner yang tampil */
+.ap-banner-pop{align-items:center}
+.ap-banner-pop-backdrop{background:transparent;backdrop-filter:none}
+.ap-banner-pop-body{position:relative;width:100%;max-width:32rem;animation:apPop .18s ease}
+.ap-banner-pop-img{display:block;width:100%;height:auto;border-radius:1rem;box-shadow:0 24px 60px rgba(6,40,58,.35)}
+.ap-banner-pop-close{position:absolute;top:-.75rem;right:-.75rem;z-index:2;display:flex;align-items:center;justify-content:center;width:2.25rem;height:2.25rem;border:0;border-radius:999px;background:#fff;color:var(--deep);box-shadow:0 8px 20px rgba(0,0,0,.28);cursor:pointer}
+.ap-banner-pop-close:hover{background:var(--mint-l);color:var(--teal)}
+.ap-banner-pop-card{background:#fff;border-radius:1rem;padding:1.5rem;box-shadow:0 24px 60px rgba(6,40,58,.35)}
+
+/* Banner dashboard — gambar menutupi penuh kartu promo, hanya tombol CTA */
+.promo-img{padding:0}
+.promo-img-el{position:absolute;inset:0;z-index:1;width:100%;height:100%;object-fit:cover}
+.promo-img-cta{position:absolute;right:1.25rem;bottom:1.25rem;z-index:2}
+
 /* Wizard */
 .wz-steps{display:flex;gap:.5rem;flex-wrap:wrap}
 .wz-step{flex:1 1 0;min-width:7rem;text-align:center;font-size:.78rem;font-weight:700;color:var(--mute);padding:.6rem .5rem;border-radius:.75rem;background:#f0f7f6;cursor:pointer;transition:.15s}
@@ -254,4 +274,25 @@ body.ap-modal-open{overflow:hidden}
 .settings-card .desc{display:block;font-size:.75rem;color:var(--mute);margin-top:.15rem}
 .settings-card .go{color:var(--mute);transition:transform .15s}
 .settings-card:hover .go{transform:translateX(2px);color:var(--teal)}
+
+/* ---------------- Pusat notifikasi (lonceng topbar) ---------------- */
+.notif{position:relative}
+.notif-pop{position:absolute;right:0;top:calc(100% + .5rem);width:22rem;max-width:calc(100vw - 2rem);background:#fff;border:1px solid var(--line);border-radius:.85rem;box-shadow:0 18px 40px -18px rgba(6,40,58,.4);overflow:hidden;z-index:1050}
+.notif-head{display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding:.75rem .9rem;border-bottom:1px solid var(--line);font-size:.85rem}
+.notif-link{background:none;border:0;color:var(--tealt);font-weight:700;font-size:.75rem;cursor:pointer;padding:0}
+.notif-list{max-height:22rem;overflow-y:auto}
+.notif-row{display:flex;gap:.65rem;padding:.7rem .9rem;border-bottom:1px solid var(--line);text-decoration:none;color:var(--ink)}
+.notif-row:last-child{border-bottom:0}
+.notif-row:hover{background:rgba(159,240,247,.18)}
+.notif-row.is-unread{background:rgba(159,240,247,.16);box-shadow:inset 3px 0 0 var(--tealt)}
+.notif-row-ic{flex-shrink:0;width:2rem;height:2rem;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;font-size:18px;background:var(--bg);color:var(--tealt)}
+.notif-row-ic.notif-success{background:rgba(100,253,185,.25);color:var(--mintt)}
+.notif-row-ic.notif-error{background:var(--errc);color:var(--err)}
+.notif-row-tx{display:flex;flex-direction:column;gap:.1rem;min-width:0}
+.notif-row-title{font-weight:700;font-size:.82rem}
+.notif-row-body{font-size:.78rem;color:var(--mute);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.notif-row-meta{font-size:.7rem;color:var(--skyd)}
+.notif-empty{padding:1.5rem .9rem;text-align:center;color:var(--mute);font-size:.82rem}
+.notif-foot{display:block;text-align:center;padding:.65rem;font-size:.78rem;font-weight:700;color:var(--tealt);text-decoration:none;border-top:1px solid var(--line)}
+.notif-foot:hover{background:rgba(159,240,247,.18)}
 

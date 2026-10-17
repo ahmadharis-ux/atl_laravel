@@ -62,6 +62,19 @@ return [
             'report' => false,
         ],
 
+        /*
+         * Gambar banner (login & dashboard). Ditulis langsung ke folder
+         * public/banners tanpa symlink, sama seperti disk `brands`.
+         */
+        'banners' => [
+            'driver' => 'local',
+            'root' => public_path('banners'),
+            'url' => '/banners',
+            'visibility' => 'public',
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

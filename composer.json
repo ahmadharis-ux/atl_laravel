@@ -7,10 +7,12 @@
     "license": "MIT",
     "require": {
         "php": "^8.3",
+        "kreait/firebase-php": "^8.6",
         "laravel/framework": "^13.17",
         "laravel/socialite": "^5.31",
         "laravel/tinker": "^3.0",
         "midtrans/midtrans-php": "^2.6",
+        "phpoffice/phpspreadsheet": "^5.10",
         "spatie/laravel-permission": "^8.3"
     },
     "require-dev": {

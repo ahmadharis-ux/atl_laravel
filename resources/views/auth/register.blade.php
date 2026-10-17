@@ -163,13 +163,13 @@ body{min-height:100vh}
 <div class="row g-0 auth">
   <!-- Panel brand (desktop) -->
   <aside class="col-lg-6 d-none d-lg-flex brand-panel flex-column justify-content-between">
-    <div class="d-flex align-items-center gap-2"><div class="logo"><span class="ms">bolt</span></div><div class="d-flex flex-column"><b class="lh-1">Atlantic</b><span class="fs-11 fw-bold tx-mint text-uppercase mt-1" style="letter-spacing:.1em">Pedia Tab</span></div></div>
     <div style="max-width:28rem">
+      <img src="{{ asset('assets/images/6.png') }}" alt="Atlantic Pedia Tab" style="width: 80%">
       <h2 class="fw-bold mb-3" style="font-size:2.25rem;line-height:1.2;letter-spacing:-.02em">Mulai jualan PPOB lebih cepat dan hemat.</h2>
       <div class="d-flex flex-column gap-3 tx-skyd">
         <div class="feat"><span class="ms">check_circle</span><span>Pulsa, paket data, token PLN, voucher game, dan e-wallet dalam satu dashboard.</span></div>
         <div class="feat"><span class="ms">check_circle</span><span>Server PPOB stabil 24/7 dengan notifikasi gangguan real-time.</span></div>
-        <div class="feat"><span class="ms">check_circle</span><span>Gratis biaya admin transfer dan poin reward di setiap transaksi.</span></div>
+        {{-- <div class="feat"><span class="ms">check_circle</span><span>Gratis biaya admin transfer dan poin reward di setiap transaksi.</span></div> --}}
       </div>
     </div>
     <span class="fs-12 tx-skyd">&copy; <span id="yr"></span> Atlantic Pedia</span>
@@ -178,7 +178,7 @@ body{min-height:100vh}
   <!-- Form -->
   <main class="col-lg-6 d-flex align-items-center justify-content-center p-3 p-sm-4" style="padding-top:max(1rem,env(safe-area-inset-top))!important">
     <div class="form-wrap py-3">
-      <div class="d-flex d-lg-none align-items-center justify-content-center gap-2 mb-4"><div class="logo"><span class="ms">bolt</span></div><div class="d-flex flex-column"><b class="lh-1">Atlantic</b><span class="fs-11 fw-bold tx-teal text-uppercase mt-1" style="letter-spacing:.1em">Pedia Tab</span></div></div>
+      <div class="d-flex d-lg-none align-items-center justify-content-center gap-2 mb-4"><img src="{{ asset('assets/images/9.png') }}" alt="Atlantic Pedia Tab" style="height:2.25rem;width:auto"></div>
       <div class="form-card">
         <h1 class="fw-bold mb-1" style="font-size:1.625rem;letter-spacing:-.015em">Buat akun baru</h1>
         <p class="tx-mute mb-4">Isi data berikut untuk mulai bertransaksi.</p>

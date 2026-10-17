@@ -73,7 +73,7 @@
                 </x-ui.card>
 
                 <div class="d-flex gap-2">
-                    <a href="{{ route('products.show', $product) }}" class="btn-ap btn-glass flex-fill justify-content-center">Batal</a>
+                    <a href="{{ route('products.show', $product) }}" class="btn-ap btn-err flex-fill justify-content-center">Batal</a>
                     <button type="submit" class="btn-ap btn-mint flex-fill justify-content-center"><span class="ms align-middle me-1">shopping_cart</span>Buat Pesanan</button>
                 </div>
             </form>
@@ -95,11 +95,11 @@
 
                     <ul class="list-unstyled m-0 d-flex flex-column gap-2 fs-13">
                         <li class="d-flex align-items-center justify-content-between">
-                            <span class="tx-mute">Harga produk</span>
+                            <span class="text-white">Harga produk</span>
                             <span class="num fw-semibold">Rp {{ number_format($product->selling_price, 0, ',', '.') }}</span>
                         </li>
                         <li class="d-flex align-items-center justify-content-between">
-                            <span class="tx-mute">Biaya admin</span>
+                            <span class="text-white">Biaya admin</span>
                             <span class="num fw-semibold">{{ $adminFee > 0 ? 'Rp '.number_format($adminFee, 0, ',', '.') : 'Gratis' }}</span>
                         </li>
                         <li class="d-flex align-items-center justify-content-between pt-2 border-top">
@@ -118,7 +118,7 @@
                     </div>
                 </div>
 
-                <span class="fs-12 tx-skyd" style="opacity:.85">Saldo hanya terpotong bila kamu memilih metode Saldo.</span>
+                <span class="fs-12 tx-mute">Saldo hanya terpotong bila kamu memilih metode Saldo.</span>
             </div>
         </div>
     </div>

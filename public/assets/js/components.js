@@ -818,6 +818,11 @@
       var open = [...document.querySelectorAll('.ap-modal:not([hidden])')].pop();
       if (open) closeModal(open);
     });
+
+    // Modal dengan atribut data-modal-auto dibuka otomatis saat halaman dimuat.
+    document.querySelectorAll('.ap-modal[data-modal-auto]').forEach(function (el) {
+      setTimeout(function () { showModal(el); }, 250);
+    });
   }
 
   // ---------------- Search box (Shopee-style suggestions + history) ----------------
@@ -1614,6 +1619,274 @@
     });
   }
 
+  // ---------------- Admin topbar search (lintas modul) ----------------
+  function initAdminSearch() {
+    document.querySelectorAll('[data-admin-search]').forEach(function (root) {
+      var input = root.querySelector('.admin-search-input');
+      var pop = root.querySelector('[data-admin-search-pop]');
+      var url = root.dataset.searchUrl || '';
+      if (!input || !pop || !url) return;
+
+      var timer = null, seq = 0, activeRow = null;
+
+      function escHtml(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+          return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+      }
+      function closePop() {
+        pop.hidden = true;
+        if (activeRow) { activeRow.classList.remove('is-active'); activeRow = null; }
+      }
+      function openPop() { pop.hidden = false; }
+      function visibleRows() {
+        return Array.prototype.filter.call(pop.querySelectorAll('.ui-search-row'), function (r) {
+          return r.offsetParent !== null;
+        });
+      }
+      function markActive(row) {
+        if (activeRow && activeRow !== row) activeRow.classList.remove('is-active');
+        if (row && !row.classList.contains('is-active')) row.classList.add('is-active');
+        if (row) row.scrollIntoView({ block: 'nearest' });
+        activeRow = row || null;
+      }
+      function render(term) {
+        var s = ++seq;
+        fetch(url + '?q=' + encodeURIComponent(term), {
+          headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (s !== seq) return;
+            var groups = (data && Array.isArray(data.groups)) ? data.groups : [];
+            var html = '';
+            groups.forEach(function (g) {
+              if (!g.items || !g.items.length) return;
+              html += '<div class="ui-search-sec"><div class="ui-search-head">' + escHtml(g.label) + '</div><ul class="ui-search-list">';
+              g.items.forEach(function (it) {
+                html += '<li><button type="button" class="ui-search-row" data-url="' + escHtml(it.url) + '">' +
+                  '<span class="ms ui-search-row-ic" aria-hidden="true">' + escHtml(it.icon || 'search') + '</span>' +
+                  '<span class="ui-search-row-tx">' +
+                    '<span class="ui-search-row-name">' + escHtml(it.text) + '</span>' +
+                    (it.hint ? '<span class="ui-search-row-meta">' + escHtml(it.hint) + '</span>' : '') +
+                  '</span></button></li>';
+              });
+              html += '</ul></div>';
+            });
+            pop.innerHTML = html || '<div class="ui-search-empty">Tidak ada hasil.</div>';
+            openPop();
+          })
+          .catch(function () {});
+      }
+
+      input.addEventListener('input', function () {
+        clearTimeout(timer);
+        var term = input.value.trim();
+        if (term.length < 2) { closePop(); pop.innerHTML = ''; return; }
+        timer = setTimeout(function () { render(term); }, 220);
+      });
+
+      input.addEventListener('focus', function () {
+        if (pop.innerHTML.trim() !== '') openPop();
+      });
+
+      input.addEventListener('keydown', function (e) {
+        var key = e.key;
+        if (key !== 'ArrowDown' && key !== 'ArrowUp' && key !== 'Enter' && key !== 'Escape') return;
+        if (key === 'ArrowDown' || key === 'ArrowUp') {
+          e.preventDefault();
+          var rows = visibleRows();
+          if (!rows.length) return;
+          var idx = rows.indexOf(activeRow);
+          idx = key === 'ArrowDown' ? Math.min(rows.length - 1, idx + 1) : Math.max(0, idx - 1);
+          markActive(rows[idx]);
+        } else if (key === 'Enter') {
+          if (activeRow) { e.preventDefault(); window.location.href = activeRow.dataset.url; }
+        } else if (key === 'Escape') {
+          closePop();
+        }
+      });
+
+      pop.addEventListener('click', function (e) {
+        var row = e.target.closest('.ui-search-row');
+        if (row) window.location.href = row.dataset.url;
+      });
+
+      document.addEventListener('click', function (e) {
+        if (!root.contains(e.target)) closePop();
+      });
+    });
+  }
+
+  // ---------------- Pusat notifikasi (lonceng topbar) ----------------
+  function initNotifications() {
+    document.querySelectorAll('[data-notif]').forEach(function (root) {
+      var toggle = root.querySelector('[data-notif-toggle]');
+      var pop = root.querySelector('[data-notif-pop]');
+      var list = root.querySelector('[data-notif-list]');
+      var url = root.dataset.notifUrl || '';
+      if (!toggle || !pop || !list || !url) return;
+
+      var interval = parseInt(root.dataset.notifInterval, 10) || 15000;
+      var storageKey = 'ap_notif_last_seen:' + (root.dataset.notifUser || 'guest');
+      var listLoaded = false;
+      var inflight = false;
+      var timer = null;
+
+      function request() {
+        return fetch(url, {
+          headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+          cache: 'no-store',
+        }).then(function (r) { return r.json(); });
+      }
+
+      function readLastSeen() {
+        try { return localStorage.getItem(storageKey); } catch (e) { return null; }
+      }
+      function writeLastSeen(id) {
+        try { localStorage.setItem(storageKey, id || ''); } catch (e) { /* ignore */ }
+      }
+
+      function updDot(data) {
+        document.querySelectorAll('[data-notif-dot]').forEach(function (d) {
+          d.hidden = !(data.unread > 0);
+        });
+      }
+
+      function renderList(data) {
+        list.innerHTML = data.html || '';
+        listLoaded = true;
+      }
+
+      // Sinkronkan badge + toast notifikasi baru (dibandingkan dengan yang
+      // terakhir dilihat, tersimpan di localStorage agar tetap muncul walau
+      // ada reload/redirect — mis. setelah top up atau pembelian).
+      function apply(data, announce) {
+        updDot(data);
+        var incoming = data.latest_id || null;
+        var lastSeen = readLastSeen();
+        var hasBaseline = lastSeen !== null;
+
+        if (announce && incoming !== null && incoming !== lastSeen && data.latest_unread) {
+          if (data.latest_title && window.AP && window.AP.showToast) {
+            window.AP.showToast(data.latest_title, data.latest_level || 'info');
+          }
+          if (!pop.hidden) renderList(data);
+        }
+
+        if (incoming !== null || !hasBaseline) writeLastSeen(incoming);
+      }
+
+      function poll() {
+        if (inflight || document.hidden) return;
+        inflight = true;
+        request()
+          .then(function (data) { apply(data, true); })
+          .catch(function () {})
+          .finally(function () { inflight = false; });
+      }
+
+      function loadList() {
+        if (inflight) return;
+        inflight = true;
+        request()
+          .then(function (data) {
+            updDot(data);
+            renderList(data);
+          })
+          .catch(function () {})
+          .finally(function () { inflight = false; });
+      }
+
+      function open() {
+        pop.hidden = false;
+        if (!listLoaded) loadList();
+      }
+      function close() { pop.hidden = true; }
+
+      toggle.addEventListener('click', function (e) {
+        e.preventDefault();
+        if (pop.hidden) open(); else close();
+      });
+
+      document.addEventListener('click', function (e) {
+        if (!root.contains(e.target)) close();
+      });
+
+      root.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') close();
+      });
+
+      // Panggilan awal: toast bila ada notif baru sejak kunjungan terakhir.
+      poll();
+
+      function start() {
+        stop();
+        timer = setInterval(poll, interval);
+      }
+      function stop() {
+        if (timer) {
+          clearInterval(timer);
+          timer = null;
+        }
+      }
+
+      start();
+
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden) stop();
+        else {
+          poll();
+          start();
+        }
+      });
+    });
+  }
+
+  function initPushToggle() {
+    document.querySelectorAll('[data-push-toggle]').forEach(function (btn) {
+      var status = document.querySelector('[data-push-status]');
+      var push = window.ATL_Push;
+
+      function render() {
+        var on = push && push.isEnabled();
+        btn.textContent = on ? 'Matikan Notifikasi' : 'Aktifkan Notifikasi';
+        btn.classList.toggle('btn-err', !!on);
+        btn.classList.toggle('btn-navy', !on);
+        if (status) {
+          status.textContent = on ? 'Aktif' : 'Belum aktif';
+          status.classList.toggle('bg-mint-l', !!on);
+          status.classList.toggle('tx-mintt', !!on);
+          status.classList.toggle('bg-tealc-m', !on);
+          status.classList.toggle('tx-tealt', !on);
+        }
+      }
+
+      if (!push || !push.supported || !push.configured) {
+        btn.disabled = true;
+        btn.classList.add('disabled');
+        if (status) status.textContent = 'Tidak didukung';
+        var note = document.querySelector('[data-push-unsupported]');
+        if (note) note.classList.remove('d-none');
+        return;
+      }
+
+      render();
+
+      btn.addEventListener('click', function () {
+        var wasOn = push.isEnabled();
+        btn.disabled = true;
+        var action = wasOn ? push.disable() : push.enable();
+        action.then(function (ok) {
+          render();
+          if (!wasOn && ok === false && window.AP && window.AP.showToast) {
+            window.AP.showToast('Izin notifikasi ditolak atau tidak tersedia di browser ini.', 'error');
+          }
+        }).catch(function () {}).finally(function () { btn.disabled = false; });
+      });
+    });
+  }
+
   function boot() {
     initTables();
     initWizards();
@@ -1638,6 +1911,9 @@
     initLoader();
     initPollers();
     initBreadcrumbs();
+    initAdminSearch();
+    initNotifications();
+    initPushToggle();
   }
 
   if (document.readyState !== 'loading') boot();

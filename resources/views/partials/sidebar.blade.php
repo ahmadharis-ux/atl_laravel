@@ -1,10 +1,9 @@
 @php
-    // Ganti '#' dengan route() saat halaman lain sudah dibuat.
     $menu = [
         ['label' => 'Beranda',    'icon' => 'grid_view',              'url' => route('dashboard'), 'active' => request()->routeIs('dashboard')],
         ['label' => 'Produk',     'icon' => 'storefront',            'url' => route('products.index'), 'active' => request()->routeIs('products.*')],
         ['label' => 'Riwayat',    'icon' => 'receipt_long',           'url' => route('orders.index'), 'active' => request()->routeIs('orders.*')],
-        ['label' => 'Kontak',     'icon' => 'contact_phone',          'url' => '#', 'active' => false],
+        ['label' => 'Kontak',     'icon' => 'contact_phone',          'url' => route('contacts.index'), 'active' => request()->routeIs('contacts.*')],
         ['label' => 'Deposit',    'icon' => 'account_balance_wallet', 'url' => route('saldo.index'), 'active' => request()->routeIs('saldo.*')],
         ['label' => 'Pengaturan', 'icon' => 'settings',               'url' => route('settings.index'), 'active' => request()->routeIs('settings.*')],
     ];

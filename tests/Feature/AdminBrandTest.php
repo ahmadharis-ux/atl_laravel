@@ -55,8 +55,8 @@ class AdminBrandTest extends TestCase
             ->assertSessionHas('status');
 
         $brand->refresh();
-        $this->assertSame('telkomsel.png', $brand->logo);
-        Storage::disk('brands')->assertExists('telkomsel.png');
+        $this->assertSame('telkomsel.webp', $brand->logo);
+        Storage::disk('brands')->assertExists('telkomsel.webp');
     }
 
     public function test_a_non_image_upload_is_rejected(): void

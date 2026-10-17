@@ -55,7 +55,7 @@
                 @endif
                 <div class="num fw-bold fs-4 tx-tealc">{{ $order->payment_code }}</div>
                 <p class="fs-12 tx-mute m-0">{{ $method?->label() }}@if ($channelLabel) &middot; {{ $channelLabel }}@endif</p>
-                <p class="fs-12 tx-skyd m-0">Bayar tepat <b>Rp {{ number_format($order->amount, 0, ',', '.') }}</b>, lalu tekan tombol di bawah.</p>
+                <p class="fs-12 tx-mute m-0">Bayar tepat <b class="tx-tealt">Rp {{ number_format($order->amount, 0, ',', '.') }}</b>, lalu tekan tombol di bawah.</p>
                 <form method="POST" action="{{ route('orders.pay', $order) }}" class="w-100">
                     @csrf
                     <button type="submit" class="btn-ap btn-mint justify-content-center w-100">Konfirmasi Pembayaran</button>
@@ -154,7 +154,7 @@
             @endif
             <li class="d-flex align-items-center justify-content-between pt-2 border-top">
                 <span class="fw-bold">Total</span>
-                <span class="num fw-bold tx-tealc">Rp {{ number_format($order->amount, 0, ',', '.') }}</span>
+                <span class="num fw-bold tx-tealt">Rp {{ number_format($order->amount, 0, ',', '.') }}</span>
             </li>
         </ul>
     </x-ui.card>

@@ -164,6 +164,8 @@ final class OrderFulfillment
             'provider_status' => $data['status'] ?? null,
             'sn' => $data['sn'] ?? null,
         ], $order, $order->user);
+
+        OrderNotifier::success($order);
     }
 
     private static function markFailed(Order $order, string $message): void
@@ -180,6 +182,10 @@ final class OrderFulfillment
             'order_number' => $order->order_number,
             'provider_status' => $order->provider_status,
         ], $order, $order->user);
+
+        OrderNotifier::failed($order, $order->payment_method === PaymentMethod::Saldo
+            ? 'Dana telah dikembalikan ke saldomu.'
+            : 'Silakan hubungi admin untuk pengembalian dana.');
     }
 
     /**

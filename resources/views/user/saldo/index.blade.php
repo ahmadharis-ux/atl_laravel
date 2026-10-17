@@ -63,15 +63,6 @@
         </div>
     @endif
 
-    <nav class="card-ap r-card p-3 row g-2 m-0 text-center">
-        @foreach ($shortcuts as $s)
-            <a href="{{ $s['url'] ?? '#' }}" class="col-3 sc d-flex flex-column align-items-center gap-1 p-1 rounded-3">
-                <span class="ibox ibox-48 {{ $s['tone'] }}"><span class="ms">{{ $s['icon'] }}</span></span>
-                <span class="fs-12 fw-semibold">{{ $s['label'] }}</span>
-            </a>
-        @endforeach
-    </nav>
-
     <div class="row g-3">
         <div class="col-sm-6">
             <div class="mini-poin r-sm p-3 h-100">
@@ -80,15 +71,6 @@
                     <a href="#" class="fs-12 fw-bold tx-gold px-2 py-1 rounded-pill bg-gold-soft">Tukar</a>
                 </div>
                 <div class="num fw-800 fs-4 mt-2">{{ number_format($points, 0, ',', '.') }} <span class="tx-gold fs-6">Poin</span></div>
-            </div>
-        </div>
-        <div class="col-sm-6">
-            <div class="mini-admin r-sm p-3 h-100">
-                <span class="d-flex align-items-center gap-1 fw-bold tx-tealt"><span class="ms ms-sm">swap_horiz</span>Biaya Admin</span>
-                <div class="d-flex align-items-center justify-content-between mt-2 gap-1">
-                    <span class="fw-bold">Gratis Transfer</span>
-                    <span class="num fw-bold tx-tealt bg-tealc px-2 rounded-2">Rp {{ number_format($adminFee, 0, ',', '.') }}</span>
-                </div>
             </div>
         </div>
     </div>

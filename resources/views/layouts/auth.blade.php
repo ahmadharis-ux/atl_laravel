@@ -60,7 +60,7 @@ body{min-height:100vh}
 <body>
 <div class="row g-0 auth">
   <aside class="col-lg-6 d-none d-lg-flex brand-panel flex-column justify-content-between">
-    <div class="d-flex align-items-center gap-2"><div class="logo"><span class="ms">bolt</span></div><div class="d-flex flex-column"><b class="lh-1">Atlantic</b><span class="fs-11 fw-bold tx-mint text-uppercase mt-1" style="letter-spacing:.1em">Pedia Tab</span></div></div>
+    <img src="{{ asset('assets/images/9.png') }}" alt="Atlantic Pedia Tab" style="height:2.75rem;width:auto">
     <div style="max-width:28rem">
       <h2 class="fw-bold mb-3" style="font-size:2.25rem;line-height:1.2;letter-spacing:-.02em">Kelola semua transaksi PPOB dari satu tempat.</h2>
       <div class="d-flex flex-column gap-3">
@@ -73,8 +73,7 @@ body{min-height:100vh}
   <main class="col-lg-6 d-flex align-items-center justify-content-center p-3 p-sm-4" style="padding-top:env(safe-area-inset-top,0px)">
     <div class="form-wrap py-4">
       <div class="d-flex d-lg-none align-items-center justify-content-center gap-2 mb-4">
-        <div class="logo"><span class="ms">bolt</span></div>
-        <div class="d-flex flex-column"><b class="lh-1">Atlantic</b><span class="fs-11 fw-bold tx-teal text-uppercase mt-1" style="letter-spacing:.1em">Pedia Tab</span></div>
+        <img src="{{ asset('assets/images/9.png') }}" alt="Atlantic Pedia Tab" style="height:2.25rem;width:auto">
       </div>
       <div class="form-card">
         @yield('content')

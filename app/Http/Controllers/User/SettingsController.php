@@ -31,6 +31,11 @@ class SettingsController extends Controller
         return view('user.settings.password');
     }
 
+    public function notifications(): View
+    {
+        return view('user.settings.notifications');
+    }
+
     public function sessions(Request $request): View
     {
         return view('user.settings.sessions', [

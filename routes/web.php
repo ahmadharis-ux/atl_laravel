@@ -6,9 +6,13 @@ use App\Http\Controllers\Auth\SocialiteController;
 use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FirebaseServiceWorkerController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\User\BankAccountController as UserBankAccountController;
 use App\Http\Controllers\User\CheckoutController as UserCheckoutController;
+use App\Http\Controllers\User\ContactController as UserContactController;
 use App\Http\Controllers\User\DepositController as UserDepositController;
+use App\Http\Controllers\User\DeviceTokenController as UserDeviceTokenController;
 use App\Http\Controllers\User\EwalletTokenizationController as UserEwalletTokenizationController;
 use App\Http\Controllers\User\LookupController as UserLookupController;
 use App\Http\Controllers\User\NicknameController as UserNicknameController;
@@ -25,6 +29,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/webhook/digiflazz', DigiflazzWebhookController::class)->name('webhook.digiflazz');
 Route::post('/webhook/midtrans', MidtransWebhookController::class)->name('webhook.midtrans');
+
+Route::get('/firebase-messaging-sw.js', FirebaseServiceWorkerController::class)->name('firebase.sw');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -79,10 +85,24 @@ Route::middleware(['auth', 'non-admin', 'verified'])->group(function () {
 
     Route::get('/pulsa', [UserPulsaController::class, 'index'])->name('pulsa.index');
 
+    Route::get('/kontak', [UserContactController::class, 'index'])->name('contacts.index');
+    Route::post('/kontak', [UserContactController::class, 'store'])->name('contacts.store');
+    Route::get('/kontak/template', [UserContactController::class, 'template'])->name('contacts.template');
+    Route::post('/kontak/import', [UserContactController::class, 'import'])->name('contacts.import');
+    Route::put('/kontak/{contact}', [UserContactController::class, 'update'])->name('contacts.update');
+    Route::delete('/kontak/{contact}', [UserContactController::class, 'destroy'])->name('contacts.destroy');
+
     Route::get('/transaksi', [UserOrderController::class, 'index'])->name('orders.index');
     Route::get('/transaksi/{order}', [UserOrderController::class, 'show'])->name('orders.show');
     Route::post('/transaksi/{order}/bayar', [UserOrderController::class, 'pay'])->name('orders.pay');
     Route::post('/transaksi/{order}/cek-status', [UserOrderController::class, 'sync'])->name('orders.sync');
+
+    Route::get('/notifikasi', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifikasi/{notification}/buka', [NotificationController::class, 'open'])->name('notifications.open');
+    Route::post('/notifikasi/baca-semua', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+
+    Route::post('/notifikasi/token', [UserDeviceTokenController::class, 'store'])->name('notifications.token.store');
+    Route::delete('/notifikasi/token', [UserDeviceTokenController::class, 'destroy'])->name('notifications.token.destroy');
 
     Route::get('/pengaturan', [UserSettingsController::class, 'index'])->name('settings.index');
 
@@ -91,6 +111,8 @@ Route::middleware(['auth', 'non-admin', 'verified'])->group(function () {
 
     Route::get('/pengaturan/kata-sandi', [UserSettingsController::class, 'password'])->name('settings.password');
     Route::put('/pengaturan/kata-sandi', [UserSettingsController::class, 'updatePassword'])->name('settings.password.update');
+
+    Route::get('/pengaturan/notifikasi', [UserSettingsController::class, 'notifications'])->name('settings.notifications');
 
     Route::get('/pengaturan/rekening', [UserBankAccountController::class, 'index'])->name('settings.banks.index');
     Route::post('/pengaturan/rekening', [UserBankAccountController::class, 'store'])->name('settings.banks.store');

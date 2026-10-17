@@ -43,28 +43,64 @@
         </div>
     </div>
 
-    <section class="promo r-card">
-        <div class="glow"></div><span class="ms bgico" aria-hidden="true">bolt</span>
-        <div class="promo-in d-flex flex-column justify-content-between gap-3">
-            <div class="d-flex align-items-center justify-content-between">
-                <span class="pill bg-mint tx-mintd"><span class="ms" style="font-size:14px">bolt</span>FLASH PROMO</span>
-                <span class="pill text-white" style="background:rgba(255,255,255,.2);backdrop-filter:blur(8px)"><span class="ms" style="font-size:14px">schedule</span>Sisa 2 Hari</span>
-            </div>
-            <div style="max-width:24rem">
-                <div class="tx-mint fw-bold">Cashback s.d 20%</div>
-                <h2 class="fw-bold fs-3 lh-sm my-1">Unlock &amp; Transact PPOB</h2>
-                <p class="tx-tealc m-0 d-none d-sm-block">Raih kupon diskon token dan game setiap hari!</p>
-            </div>
-            <div class="d-flex align-items-center justify-content-between">
-                <div class="d-flex align-items-center gap-1">
-                    <span class="rounded-pill bg-mint" style="width:1.5rem;height:6px"></span>
-                    <span class="rounded-circle" style="width:6px;height:6px;background:rgba(255,255,255,.4)"></span>
-                    <span class="rounded-circle" style="width:6px;height:6px;background:rgba(255,255,255,.4)"></span>
+    @if ($banners->isNotEmpty())
+        @foreach ($banners as $banner)
+            @if ($url = $banner->imageUrl())
+                <section class="promo promo-img r-card">
+                    <img src="{{ $url }}" alt="{{ $banner->title }}" class="promo-img-el">
+                    @if ($banner->link)
+                        <a href="{{ $banner->link }}" class="btn-white promo-img-cta" @if (\Illuminate\Support\Str::startsWith($banner->link, ['http://', 'https://'])) target="_blank" rel="noopener" @endif>{{ $banner->cta_label ?: 'Selengkapnya' }}</a>
+                    @endif
+                </section>
+            @else
+                <section class="promo r-card">
+                    <div class="glow"></div><span class="ms bgico" aria-hidden="true">bolt</span>
+                    <div class="promo-in d-flex flex-column justify-content-between gap-3">
+                        <div class="d-flex align-items-center justify-content-between">
+                            @if ($banner->badge)
+                                <span class="pill bg-mint tx-mintd"><span class="ms" style="font-size:14px">bolt</span>{{ $banner->badge }}</span>
+                            @else
+                                <span></span>
+                            @endif
+                        </div>
+                        <div style="max-width:24rem">
+                            @if ($banner->subtitle)<div class="tx-mint fw-bold">{{ $banner->subtitle }}</div>@endif
+                            <h2 class="fw-bold fs-3 lh-sm my-1">{{ $banner->title }}</h2>
+                            @if ($banner->description)<p class="tx-tealc m-0 d-none d-sm-block">{{ $banner->description }}</p>@endif
+                        </div>
+                        @if ($banner->link)
+                            <div class="d-flex align-items-center justify-content-end">
+                                <a href="{{ $banner->link }}" class="btn-white">{{ $banner->cta_label ?: 'Selengkapnya' }}</a>
+                            </div>
+                        @endif
+                    </div>
+                </section>
+            @endif
+        @endforeach
+    @else
+        <section class="promo r-card">
+            <div class="glow"></div><span class="ms bgico" aria-hidden="true">bolt</span>
+            <div class="promo-in d-flex flex-column justify-content-between gap-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <span class="pill bg-mint tx-mintd"><span class="ms" style="font-size:14px">bolt</span>FLASH PROMO</span>
+                    <span class="pill text-white" style="background:rgba(255,255,255,.2);backdrop-filter:blur(8px)"><span class="ms" style="font-size:14px">schedule</span>Sisa 2 Hari</span>
                 </div>
-                <a href="#" class="btn-white">Klaim Promo</a>
+                <div style="max-width:24rem">
+                    <div class="tx-mint fw-bold">Cashback s.d 20%</div>
+                    <h2 class="fw-bold fs-3 lh-sm my-1">Unlock &amp; Transact PPOB</h2>
+                    <p class="tx-tealc m-0 d-none d-sm-block">Raih kupon diskon token dan game setiap hari!</p>
+                </div>
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-1">
+                        <span class="rounded-pill bg-mint" style="width:1.5rem;height:6px"></span>
+                        <span class="rounded-circle" style="width:6px;height:6px;background:rgba(255,255,255,.4)"></span>
+                        <span class="rounded-circle" style="width:6px;height:6px;background:rgba(255,255,255,.4)"></span>
+                    </div>
+                    <a href="#" class="btn-white">Klaim Promo</a>
+                </div>
             </div>
-        </div>
-    </section>
+        </section>
+    @endif
 
     {{-- Katalog --}}
     <section>
@@ -174,4 +210,16 @@
         </div>
     </div>
 </div>
+
+@if ($loginBanner)
+    <x-ui.banner-popup
+        id="modalLoginBanner"
+        :image="$loginBanner->imageUrl()"
+        :title="$loginBanner->title"
+        :body="$loginBanner->body"
+        :link="$loginBanner->link"
+        :cta-label="$loginBanner->cta_label"
+        data-modal-auto
+    />
+@endif
 @endsection

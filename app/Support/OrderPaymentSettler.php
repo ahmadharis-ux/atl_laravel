@@ -46,6 +46,10 @@ final class OrderPaymentSettler
 
         $order->refresh();
 
+        if ($order->status === OrderStatus::Success) {
+            OrderNotifier::success($order);
+        }
+
         OrderFulfillment::start($order);
 
         return true;

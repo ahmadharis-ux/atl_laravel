@@ -44,10 +44,10 @@
             @if ($isQris && $qrUrl)
                 <div class="d-flex flex-column align-items-center gap-2 text-center">
                     <img src="{{ $qrUrl }}" alt="QRIS" class="r-sm bg-white p-2" style="width:220px;height:220px;object-fit:contain">
-                    <div class="num fw-bold fs-4 tx-tealc">Rp {{ number_format($deposit->amount, 0, ',', '.') }}</div>
+                    <div class="num fw-bold fs-4 tx-tealt">Rp {{ number_format($deposit->amount, 0, ',', '.') }}</div>
                     <p class="fs-12 tx-mute m-0">Pindai kode QR di atas dengan aplikasi pembayaran apa pun.</p>
                     @if ($deposit->expires_at)
-                        <p class="fs-12 tx-skyd m-0">Berlaku sampai {{ $deposit->expires_at->locale('id')->translatedFormat('d M Y, H:i') }}.</p>
+                        <p class="fs-12 tx-mute m-0">Berlaku sampai {{ $deposit->expires_at->locale('id')->translatedFormat('d M Y, H:i') }}.</p>
                     @endif
                 </div>
             @elseif ($masterBank)
@@ -70,11 +70,11 @@
                         </li>
                     <li class="d-flex align-items-center justify-content-between pt-2 border-top">
                         <span class="fw-bold">Jumlah transfer</span>
-                        <span class="num fw-bold tx-tealc">Rp {{ number_format($deposit->amount, 0, ',', '.') }}</span>
+                        <span class="num fw-bold tx-tealt">Rp {{ number_format($deposit->amount, 0, ',', '.') }}</span>
                     </li>
                 </ul>
                     @if ($deposit->expires_at)
-                        <p class="fs-12 tx-skyd m-0">Transfer sebelum {{ $deposit->expires_at->locale('id')->translatedFormat('d M Y, H:i') }}.</p>
+                        <p class="fs-12 tx-mute m-0">Transfer sebelum {{ $deposit->expires_at->locale('id')->translatedFormat('d M Y, H:i') }}.</p>
                     @endif
                 </div>
             @else
@@ -85,9 +85,9 @@
                             <span class="ms" style="font-size:64px">qr_code_2</span>
                         </div>
                     @endif
-                    <div class="num fw-bold fs-4 tx-tealc">{{ $deposit->payment_code }}</div>
+                    <div class="num fw-bold fs-4 tx-tealt">{{ $deposit->payment_code }}</div>
                     <p class="fs-12 tx-mute m-0">{{ $method?->label() }}@if ($channelLabel) &middot; {{ $channelLabel }}@endif</p>
-                    <p class="fs-12 tx-skyd m-0">Bayar tepat <b>Rp {{ number_format($deposit->amount, 0, ',', '.') }}</b>@if ($deposit->expires_at) sebelum {{ $deposit->expires_at->locale('id')->translatedFormat('d M Y, H:i') }}@endif.</p>
+                    <p class="fs-12 tx-mute m-0">Bayar tepat <b>Rp {{ number_format($deposit->amount, 0, ',', '.') }}</b>@if ($deposit->expires_at) sebelum {{ $deposit->expires_at->locale('id')->translatedFormat('d M Y, H:i') }}@endif.</p>
                 </div>
             @endif
         </x-ui.card>
@@ -97,7 +97,7 @@
                 <div class="d-flex flex-column gap-3">
                     <p class="fs-12 tx-mute m-0">
                         Salin nilai di bawah untuk uji di
-                        <a href="https://simulator.sandbox.midtrans.com/v2/qris/index" target="_blank" rel="noopener" class="tx-skyd fw-semibold">QRIS Simulator</a>.
+                        <a href="https://simulator.sandbox.midtrans.com/v2/qris/index" target="_blank" rel="noopener" class="tx-mute fw-semibold">QRIS Simulator</a>.
                     </p>
                     <x-ui.input name="test_order_id" label="Order ID" :value="$deposit->reference" readonly />
                     @if ($qrUrl)
@@ -132,7 +132,7 @@
         <x-ui.card>
             <div class="d-flex flex-column align-items-center gap-2 text-center">
                 <span class="ibox ibox-48 bg-mint-l tx-mintt"><span class="ms">check_circle</span></span>
-                <div class="num fw-bold fs-4 tx-tealc">+ Rp {{ number_format($deposit->amount, 0, ',', '.') }}</div>
+                <div class="num fw-bold fs-4 tx-tealt">+ Rp {{ number_format($deposit->amount, 0, ',', '.') }}</div>
                 <p class="fs-13 tx-mute m-0">Top up berhasil. Saldo kamu sudah bertambah.</p>
                 <a href="{{ route('saldo.index') }}" class="btn-ap btn-mint justify-content-center">Lihat Saldo</a>
             </div>
@@ -175,7 +175,7 @@
             @endif
             <li class="d-flex align-items-center justify-content-between pt-2 border-top">
                 <span class="fw-bold">Total</span>
-                <span class="num fw-bold tx-tealc">Rp {{ number_format($deposit->amount, 0, ',', '.') }}</span>
+                <span class="num fw-bold tx-tealt">Rp {{ number_format($deposit->amount, 0, ',', '.') }}</span>
             </li>
         </ul>
     </x-ui.card>

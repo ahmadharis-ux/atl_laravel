@@ -38,7 +38,7 @@
                             @foreach ($presets as $preset)
                                 <button
                                     type="button"
-                                    class="pill bg-tealc-m tx-tealt fw-semibold"
+                                    class="amt-chip"
                                     data-amount-set="{{ $preset }}"
                                     data-amount-target="#amount"
                                 >Rp {{ number_format($preset, 0, ',', '.') }}</button>
@@ -92,7 +92,7 @@
                 </x-ui.card>
 
                 <div class="d-flex gap-2">
-                    <a href="{{ route('saldo.index') }}" class="btn-ap btn-glass flex-fill justify-content-center">Batal</a>
+                    <a href="{{ route('saldo.index') }}" class="btn-ap btn-err flex-fill justify-content-center">Batal</a>
                     <button type="submit" class="btn-ap btn-mint flex-fill justify-content-center"><span class="ms align-middle me-1">add</span>Top Up</button>
                 </div>
             </form>
@@ -115,7 +115,10 @@
                     </ul>
                 </x-ui.card>
 
-                <span class="fs-12 tx-skyd" style="opacity:.85">Saldo hanya bisa dipakai untuk transaksi di Atlantic Pedia Tab (tidak dapat ditarik tunai).</span>
+                <div class="alert-ap r-sm bg-tealc-m tx-tealt d-flex align-items-start gap-2 px-3 py-2">
+                    <span class="ms ms-sm">info</span>
+                    <span class="fs-12 fw-semibold">Saldo hanya bisa dipakai untuk transaksi di Atlantic Pedia Tab (tidak dapat ditarik tunai).</span>
+                </div>
             </div>
         </div>
     </div>

@@ -15,7 +15,13 @@ class FetchBrandLogosTest extends TestCase
 
     private function png(): string
     {
-        return (string) base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==');
+        $image = imagecreatetruecolor(8, 8);
+        ob_start();
+        imagepng($image);
+        $bytes = (string) ob_get_clean();
+        imagedestroy($image);
+
+        return $bytes;
     }
 
     protected function setUp(): void
@@ -39,8 +45,8 @@ class FetchBrandLogosTest extends TestCase
 
         $this->artisan('brands:fetch-logos')->assertSuccessful();
 
-        $this->assertSame('telkomsel.png', $brand->fresh()->logo);
-        Storage::disk('brands')->assertExists('telkomsel.png');
+        $this->assertSame('telkomsel.webp', $brand->fresh()->logo);
+        Storage::disk('brands')->assertExists('telkomsel.webp');
 
         Http::assertNotSent(fn ($request) => str_contains($request->url(), 'autocomplete.clearbit.com'));
     }
@@ -63,8 +69,8 @@ class FetchBrandLogosTest extends TestCase
 
         $this->artisan('brands:fetch-logos')->assertSuccessful();
 
-        $this->assertSame('acme-corp.png', $brand->fresh()->logo);
-        Storage::disk('brands')->assertExists('acme-corp.png');
+        $this->assertSame('acme-corp.webp', $brand->fresh()->logo);
+        Storage::disk('brands')->assertExists('acme-corp.webp');
     }
 
     public function test_a_brand_without_a_confident_match_is_skipped(): void
@@ -110,7 +116,7 @@ class FetchBrandLogosTest extends TestCase
             File::deleteDirectory($directory);
         }
 
-        $this->assertSame('telkomsel.png', $brand->fresh()->logo);
-        Storage::disk('brands')->assertExists('telkomsel.png');
+        $this->assertSame('telkomsel.webp', $brand->fresh()->logo);
+        Storage::disk('brands')->assertExists('telkomsel.webp');
     }
 }

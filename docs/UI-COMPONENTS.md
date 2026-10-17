@@ -318,6 +318,28 @@ Aturan:
 - **Konfirmasi aksi apapun** (termasuk aksi di `x-ui.actions`) cukup tambah `data-confirm` pada tombol/link — modal konfirmasi muncul otomatis.
 - Programatik: `AP.openModal('id')`, `AP.closeModal('id')`, `AP.confirm({ message, title, okLabel, danger }, callback)`.
 
+#### Banner Popup
+
+Overlay **transparan** (tanpa kotak modal dan tanpa backdrop gelap) yang hanya menampilkan banner — dipakai untuk banner promo setelah login. Bila ada gambar, hanya gambar yang tampil (klik gambar membuka `link`); tanpa gambar, tampil kartu berisi judul/isi/tombol.
+
+```blade
+<x-ui.banner-popup
+    id="modalBanner"
+    :image="asset('assets/images/promo.png')"
+    title="Promo Spesial"
+    body="Keterangan singkat."
+    :link="route('products.index')"
+    cta-label="Klaim"
+    data-modal-auto {{-- opsional: buka otomatis saat halaman dimuat --}}
+/>
+```
+
+- `id`, `image`, `title`, `body`, `link`, `cta-label`. Atribut lain (mis. `data-modal-auto`) diteruskan ke elemen root dan tetap dikendalikan `initModals()` (`data-modal-open`/`data-modal-close`/ESC).
+
+#### Banner Dashboard (kartu promo)
+
+Bila banner dashboard punya gambar, gambar menutupi penuh kartu `.promo` (`object-fit: cover`) dan **hanya tombol CTA** yang ditampilkan di atasnya; tanpa gambar dipakai tata letak teks biasa. Kelas bantu ada di `components.css`: `.promo-img`, `.promo-img-el`, `.promo-img-cta`.
+
 ### Chart
 
 ```blade
@@ -356,6 +378,12 @@ Komponen pill memakai kelas dari `atlantic.css`:
 <span class="pill bg-gold tx-gold">Pending</span>
 <span class="pill bg-errc-l tx-err">Nonaktif</span>
 <span class="pill bg-tealc-m tx-tealt">Admin</span>
+```
+
+**Shortcut nominal (chip yang dapat diklik)** — dipakai untuk preset top up. Bukan badge pasif, tetapi tombol: gaya ada di `components.css` (`.amt-chip`) dan dipasangkan dengan `data-amount-set` + `data-amount-target` (lihat `x-ui.currency-input`).
+
+```blade
+<button type="button" class="amt-chip" data-amount-set="50000" data-amount-target="#amount">Rp 50.000</button>
 ```
 
 ### Empty State

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\LoginBanner;
 use App\Models\User;
 use App\Support\Roles;
 use Illuminate\Http\RedirectResponse;
@@ -40,6 +41,10 @@ class AuthController extends Controller
 
         Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();
+
+        if (! $user->can('dashboard.view') && LoginBanner::query()->active()->exists()) {
+            $request->session()->flash('show_login_banner', true);
+        }
 
         return redirect()->intended($this->homePath($user));
     }

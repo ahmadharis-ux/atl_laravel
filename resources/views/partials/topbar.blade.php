@@ -13,6 +13,8 @@
     if ($pageTitle === '') {
         $pageTitle = 'Beranda';
     }
+
+    $unreadNotifications = auth()->user()?->unreadNotifications()->count() ?? 0;
 @endphp
 
 {{-- Header desktop --}}
@@ -31,23 +33,38 @@
         @endif
     </div>
     <div class="d-flex align-items-center gap-3 flex-shrink-0">
-        <button class="sq" aria-label="Notifikasi">
-            <span class="ms">notifications</span>
-            <span class="dot" style="top:.5rem;right:.5rem;background:var(--err)"></span>
-        </button>
+        <div class="notif" data-notif data-notif-url="{{ route('notifications.index') }}" data-notif-interval="15000" data-notif-user="{{ auth()->id() }}">
+            <button class="sq" type="button" aria-label="Notifikasi" data-notif-toggle>
+                <span class="ms">notifications</span>
+                <span class="dot" data-notif-dot style="top:.5rem;right:.5rem;background:var(--err)" @if ($unreadNotifications === 0) hidden @endif></span>
+            </button>
+            <div class="notif-pop" data-notif-pop hidden>
+                <div class="notif-head">
+                    <span class="fw-bold">Notifikasi</span>
+                    <form method="POST" action="{{ route('notifications.read-all') }}" class="m-0">
+                        @csrf
+                        <button type="submit" class="notif-link">Tandai semua dibaca</button>
+                    </form>
+                </div>
+                <div class="notif-list" data-notif-list>
+                    <div class="notif-empty">Memuat…</div>
+                </div>
+                <a href="{{ route('notifications.index') }}" class="notif-foot">Semua notifikasi</a>
+            </div>
+        </div>
         <form action="{{ route('logout') }}" method="POST" class="d-flex m-0">
             @csrf
             <button type="submit" class="sq" aria-label="Keluar" title="Keluar">
                 <span class="ms">logout</span>
             </button>
         </form>
-        <div class="ibox bg-deep rounded-circle" style="width:2rem;height:2rem"><span class="ms ms-md text-white">person</span></div>
+        <a href="{{ route('settings.index') }}" class="ibox bg-deep rounded-circle" style="width:2rem;height:2rem" aria-label="Pengaturan akun" title="Pengaturan"><span class="ms ms-md text-white">person</span></a>
     </div>
 </header>
 
 {{-- Header mobile --}}
 <header class="d-flex d-lg-none align-items-center gap-3 px-3 pt-3 pb-2">
-    <div class="ibox bg-deep rounded-circle" style="width:2rem;height:2rem"><span class="ms ms-md text-white">person</span></div>
+    <a href="{{ route('settings.index') }}" class="ibox bg-deep rounded-circle" style="width:2rem;height:2rem" aria-label="Pengaturan akun" title="Pengaturan"><span class="ms ms-md text-white">person</span></a>
     <div class="d-flex align-items-center gap-3 min-w-0">
         @hasSection('breadcrumb')
             @yield('breadcrumb')
@@ -58,9 +75,15 @@
         @endif
     </div>
     <div class="d-flex align-items-center gap-3 flex-shrink-0 ms-auto">
-        <button class="sq rounded-circle shadow-sm flex-shrink-0" style="width:2.75rem;height:2.75rem" aria-label="Notifikasi">
+        <a href="{{ route('notifications.index') }}" class="sq rounded-circle shadow-sm flex-shrink-0 position-relative" style="width:2.75rem;height:2.75rem" aria-label="Notifikasi">
             <span class="ms">notifications</span>
-            <span class="dot bg-mintt" style="top:.65rem;right:.8rem"></span>
-        </button>
+            <span class="dot bg-mintt" data-notif-dot style="top:.65rem;right:.8rem" @if ($unreadNotifications === 0) hidden @endif></span>
+        </a>
+        <form action="{{ route('logout') }}" method="POST" class="d-flex m-0">
+            @csrf
+            <button type="submit" class="sq rounded-circle shadow-sm flex-shrink-0" style="width:2.75rem;height:2.75rem" aria-label="Keluar" title="Keluar">
+                <span class="ms">logout</span>
+            </button>
+        </form>
     </div>
 </header>

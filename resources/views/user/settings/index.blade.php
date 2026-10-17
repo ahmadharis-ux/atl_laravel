@@ -19,6 +19,7 @@
             ['label' => 'Ubah Kata Sandi', 'desc' => 'Perbarui kata sandi akun', 'icon' => 'lock', 'tone' => 'bg-tealc-m tx-tealt', 'url' => route('settings.password')],
             ['label' => 'Autentikasi Dua Faktor', 'desc' => 'Keamanan tambahan akun', 'icon' => 'verified_user', 'tone' => 'bg-gold tx-gold', 'url' => route('settings.two-factor')],
             ['label' => 'Perangkat Aktif', 'desc' => 'Kelola sesi login', 'icon' => 'devices', 'tone' => 'bg-errc-l tx-err', 'url' => route('settings.sessions')],
+            ['label' => 'Notifikasi', 'desc' => 'Push notifikasi perangkat', 'icon' => 'notifications', 'tone' => 'bg-sky-l tx-navy', 'url' => route('settings.notifications')],
         ];
     @endphp
 
