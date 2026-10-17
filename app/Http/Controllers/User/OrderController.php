@@ -13,6 +13,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Throwable;
 
 class OrderController extends Controller
@@ -94,13 +95,12 @@ class OrderController extends Controller
     }
 
     /**
-     * Tarik status pembayaran QRIS terkini dari Midtrans (khusus lingkungan
-     * pengembangan, karena webhook tidak menjangkau server lokal).
+     * Tarik status pembayaran QRIS terkini dari Midtrans. Dipakai tombol
+     * "Cek Status" saat webhook belum/terlambat menjangkau server.
      */
     public function sync(Request $request, Order $order, MidtransService $midtrans): RedirectResponse
     {
         abort_unless($order->user_id === $request->user()->getKey(), 403);
-        abort_if(config('midtrans.is_production'), 404);
 
         if ($order->payment_method !== PaymentMethod::Qris) {
             return redirect()->route('orders.show', $order);
@@ -127,5 +127,23 @@ class OrderController extends Controller
         };
 
         return redirect()->route('orders.show', $order)->with('status', $message);
+    }
+
+    /**
+     * Unduh gambar QRIS pesanan sebagai berkas agar dapat disimpan pengguna.
+     */
+    public function downloadQris(Request $request, Order $order, MidtransService $midtrans): Response
+    {
+        abort_unless($order->user_id === $request->user()->getKey(), 403);
+
+        $url = data_get($order->metadata, 'midtrans.qr_url');
+        $image = $midtrans->fetchQrImage(is_string($url) ? $url : null);
+
+        abort_if($image === null, 404, 'Gambar QRIS tidak tersedia.');
+
+        return response($image, 200, [
+            'Content-Type' => 'image/png',
+            'Content-Disposition' => 'attachment; filename="qris-'.$order->order_number.'.png"',
+        ]);
     }
 }

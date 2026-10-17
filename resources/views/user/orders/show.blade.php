@@ -55,6 +55,23 @@
                 <div class="num fw-bold fs-4 tx-tealc">{{ $order->payment_code }}</div>
                 <p class="fs-12 tx-mute m-0">{{ $method?->label() }}@if ($channelLabel) &middot; {{ $channelLabel }}@endif</p>
                 <p class="fs-12 tx-mute m-0">Bayar tepat <b class="tx-tealt">Rp {{ number_format($order->amount, 0, ',', '.') }}</b>. Status pesanan akan otomatis diperbarui setelah pembayaran diterima.</p>
+
+                @if ($method === \App\Enums\PaymentMethod::Qris)
+                    <div class="d-flex flex-wrap gap-2 justify-content-center w-100 mt-1">
+                        @if ($qrUrl)
+                            <a href="{{ route('orders.qris', $order) }}" class="btn-ap btn-ap-outline flex-fill" style="min-width:9rem">
+                                <span class="ms ms-sm align-middle me-1">download</span>Unduh QRIS
+                            </a>
+                        @endif
+                        <form method="POST" action="{{ route('orders.sync', $order) }}" class="d-flex flex-fill m-0" style="min-width:9rem">
+                            @csrf
+                            <button type="submit" class="btn-ap btn-mint flex-fill justify-content-center w-100">
+                                <span class="ms ms-sm align-middle me-1">refresh</span>Cek Status
+                            </button>
+                        </form>
+                    </div>
+                    <p class="fs-11 tx-mute m-0 mt-1">Sudah membayar? Tekan "Cek Status" untuk memperbarui pembayaran secara manual.</p>
+                @endif
             </div>
         </x-ui.card>
     @endif

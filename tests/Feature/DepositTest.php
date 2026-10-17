@@ -10,6 +10,7 @@ use App\Models\Deposit;
 use App\Models\MasterBank;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class DepositTest extends TestCase
@@ -113,6 +114,100 @@ class DepositTest extends TestCase
             ->assertDontSee('Data Testing (Sandbox Midtrans)')
             ->assertDontSee('00020101021226610014ID.CO.QRIS.WWW', false)
             ->assertDontSee('simulator.sandbox.midtrans.com/v2/qris/index', false);
+    }
+
+    public function test_deposit_show_offers_qris_download_and_status_buttons(): void
+    {
+        $user = User::factory()->create();
+        $deposit = Deposit::factory()->create([
+            'user_id' => $user->getKey(),
+            'payment_method' => PaymentMethod::Qris,
+            'status' => DepositStatus::Pending,
+            'metadata' => ['midtrans' => ['qr_url' => 'https://api.sandbox.midtrans.com/v2/qris/qr.png']],
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('deposits.show', $deposit))
+            ->assertOk()
+            ->assertSee(route('deposits.qris', $deposit), false)
+            ->assertSee(route('deposits.sync', $deposit), false)
+            ->assertSee('Unduh QRIS')
+            ->assertSee('Cek Status');
+    }
+
+    public function test_deposit_qris_can_be_downloaded(): void
+    {
+        Http::fake(['*' => Http::response('PNG-BYTES', 200, ['Content-Type' => 'image/png'])]);
+
+        $user = User::factory()->create();
+        $deposit = Deposit::factory()->create([
+            'user_id' => $user->getKey(),
+            'payment_method' => PaymentMethod::Qris,
+            'status' => DepositStatus::Pending,
+            'metadata' => ['midtrans' => ['qr_url' => 'https://api.sandbox.midtrans.com/v2/qris/qr.png']],
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('deposits.qris', $deposit))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'image/png')
+            ->assertHeader('Content-Disposition', 'attachment; filename="qris-'.$deposit->reference.'.png"')
+            ->assertContent('PNG-BYTES');
+    }
+
+    public function test_deposit_qris_download_returns_404_without_qr_url(): void
+    {
+        $user = User::factory()->create();
+        $deposit = Deposit::factory()->create([
+            'user_id' => $user->getKey(),
+            'payment_method' => PaymentMethod::Qris,
+            'status' => DepositStatus::Pending,
+            'metadata' => null,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('deposits.qris', $deposit))
+            ->assertNotFound();
+    }
+
+    public function test_deposit_qris_download_requires_ownership(): void
+    {
+        $deposit = Deposit::factory()->create([
+            'payment_method' => PaymentMethod::Qris,
+            'metadata' => ['midtrans' => ['qr_url' => 'https://api.sandbox.midtrans.com/v2/qris/qr.png']],
+        ]);
+
+        $this->actingAs(User::factory()->create())
+            ->get(route('deposits.qris', $deposit))
+            ->assertForbidden();
+    }
+
+    public function test_deposit_sync_redirects_with_status_message(): void
+    {
+        $user = User::factory()->create();
+        $deposit = Deposit::factory()->create([
+            'user_id' => $user->getKey(),
+            'payment_method' => PaymentMethod::Qris,
+            'status' => DepositStatus::Pending,
+            'metadata' => ['midtrans' => ['qr_url' => 'https://api.sandbox.midtrans.com/v2/qris/qr.png']],
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('deposits.sync', $deposit))
+            ->assertRedirect(route('deposits.show', $deposit))
+            ->assertSessionHas('status', 'Status tidak dapat diambil dari Midtrans.');
+    }
+
+    public function test_deposit_sync_requires_ownership(): void
+    {
+        $deposit = Deposit::factory()->create([
+            'payment_method' => PaymentMethod::Qris,
+            'status' => DepositStatus::Pending,
+        ]);
+
+        $this->actingAs(User::factory()->create())
+            ->post(route('deposits.sync', $deposit))
+            ->assertForbidden();
     }
 
     public function test_top_up_history_lists_all_deposits_for_the_user(): void

@@ -139,7 +139,7 @@ class MidtransOrderTest extends TestCase
         $this->assertNull($service->chargeOrderQris($order));
     }
 
-    public function test_sync_status_route_is_hidden_in_production(): void
+    public function test_sync_status_route_is_available_in_production(): void
     {
         config()->set('midtrans.is_production', true);
 
@@ -150,7 +150,76 @@ class MidtransOrderTest extends TestCase
 
         $this->actingAs($order->user)
             ->post(route('orders.sync', $order))
+            ->assertRedirect(route('orders.show', $order))
+            ->assertSessionHas('status', 'Status tidak dapat diambil dari Midtrans.');
+    }
+
+    public function test_order_show_offers_qris_download_and_status_buttons(): void
+    {
+        $this->configureMidtrans();
+
+        $user = User::factory()->create();
+        $order = Order::factory()->create([
+            'user_id' => $user->getKey(),
+            'payment_method' => PaymentMethod::Qris,
+            'status' => OrderStatus::Pending,
+            'metadata' => ['midtrans' => ['qr_url' => 'https://api.sandbox.midtrans.com/v2/qris/qr.png']],
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('orders.show', $order))
+            ->assertOk()
+            ->assertSee(route('orders.qris', $order), false)
+            ->assertSee(route('orders.sync', $order), false)
+            ->assertSee('Unduh QRIS')
+            ->assertSee('Cek Status');
+    }
+
+    public function test_order_qris_can_be_downloaded(): void
+    {
+        Http::fake(['*' => Http::response('PNG-BYTES', 200, ['Content-Type' => 'image/png'])]);
+
+        $user = User::factory()->create();
+        $order = Order::factory()->create([
+            'user_id' => $user->getKey(),
+            'payment_method' => PaymentMethod::Qris,
+            'status' => OrderStatus::Pending,
+            'metadata' => ['midtrans' => ['qr_url' => 'https://api.sandbox.midtrans.com/v2/qris/qr.png']],
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('orders.qris', $order))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'image/png')
+            ->assertHeader('Content-Disposition', 'attachment; filename="qris-'.$order->order_number.'.png"')
+            ->assertContent('PNG-BYTES');
+    }
+
+    public function test_order_qris_download_returns_404_without_qr_url(): void
+    {
+        $user = User::factory()->create();
+        $order = Order::factory()->create([
+            'user_id' => $user->getKey(),
+            'payment_method' => PaymentMethod::Qris,
+            'status' => OrderStatus::Pending,
+            'metadata' => null,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('orders.qris', $order))
             ->assertNotFound();
+    }
+
+    public function test_order_qris_download_requires_ownership(): void
+    {
+        $order = Order::factory()->create([
+            'payment_method' => PaymentMethod::Qris,
+            'metadata' => ['midtrans' => ['qr_url' => 'https://api.sandbox.midtrans.com/v2/qris/qr.png']],
+        ]);
+
+        $this->actingAs(User::factory()->create())
+            ->get(route('orders.qris', $order))
+            ->assertForbidden();
     }
 
     public function test_sync_status_returns_null_when_not_configured(): void

@@ -100,6 +100,11 @@
             <span class="fs-12 fw-semibold text-white text-truncate">{{ $auth?->name ?? 'Admin' }}</span>
             <span class="fs-11 fw-bold tx-tealc text-truncate">{{ $auth?->roleLabel() ?? 'Administrator' }}</span>
         </div>
-        <span class="ms ms-md tx-skyd">verified</span>
+        <form action="{{ route('logout') }}" method="POST" class="d-flex m-0">
+            @csrf
+            <button type="submit" class="side-logout" aria-label="Keluar" title="Keluar">
+                <span class="ms ms-md">logout</span>
+            </button>
+        </form>
     </div>
 </aside>
