@@ -127,6 +127,83 @@ class ProductBrandPageTest extends TestCase
             ->assertJsonStructure(['rows', 'footer']);
     }
 
+    public function test_brand_page_provides_product_search(): void
+    {
+        $user = $this->user();
+        $brand = Brand::factory()->create();
+        Product::factory()->create(['brand_id' => $brand->getKey(), 'name' => 'Diamonds 100', 'status' => true]);
+
+        $this->actingAs($user)
+            ->get(route('products.brand', $brand))
+            ->assertOk()
+            ->assertSee('Cari produk')
+            ->assertSee('name="q"', false)
+            ->assertSee('data-ajax-maybe', false);
+    }
+
+    public function test_brand_page_searches_products_by_name(): void
+    {
+        $user = $this->user();
+        $brand = Brand::factory()->create();
+        Product::factory()->create(['brand_id' => $brand->getKey(), 'name' => 'Diamonds 100', 'status' => true]);
+        Product::factory()->create(['brand_id' => $brand->getKey(), 'name' => 'Weekly Pass', 'status' => true]);
+
+        $this->actingAs($user)
+            ->get(route('products.brand', $brand).'?q=Diamonds')
+            ->assertOk()
+            ->assertSee('Diamonds 100')
+            ->assertDontSee('Weekly Pass');
+    }
+
+    public function test_brand_page_searches_products_by_code(): void
+    {
+        $user = $this->user();
+        $brand = Brand::factory()->create();
+        Product::factory()->create(['brand_id' => $brand->getKey(), 'name' => 'Diamonds 100', 'code' => 'ML-100', 'status' => true]);
+        Product::factory()->create(['brand_id' => $brand->getKey(), 'name' => 'Weekly Pass', 'code' => 'ML-WP', 'status' => true]);
+
+        $this->actingAs($user)
+            ->get(route('products.brand', $brand).'?q=ML-100')
+            ->assertOk()
+            ->assertSee('Diamonds 100')
+            ->assertDontSee('Weekly Pass');
+    }
+
+    public function test_brand_page_filter_uses_modal_like_product_index(): void
+    {
+        $user = $this->user();
+        $brand = Brand::factory()->create();
+        Product::factory()->create([
+            'brand_id' => $brand->getKey(),
+            'name' => 'Diamonds 100',
+            'status' => true,
+            'region' => 'Malaysia',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('products.brand', $brand))
+            ->assertOk()
+            ->assertSee('data-modal-open="modalFilter"', false)
+            ->assertSeeInOrder(['id="modalFilter"', 'name="region"', 'name="category"', 'name="min_price"', 'name="max_price"'], false);
+    }
+
+    public function test_brand_page_filters_by_category(): void
+    {
+        $user = $this->user();
+        $brand = Brand::factory()->create();
+        $games = Category::factory()->create(['name' => 'Games']);
+        $voucher = Category::factory()->create(['name' => 'Voucher']);
+
+        Product::factory()->create(['brand_id' => $brand->getKey(), 'category_id' => $games->getKey(), 'name' => 'Diamonds Game', 'status' => true]);
+        Product::factory()->create(['brand_id' => $brand->getKey(), 'category_id' => $voucher->getKey(), 'name' => 'Voucher Nonton', 'status' => true]);
+
+        $this->actingAs($user)
+            ->get(route('products.brand', $brand).'?category='.$games->getKey())
+            ->assertOk()
+            ->assertSee('Diamonds Game')
+            ->assertDontSee('Voucher Nonton');
+    }
+
     public function test_product_tab_is_the_default_and_hides_the_brand_directory(): void
     {
         $user = $this->user();

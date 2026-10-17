@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\SearchHistory;
 use App\Support\GameNickname;
 use App\Support\ProductFilters;
+use App\Support\ProductRegion;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -123,31 +124,47 @@ class ProductController extends Controller
 
     public function brand(Request $request, Brand $brand): View|JsonResponse
     {
+        $rawTerm = $request->query('q');
+        $term = is_string($rawTerm) ? trim($rawTerm) : '';
+        $searching = $term !== '';
+
         $selectedRegion = (string) $request->input('region', '');
+        $selectedCategory = $request->filled('category') ? $request->integer('category') : null;
         $minPrice = ProductFilters::priceBound($request, 'min_price');
         $maxPrice = ProductFilters::priceBound($request, 'max_price');
 
-        $regions = Product::query()
-            ->where('brand_id', $brand->getKey())
-            ->where('status', true)
-            ->forCatalog()
-            ->whereNotNull('region')
-            ->orderBy('region')
-            ->pluck('region')
-            ->unique()
-            ->values();
-
-        $query = Product::query()
-            ->with('category')
+        $base = Product::query()
             ->where('brand_id', $brand->getKey())
             ->where('status', true)
             ->forCatalog();
 
-        if ($selectedRegion !== '') {
-            $query->where('region', $selectedRegion);
-        }
+        $regionOptions = (clone $base)
+            ->whereNotNull('region')
+            ->orderBy('region')
+            ->pluck('region')
+            ->unique()
+            ->mapWithKeys(fn (string $region): array => [$region => ProductRegion::label($region)])
+            ->all();
 
-        $products = $query
+        $categoryOptions = Category::query()
+            ->whereHas('products', fn ($query) => $query
+                ->where('brand_id', $brand->getKey())
+                ->where('status', true)
+                ->forCatalog())
+            ->orderBy('name')
+            ->pluck('name', 'id');
+
+        $products = (clone $base)
+            ->with('category')
+            ->when($selectedRegion !== '', fn ($query) => $query->where('region', $selectedRegion))
+            ->when($selectedCategory !== null, fn ($query) => $query->where('category_id', $selectedCategory))
+            ->when($searching, function ($query) use ($term): void {
+                $like = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $term).'%';
+                $query->where(function ($sub) use ($like): void {
+                    $sub->where('name', 'like', $like)
+                        ->orWhere('code', 'like', $like);
+                });
+            })
             ->priceBetween($minPrice, $maxPrice)
             ->orderBy('sort_order')
             ->orderBy('name')
@@ -157,10 +174,11 @@ class ProductController extends Controller
         $data = [
             'brand' => $brand,
             'products' => $products,
-            'regions' => $regions,
+            'regionOptions' => $regionOptions,
+            'categoryOptions' => $categoryOptions,
             'selectedRegion' => $selectedRegion,
-            'searching' => false,
-            'term' => '',
+            'searching' => $searching,
+            'term' => $term,
             'requiresZone' => GameNickname::requiresZone((string) $brand->slug),
             'canValidateNickname' => GameNickname::supports((string) $brand->slug),
         ];
