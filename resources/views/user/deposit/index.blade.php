@@ -20,6 +20,7 @@
                 @php($method = $deposit->payment_method)
                 @php($channelLabel = $deposit->masterBank?->bank_name ?? $method?->channelLabel($deposit->payment_channel))
                 @php($resumable = $deposit->status === \App\Enums\DepositStatus::Pending && ! $deposit->isExpired())
+                @php($isQris = $method === \App\Enums\PaymentMethod::Qris)
                 <li data-row-href="{{ route('deposits.show', $deposit) }}">
                     <span class="ibox ibox-44 {{ $deposit->status->tone() }}"><span class="ms" style="font-size:20px">{{ $deposit->status->icon() }}</span></span>
                     <div class="t">
@@ -32,6 +33,17 @@
                             <span class="num fw-bold">Rp {{ number_format($deposit->amount, 0, ',', '.') }}</span>
                             <span class="pill {{ $deposit->status->tone() }}">{{ $deposit->status->label() }}</span>
                         </div>
+                        @unless ($isQris)
+                            <x-ui.card title="Konfirmasi Pembayaran" class="w-100 mb-2">
+                                <div class="d-flex align-items-start gap-2">
+                                    <span class="ms tx-gold">hourglass_top</span>
+                                    <div class="d-flex flex-column gap-1">
+                                        <span class="fs-13 fw-semibold">Menunggu konfirmasi admin</span>
+                                        <span class="fs-12 tx-mute">Setelah transfer ke tujuan di atas diterima, admin akan memverifikasi dan menambahkan saldo ke akunmu.</span>
+                                    </div>
+                                </div>
+                            </x-ui.card>
+                        @endunless
                         @if ($resumable)
                             <x-ui.icon-button href="{{ route('deposits.show', $deposit) }}" icon="payments" tip="Lanjutkan bayar" />
                         @endif
