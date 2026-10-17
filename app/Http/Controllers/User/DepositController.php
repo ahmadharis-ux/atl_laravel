@@ -7,14 +7,18 @@ use App\Enums\PaymentMethod;
 use App\Http\Controllers\Controller;
 use App\Models\Deposit;
 use App\Models\MasterBank;
+use App\Models\User;
+use App\Notifications\TransactionResult;
 use App\Services\MidtransService;
 use App\Support\DepositSettler;
 use App\Support\PaymentInstruction;
+use App\Support\Roles;
 use App\Support\TransactionLogger;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -107,6 +111,16 @@ class DepositController extends Controller
             'payment_method' => $method->value,
         ], null, $request->user());
 
+        User::whereHas('roles', fn ($q) => $q->where('name', Roles::ADMIN))
+            ->get()
+            ->each(fn ($user) => $user->notify(new TransactionResult(
+                title: 'Permintaan Top Up Baru',
+                body: 'Pengguna '.$deposit->user->name.' ('.$deposit->user->email.') membuat permintaan topup Rp '.number_format($deposit->amount, 0, ',', '.').' - Ref. '.$deposit->reference,
+                level: 'info',
+                url: route('admin.topup.show', $deposit),
+                context: ['type' => 'deposit_new', 'reference' => $deposit->reference],
+            )));
+
         return redirect()
             ->route('deposits.show', $deposit)
             ->with('status', 'Instruksi top up dibuat. Selesaikan pembayaran sebelum kedaluwarsa.');
@@ -191,6 +205,59 @@ class DepositController extends Controller
         return redirect()
             ->route('deposits.show', $deposit)
             ->with('status', 'Top up '.$deposit->reference.' berhasil. Saldo kamu sudah bertambah.');
+    }
+
+    /**
+     * Tarik status pembayaran QRIS terkini dari Midtrans dan terapkan ke deposit.
+     * Dipakai tombol "Cek Status" di halaman top up.
+     */
+    public function sync(Request $request, Deposit $deposit): RedirectResponse
+    {
+        abort_unless($deposit->user_id === $request->user()->getKey(), 403);
+
+        if ($deposit->payment_method !== PaymentMethod::Qris) {
+            return redirect()->route('deposits.show', $deposit);
+        }
+
+        try {
+            $status = $this->midtrans->syncDepositStatus($deposit);
+        } catch (Throwable $e) {
+            TransactionLogger::error('deposit.failed', 'Sinkronisasi status Midtrans gagal.', $e, [
+                'reference' => $deposit->reference,
+            ], null, $request->user());
+
+            return redirect()
+                ->route('deposits.show', $deposit)
+                ->with('status', 'Gagal mengambil status dari Midtrans.');
+        }
+
+        $message = match ($status) {
+            null => 'Status tidak dapat diambil dari Midtrans.',
+            'settlement', 'capture' => 'Pembayaran '.$deposit->reference.' terverifikasi. Saldo kamu sudah bertambah.',
+            'expire' => 'Kode QRIS top up '.$deposit->reference.' sudah kedaluwarsa.',
+            'deny', 'cancel', 'failure' => 'Pembayaran top up '.$deposit->reference.' ditolak atau dibatalkan.',
+            default => 'Status pembayaran '.$deposit->reference.': '.$status.'.',
+        };
+
+        return redirect()->route('deposits.show', $deposit)->with('status', $message);
+    }
+
+    /**
+     * Unduh gambar QRIS deposit sebagai berkas agar dapat disimpan pengguna.
+     */
+    public function downloadQris(Request $request, Deposit $deposit): Response
+    {
+        abort_unless($deposit->user_id === $request->user()->getKey(), 403);
+
+        $url = data_get($deposit->metadata, 'midtrans.qr_url');
+        $image = $this->midtrans->fetchQrImage(is_string($url) ? $url : null);
+
+        abort_if($image === null, 404, 'Gambar QRIS tidak tersedia.');
+
+        return response($image, 200, [
+            'Content-Type' => 'image/png',
+            'Content-Disposition' => 'attachment; filename="qris-'.$deposit->reference.'.png"',
+        ]);
     }
 
     /**

@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Support\DepositSettler;
 use App\Support\OrderPaymentSettler;
 use Closure;
+use Illuminate\Support\Facades\Http;
 use Midtrans\Config as MidtransConfig;
 use Midtrans\CoreApi;
 use Midtrans\Transaction;
@@ -98,11 +99,29 @@ class MidtransService
     }
 
     /**
-     * Tanyakan status transaksi terkini ke Midtrans lalu terapkan ke deposit
-     * atau order terkait. Dipakai sebagai penarik manual di lingkungan
-     * pengembangan ketika webhook tidak dapat menjangkau server lokal.
+     * Tanyakan status transaksi terkini ke Midtrans lalu terapkan ke order
+     * terkait. Dipakai saat pengguna menekan tombol "Cek Status" ketika webhook
+     * belum/terlambat menjangkau server.
      */
     public function syncOrderStatus(Order $order): ?string
+    {
+        return $this->syncStatus($order->order_number);
+    }
+
+    /**
+     * Tanyakan status transaksi terkini ke Midtrans lalu terapkan ke deposit
+     * terkait (top up saldo).
+     */
+    public function syncDepositStatus(Deposit $deposit): ?string
+    {
+        return $this->syncStatus($deposit->reference);
+    }
+
+    /**
+     * Ambil status transaksi dari Midtrans berdasarkan order_id/reference lalu
+     * terapkan ke deposit atau order terkait.
+     */
+    private function syncStatus(string $orderId): ?string
     {
         if (! $this->isConfigured()) {
             return null;
@@ -111,7 +130,7 @@ class MidtransService
         $this->boot();
 
         try {
-            $response = Transaction::status($order->order_number);
+            $response = Transaction::status($orderId);
         } catch (Throwable $e) {
             report($e);
 
@@ -125,12 +144,33 @@ class MidtransService
         }
 
         $this->applyTransactionStatus(
-            orderId: $order->order_number,
+            orderId: $orderId,
             status: $status,
             fraud: (string) ($response->fraud_status ?? ''),
         );
 
         return $status;
+    }
+
+    /**
+     * Unduh gambar QRIS dari URL Midtrans agar bisa dijadikan file oleh
+     * pengguna (menghindari batasan CORS saat diunduh dari browser).
+     */
+    public function fetchQrImage(?string $url): ?string
+    {
+        if (blank($url)) {
+            return null;
+        }
+
+        try {
+            $response = Http::timeout(20)->get($url);
+        } catch (Throwable $e) {
+            report($e);
+
+            return null;
+        }
+
+        return $response->successful() ? $response->body() : null;
     }
 
     /**

@@ -11,7 +11,6 @@
     $paid = $deposit->status === \App\Enums\DepositStatus::Paid;
     $midtrans = $deposit->metadata['midtrans'] ?? [];
     $qrUrl = $midtrans['qr_url'] ?? null;
-    $qrString = $midtrans['qr_string'] ?? null;
     $isQris = $method === \App\Enums\PaymentMethod::Qris;
     $fee = (int) $deposit->fee;
     $totalDue = $deposit->totalDue();
@@ -51,6 +50,18 @@
                     @if ($deposit->expires_at)
                         <p class="fs-12 tx-mute m-0">Berlaku sampai {{ $deposit->expires_at->locale('id')->translatedFormat('d M Y, H:i') }}.</p>
                     @endif
+                    <div class="d-flex flex-wrap gap-2 justify-content-center w-100 mt-1">
+                        <a href="{{ route('deposits.qris', $deposit) }}" class="btn-ap btn-ap-outline flex-fill" style="min-width:9rem">
+                            <span class="ms ms-sm align-middle me-1">download</span>Unduh QRIS
+                        </a>
+                        <form method="POST" action="{{ route('deposits.sync', $deposit) }}" class="d-flex flex-fill m-0" style="min-width:9rem">
+                            @csrf
+                            <button type="submit" class="btn-ap btn-mint flex-fill justify-content-center w-100">
+                                <span class="ms ms-sm align-middle me-1">refresh</span>Cek Status
+                            </button>
+                        </form>
+                    </div>
+                    {{-- <p class="fs-11 tx-mute m-0">Sudah membayar? Tekan "Cek Status" untuk memperbarui pembayaran secara manual.</p> --}}
                 </div>
             @elseif ($masterBank)
                 <div class="d-flex flex-column gap-3">
@@ -97,7 +108,7 @@
                     <p class="fs-12 tx-mute m-0">Pembayaran akan dikonfirmasi admin setelah dana diterima.</p>
                     <div class="alert-ap r-sm bg-glass d-flex align-items-start gap-2 px-3 py-2">
                         <span class="ms ms-sm tx-teal">info</span>
-                        <span class="fs-12">Bila dana yang kamu transfer kurang dari total tagihan, saldo yang ditambahkan akan menyesuaikan dana yang benar-benar diterima (setelah dikurangi biaya admin).</span>
+                        <span class="fs-12"><strong>Bila dana yang kamu transfer kurang dari total tagihan, saldo yang ditambahkan akan menyesuaikan dana yang benar-benar diterima (setelah dikurangi biaya admin).</strong></span>
                     </div>
                 </div>
             @else
@@ -111,27 +122,17 @@
                     <div class="num fw-bold fs-4 tx-tealt">{{ $deposit->payment_code }}</div>
                     <p class="fs-12 tx-mute m-0">{{ $method?->label() }}@if ($channelLabel) &middot; {{ $channelLabel }}@endif</p>
                     <p class="fs-12 tx-mute m-0">Bayar tepat <b>Rp {{ number_format($deposit->amount, 0, ',', '.') }}</b>@if ($deposit->expires_at) sebelum {{ $deposit->expires_at->locale('id')->translatedFormat('d M Y, H:i') }}@endif.</p>
+                    @if ($isQris)
+                        <form method="POST" action="{{ route('deposits.sync', $deposit) }}" class="d-flex w-100 mt-1">
+                            @csrf
+                            <button type="submit" class="btn-ap btn-mint justify-content-center w-100">
+                                <span class="ms ms-sm align-middle me-1">refresh</span>Cek Status
+                            </button>
+                        </form>
+                    @endif
                 </div>
             @endif
         </x-ui.card>
-
-        @if ($isQris && ! empty($midtrans) && ! config('midtrans.is_production'))
-            <x-ui.card title="Data Testing (Sandbox Midtrans)">
-                <div class="d-flex flex-column gap-3">
-                    <p class="fs-12 tx-mute m-0">
-                        Salin nilai di bawah untuk uji di
-                        <a href="https://simulator.sandbox.midtrans.com/v2/qris/index" target="_blank" rel="noopener" class="tx-mute fw-semibold">QRIS Simulator</a>.
-                    </p>
-                    <x-ui.input name="test_order_id" label="Order ID" :value="$deposit->reference" readonly />
-                    @if ($qrUrl)
-                        <x-ui.input name="test_qr_url" label="QR Image URL" :value="$qrUrl" readonly />
-                    @endif
-                    @if ($qrString)
-                        <x-ui.textarea name="test_qr_string" label="QR String" :value="$qrString" readonly rows="3" />
-                    @endif
-                </div>
-            </x-ui.card>
-        @endif
 
         @unless ($isQris)
             <x-ui.card title="Konfirmasi Pembayaran">

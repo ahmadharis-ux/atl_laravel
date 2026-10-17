@@ -70,6 +70,9 @@ Route::middleware(['auth', 'non-admin', 'verified'])->group(function () {
     Route::post('/saldo/topup', [UserDepositController::class, 'store'])->name('deposits.store');
     Route::get('/saldo/topup/riwayat', [UserDepositController::class, 'index'])->name('deposits.index');
     Route::get('/saldo/topup/{deposit}', [UserDepositController::class, 'show'])->name('deposits.show');
+    Route::get('/saldo/topup/{deposit}/qris', [UserDepositController::class, 'downloadQris'])->name('deposits.qris');
+    Route::post('/saldo/topup/{deposit}/cek-status', [UserDepositController::class, 'sync'])
+        ->middleware('throttle:10,1')->name('deposits.sync');
 
     if (! app()->environment('production')) {
         Route::post('/saldo/topup/{deposit}/bayar', [UserDepositController::class, 'pay'])->name('deposits.pay');
@@ -98,7 +101,9 @@ Route::middleware(['auth', 'non-admin', 'verified'])->group(function () {
     Route::get('/transaksi', [UserOrderController::class, 'index'])->name('orders.index');
     Route::get('/transaksi/{order}', [UserOrderController::class, 'show'])->name('orders.show');
     Route::post('/transaksi/{order}/bayar', [UserOrderController::class, 'pay'])->name('orders.pay');
-    Route::post('/transaksi/{order}/cek-status', [UserOrderController::class, 'sync'])->name('orders.sync');
+    Route::post('/transaksi/{order}/cek-status', [UserOrderController::class, 'sync'])
+        ->middleware('throttle:10,1')->name('orders.sync');
+    Route::get('/transaksi/{order}/qris', [UserOrderController::class, 'downloadQris'])->name('orders.qris');
     Route::get('/transaksi/{order}/invoice', [UserOrderController::class, 'invoice'])->name('orders.invoice');
 
     Route::get('/notifikasi', [NotificationController::class, 'index'])->name('notifications.index');

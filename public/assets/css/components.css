@@ -126,6 +126,8 @@
 .btn-navy:hover{background:var(--deep);color:#fff}
 .btn-soft{background:#eef6f5;color:var(--ink);border:1px solid #d3e3e1;font-weight:700;border-radius:.75rem;padding:.6rem 1rem}
 .btn-soft:hover{background:#e3f2f0}
+.btn-ap-outline{background:#fff;color:var(--tealt);border:1.5px solid #bfe6e2;font-weight:700}
+.btn-ap-outline:hover{background:#eef8f7}
 
 /* Data table */
 .table>:not(caption)>*>*{padding:.75rem .85rem}

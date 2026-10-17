@@ -157,17 +157,6 @@ body{min-height:100vh}
 .strength[data-s="2"] i:nth-child(-n+2){background:#e0a100}
 .strength[data-s="3"] i:nth-child(-n+3){background:var(--mintt)}
 .strength[data-s="4"] i{background:var(--mintt)}
-/* akun demo */
-.demo{margin-top:1.25rem;border:1px dashed #cfe0de;border-radius:.875rem;padding:.875rem;background:#f6fbfa}
-.demo-head{display:flex;align-items:center;gap:.4rem;font-weight:700;font-size:.8125rem;margin-bottom:.35rem}
-.demo-head .ms{font-size:18px;color:var(--mintt)}
-.demo-head .hint{font-weight:600;font-size:.6875rem;color:var(--mute);margin-left:auto}
-.demo-row{display:flex;align-items:center;gap:.5rem;justify-content:space-between;padding:.5rem 0;border-top:1px solid #e2efed}
-.demo-info{display:flex;flex-direction:column;min-width:0}
-.demo-role{font-weight:700;font-size:.75rem}
-.demo-cred{font-size:.6875rem;color:var(--mute);word-break:break-all}
-.demo-use{border:1px solid var(--mintt);background:#fff;color:var(--mintt);font-weight:700;font-size:.75rem;padding:.35rem .75rem;border-radius:.6rem;flex-shrink:0}
-.demo-use:hover{background:var(--mintt);color:#fff}
 </style>
 </head>
 <body>
@@ -213,17 +202,6 @@ body{min-height:100vh}
 <div class="divider">atau</div>
 <a href="{{ route('auth.google.redirect') }}" class="btn-alt">@include('partials.google-logo')Masuk dengan Google</a>
 @endif
-  <div class="demo">
-    <div class="demo-head"><span class="ms">key</span>Akun demo<span class="hint">Klik "Pakai" untuk mengisi otomatis</span></div>
-    <div class="demo-row">
-      <div class="demo-info"><span class="demo-role">User</span><span class="demo-cred">user@atlantic.test &middot; user12345</span></div>
-      <button type="button" class="demo-use" data-fill-email="user@atlantic.test" data-fill-password="user12345">Pakai</button>
-    </div>
-    <div class="demo-row">
-      <div class="demo-info"><span class="demo-role">Admin</span><span class="demo-cred">admin@atlantic.test &middot; admin123</span></div>
-      <button type="button" class="demo-use" data-fill-email="admin@atlantic.test" data-fill-password="admin123">Pakai</button>
-    </div>
-  </div>
         <p class="text-center m-0 mt-4 tx-mute">Belum punya akun? <a href="{{ route('register') }}" class="lnk">Daftar sekarang</a></p>
       </div>
     </div>
@@ -231,7 +209,6 @@ body{min-height:100vh}
 </div>
 <script>document.getElementById('yr').textContent=new Date().getFullYear();
 document.querySelectorAll('[data-toggle]').forEach(function(b){b.addEventListener('click',function(){var i=document.getElementById(b.dataset.toggle),s=i.type==='password';i.type=s?'text':'password';b.firstElementChild.textContent=s?'visibility_off':'visibility'})});
-document.querySelectorAll('[data-fill-email]').forEach(function(b){b.addEventListener('click',function(){var e=document.getElementById('email'),p=document.getElementById('password');if(e){e.value=b.dataset.fillEmail;e.dispatchEvent(new Event('input',{bubbles:true}))}if(p){p.value=b.dataset.fillPassword;p.dispatchEvent(new Event('input',{bubbles:true}))}if(e){e.focus()}})});
 </script>
 </body>
 </html>

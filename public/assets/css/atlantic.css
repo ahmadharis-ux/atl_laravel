@@ -38,6 +38,9 @@ a{text-decoration:none;color:inherit}
 .side-sub-link{display:block;padding:.45rem .75rem;border-radius:.5rem;font-size:.8rem;font-weight:600;color:var(--skyd);text-decoration:none}
 .side-sub-link:hover{background:rgba(255,255,255,.1);color:#fff}
 .side-sub-link.active{background:rgba(255,255,255,.14);color:#fff}
+.side-logout{display:flex;align-items:center;justify-content:center;width:2.25rem;height:2.25rem;flex-shrink:0;border:0;border-radius:.6rem;background:rgba(255,255,255,.1);color:#fff;transition:background .15s}
+.side-logout:hover{background:rgba(255,255,255,.22)}
+.side-logout:focus-visible{outline:2px solid var(--mint);outline-offset:1px}
 @media(min-width:992px){html.sidebar-collapsed .side-caret,html.sidebar-collapsed .side-sub{display:none}}
 .topbar{position:fixed;top:0;left:14rem;right:0;height:4rem;background:rgba(228,242,240,.88);backdrop-filter:blur(16px);box-shadow:0 1px 8px rgba(0,0,0,.04);z-index:1030;padding:0 1.5rem;transition:left .2s ease}
 .sq{width:2.5rem;height:2.5rem;border-radius:.5rem;background:#fff;border:0;display:flex;align-items:center;justify-content:center;position:relative}

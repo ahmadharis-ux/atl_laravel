@@ -12,8 +12,6 @@
     $processing = $order->status === \App\Enums\OrderStatus::Processing;
     $midtrans = $order->metadata['midtrans'] ?? [];
     $qrUrl = $midtrans['qr_url'] ?? null;
-    $qrString = $midtrans['qr_string'] ?? null;
-    $isQris = $method === \App\Enums\PaymentMethod::Qris;
 @endphp
 
 <div class="d-flex flex-column gap-3"
@@ -56,38 +54,26 @@
                 @endif
                 <div class="num fw-bold fs-4 tx-tealc">{{ $order->payment_code }}</div>
                 <p class="fs-12 tx-mute m-0">{{ $method?->label() }}@if ($channelLabel) &middot; {{ $channelLabel }}@endif</p>
-                <p class="fs-12 tx-mute m-0">Bayar tepat <b class="tx-tealt">Rp {{ number_format($order->amount, 0, ',', '.') }}</b>, lalu tekan tombol di bawah.</p>
-                <form method="POST" action="{{ route('orders.pay', $order) }}" class="w-100">
-                    @csrf
-                    <button type="submit" class="btn-ap btn-mint justify-content-center w-100">Konfirmasi Pembayaran</button>
-                </form>
+                <p class="fs-12 tx-mute m-0">Bayar tepat <b class="tx-tealt">Rp {{ number_format($order->amount, 0, ',', '.') }}</b>. Status pesanan akan otomatis diperbarui setelah pembayaran diterima.</p>
+
+                @if ($method === \App\Enums\PaymentMethod::Qris)
+                    <div class="d-flex flex-wrap gap-2 justify-content-center w-100 mt-1">
+                        @if ($qrUrl)
+                            <a href="{{ route('orders.qris', $order) }}" class="btn-ap btn-ap-outline flex-fill" style="min-width:9rem">
+                                <span class="ms ms-sm align-middle me-1">download</span>Unduh QRIS
+                            </a>
+                        @endif
+                        <form method="POST" action="{{ route('orders.sync', $order) }}" class="d-flex flex-fill m-0" style="min-width:9rem">
+                            @csrf
+                            <button type="submit" class="btn-ap btn-mint flex-fill justify-content-center w-100">
+                                <span class="ms ms-sm align-middle me-1">refresh</span>Cek Status
+                            </button>
+                        </form>
+                    </div>
+                    {{-- <p class="fs-11 tx-mute m-0 mt-1">Sudah membayar? Tekan "Cek Status" untuk memperbarui pembayaran secara manual.</p> --}}
+                @endif
             </div>
         </x-ui.card>
-
-        @if ($pending && $isQris && ! config('midtrans.is_production'))
-            <x-ui.card title="Data Testing (Sandbox Midtrans)">
-                <div class="d-flex flex-column gap-3">
-                    <p class="fs-12 tx-mute m-0">
-                        Salin nilai di bawah untuk uji di
-                        <a href="https://simulator.sandbox.midtrans.com/v2/qris/index" target="_blank" rel="noopener" class="tx-skyd fw-semibold">QRIS Simulator</a>,
-                        lalu tekan tombol cek status untuk menarik hasilnya.
-                    </p>
-                    <x-ui.input name="test_order_id" label="Order ID" :value="$order->order_number" readonly />
-                    @if ($qrUrl)
-                        <x-ui.input name="test_qr_url" label="QR Image URL" :value="$qrUrl" readonly />
-                    @endif
-                    @if ($qrString)
-                        <x-ui.textarea name="test_qr_string" label="QR String" :value="$qrString" readonly rows="3" />
-                    @endif
-                    <form method="POST" action="{{ route('orders.sync', $order) }}">
-                        @csrf
-                        <button type="submit" class="btn-ap btn-glass justify-content-center w-100">
-                            <span class="ms align-middle me-1">refresh</span>Cek Status dari Midtrans
-                        </button>
-                    </form>
-                </div>
-            </x-ui.card>
-        @endif
     @endif
 
     @if ($processing)
