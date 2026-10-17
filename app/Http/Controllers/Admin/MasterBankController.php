@@ -55,6 +55,7 @@ class MasterBankController extends Controller
             'bank_name' => $data['bank_name'],
             'account_number' => $data['account_number'],
             'account_holder' => $data['account_holder'],
+            'admin_fee' => $data['admin_fee'] ?? 0,
             'is_active' => $request->boolean('is_active'),
             'sort_order' => $data['sort_order'] ?? 0,
         ]);
@@ -71,6 +72,7 @@ class MasterBankController extends Controller
             'bank_name' => $data['bank_name'],
             'account_number' => $data['account_number'],
             'account_holder' => $data['account_holder'],
+            'admin_fee' => $data['admin_fee'] ?? 0,
             'is_active' => $request->boolean('is_active'),
             'sort_order' => $data['sort_order'] ?? 0,
         ]);
@@ -102,6 +104,7 @@ class MasterBankController extends Controller
                     ->ignore($masterBank?->getKey()),
             ],
             'account_holder' => ['required', 'string', 'max:100'],
+            'admin_fee' => ['nullable', 'integer', 'min:0', 'max:1000000'],
             'is_active' => ['nullable', 'boolean'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
         ], [

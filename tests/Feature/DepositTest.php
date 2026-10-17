@@ -39,6 +39,56 @@ class DepositTest extends TestCase
             ->assertSee('PT Atlantic Pedia');
     }
 
+    public function test_va_and_ewallet_deposit_page_waits_for_admin_confirmation(): void
+    {
+        $user = User::factory()->create();
+        $bank = MasterBank::factory()->create([
+            'type' => MasterBank::TYPE_EWALLET,
+            'bank_name' => 'DANA',
+            'account_number' => '085943133886',
+            'account_holder' => 'Ahmad Haris',
+        ]);
+
+        $deposit = Deposit::factory()->create([
+            'user_id' => $user->getKey(),
+            'payment_method' => PaymentMethod::EWallet,
+            'master_bank_id' => $bank->getKey(),
+            'status' => DepositStatus::Pending,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('deposits.show', $deposit))
+            ->assertOk()
+            ->assertSee('Menunggu konfirmasi admin')
+            ->assertSee('Pembayaran akan dikonfirmasi admin')
+            ->assertDontSee('Simulasikan Pembayaran');
+    }
+
+    public function test_va_and_ewallet_deposit_page_offers_copy_for_number_and_amount(): void
+    {
+        $user = User::factory()->create();
+        $bank = MasterBank::factory()->create([
+            'type' => MasterBank::TYPE_BANK,
+            'bank_name' => 'BCA',
+            'account_number' => '1234567890',
+            'account_holder' => 'PT Atlantic Pedia',
+        ]);
+
+        $deposit = Deposit::factory()->create([
+            'user_id' => $user->getKey(),
+            'payment_method' => PaymentMethod::VirtualAccount,
+            'master_bank_id' => $bank->getKey(),
+            'amount' => 50_000,
+            'status' => DepositStatus::Pending,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('deposits.show', $deposit))
+            ->assertOk()
+            ->assertSee('data-copy="1234567890"', false)
+            ->assertSee('data-copy="50000"', false);
+    }
+
     public function test_deposit_show_exposes_sandbox_qris_testing_data(): void
     {
         config()->set('midtrans.is_production', false);
@@ -154,6 +204,23 @@ class DepositTest extends TestCase
             ->assertSee('data-amount-set="100000"', false);
     }
 
+    public function test_top_up_page_shows_the_admin_fee_on_the_target_option(): void
+    {
+        $user = User::factory()->create();
+        MasterBank::factory()->create([
+            'type' => MasterBank::TYPE_BANK,
+            'bank_name' => 'BCA',
+            'account_number' => '1234567890',
+            'account_holder' => 'PT Atlantic Pedia',
+            'admin_fee' => 2_500,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('deposits.create'))
+            ->assertOk()
+            ->assertSee('biaya admin Rp 2.500');
+    }
+
     public function test_a_user_can_create_a_pending_top_up_without_touching_balance(): void
     {
         $user = User::factory()->create(['balance' => 0]);
@@ -227,6 +294,59 @@ class DepositTest extends TestCase
         $this->assertSame($bank->getKey(), $deposit->master_bank_id);
         $this->assertSame('BCA', $deposit->payment_channel);
         $this->assertSame('1234567890', $deposit->payment_code);
+    }
+
+    public function test_top_up_stores_the_admin_fee_from_the_selected_bank(): void
+    {
+        $user = User::factory()->create();
+        $bank = MasterBank::factory()->create([
+            'type' => MasterBank::TYPE_BANK,
+            'bank_name' => 'BCA',
+            'account_number' => '1234567890',
+            'account_holder' => 'PT Atlantic Pedia',
+            'admin_fee' => 2_500,
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('deposits.store'), [
+                'amount' => 50_000,
+                'payment_method' => PaymentMethod::VirtualAccount->value,
+                'master_bank_id' => $bank->getKey(),
+            ])
+            ->assertRedirect();
+
+        $deposit = Deposit::query()->sole();
+        $this->assertSame(2_500, $deposit->fee);
+        $this->assertSame(52_500, $deposit->totalDue());
+    }
+
+    public function test_deposit_show_displays_the_admin_fee_and_total_transfer(): void
+    {
+        $user = User::factory()->create();
+        $bank = MasterBank::factory()->create([
+            'type' => MasterBank::TYPE_EWALLET,
+            'bank_name' => 'DANA',
+            'account_number' => '085943133886',
+            'account_holder' => 'Ahmad Haris',
+            'admin_fee' => 2_500,
+        ]);
+
+        $deposit = Deposit::factory()->create([
+            'user_id' => $user->getKey(),
+            'payment_method' => PaymentMethod::EWallet,
+            'master_bank_id' => $bank->getKey(),
+            'amount' => 50_000,
+            'fee' => 2_500,
+            'status' => DepositStatus::Pending,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('deposits.show', $deposit))
+            ->assertOk()
+            ->assertSee('Biaya admin')
+            ->assertSee('Jumlah transfer')
+            ->assertSee('Rp 52.500')
+            ->assertSee('data-copy="52500"', false);
     }
 
     public function test_ewallet_rejects_a_bank_type_target(): void

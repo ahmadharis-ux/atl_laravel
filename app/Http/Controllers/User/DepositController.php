@@ -80,6 +80,7 @@ class DepositController extends Controller
                 'user_id' => $request->user()->getKey(),
                 'reference' => $this->generateReference(),
                 'amount' => $amount,
+                'fee' => $masterBank?->admin_fee ?? 0,
                 'payment_method' => $method,
                 'payment_channel' => $masterBank?->bank_name,
                 'payment_code' => $masterBank?->account_number ?? PaymentInstruction::code($method),
@@ -152,7 +153,6 @@ class DepositController extends Controller
 
         return view('user.deposit.show', [
             'deposit' => $deposit,
-            'midtransEnabled' => $this->midtrans->isConfigured(),
         ]);
     }
 

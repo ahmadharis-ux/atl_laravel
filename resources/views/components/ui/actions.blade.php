@@ -17,6 +17,9 @@
         $attrs = '';
         if ($href) {
             $attrs .= ' href="' . e($href) . '"';
+            if (! empty($a['target'])) {
+                $attrs .= ' target="' . e($a['target']) . '" rel="noopener"';
+            }
         }
         if ($modal) {
             $attrs .= ' data-modal-open="' . e($modal) . '"';

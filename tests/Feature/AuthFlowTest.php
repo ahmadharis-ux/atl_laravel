@@ -3,9 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Notifications\ResetPasswordNotification;
+use App\Notifications\VerifyEmailNotification;
 use App\Support\TwoFactorAuthentication;
-use Illuminate\Auth\Notifications\ResetPassword;
-use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
@@ -41,7 +41,7 @@ class AuthFlowTest extends TestCase
 
         $this->assertNull($user->email_verified_at);
         $this->assertAuthenticatedAs($user);
-        Notification::assertSentTo($user, VerifyEmail::class);
+        Notification::assertSentTo($user, VerifyEmailNotification::class);
     }
 
     public function test_unverified_user_is_redirected_to_the_verification_notice(): void
@@ -96,7 +96,7 @@ class AuthFlowTest extends TestCase
             ->post(route('verification.send'))
             ->assertSessionHas('status');
 
-        Notification::assertSentTo($user, VerifyEmail::class);
+        Notification::assertSentTo($user, VerifyEmailNotification::class);
     }
 
     public function test_a_password_reset_link_can_be_requested(): void
@@ -108,7 +108,7 @@ class AuthFlowTest extends TestCase
         $this->post(route('password.email'), ['email' => $user->email])
             ->assertSessionHasNoErrors();
 
-        Notification::assertSentTo($user, ResetPassword::class);
+        Notification::assertSentTo($user, ResetPasswordNotification::class);
     }
 
     public function test_a_password_can_be_reset_with_a_valid_token(): void

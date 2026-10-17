@@ -47,6 +47,7 @@
             ['label' => 'Bank'],
             ['label' => 'Nomor Rekening'],
             ['label' => 'Atas Nama'],
+            ['label' => 'Biaya Admin', 'class' => 'text-end'],
             ['label' => 'Status'],
             ['label' => 'Urutan'],
             ['label' => 'Aksi', 'class' => 'text-end'],
@@ -72,6 +73,7 @@
                 :options="\App\Models\MasterBank::nameOptions()" />
             <x-ui.input name="account_number" label="Nomor rekening" placeholder="1234567890" />
             <x-ui.input name="account_holder" label="Atas nama" placeholder="PT Atlantic Pedia" />
+            <x-ui.currency-input name="admin_fee" label="Biaya admin" value="0" hint="Ditambahkan di atas nominal top up. Isi 0 bila tanpa biaya." />
             <x-ui.input name="sort_order" type="number" label="Urutan tampil" value="0" hint="Angka kecil tampil lebih dulu." />
             <x-ui.switch name="is_active" label="Aktif" :checked="true" class="mt-2" />
         </form>

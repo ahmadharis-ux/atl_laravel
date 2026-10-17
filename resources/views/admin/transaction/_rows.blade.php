@@ -27,6 +27,7 @@
         <td class="text-end">
             <x-ui.actions :actions="[
                 ['label' => 'Detail', 'icon' => 'visibility', 'href' => route('admin.transactions.show', $order)],
+                ['label' => 'Invoice', 'icon' => 'receipt_long', 'href' => route('admin.transactions.invoice', $order), 'target' => '_blank'],
             ]" />
         </td>
     </tr>

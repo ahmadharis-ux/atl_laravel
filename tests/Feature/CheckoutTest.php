@@ -251,6 +251,35 @@ class CheckoutTest extends TestCase
         $this->actingAs($user)->post(route('orders.pay', $order))->assertForbidden();
     }
 
+    public function test_a_user_can_view_the_invoice_of_their_own_order(): void
+    {
+        $user = User::factory()->create();
+        $product = $this->product(['name' => 'Diamond Mobile Legends']);
+        $order = Order::factory()->create([
+            'user_id' => $user->getKey(),
+            'product_id' => $product->getKey(),
+            'target' => '123456789',
+            'amount' => 50_000,
+            'status' => OrderStatus::Success,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('orders.invoice', $order))
+            ->assertOk()
+            ->assertSee('INVOICE')
+            ->assertSee($order->order_number)
+            ->assertSee('Diamond Mobile Legends')
+            ->assertSee('Rp 50.000');
+    }
+
+    public function test_a_user_cannot_view_another_users_order_invoice(): void
+    {
+        $user = User::factory()->create();
+        $order = Order::factory()->create();
+
+        $this->actingAs($user)->get(route('orders.invoice', $order))->assertForbidden();
+    }
+
     public function test_product_page_submits_target_and_zone_to_checkout(): void
     {
         $user = User::factory()->create();

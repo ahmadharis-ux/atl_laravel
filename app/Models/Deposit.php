@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 
-#[Fillable(['user_id', 'reference', 'amount', 'payment_method', 'payment_channel', 'payment_code', 'master_bank_id', 'status', 'expires_at', 'paid_at', 'metadata'])]
+#[Fillable(['user_id', 'reference', 'amount', 'fee', 'received_amount', 'payment_method', 'payment_channel', 'payment_code', 'master_bank_id', 'status', 'expires_at', 'paid_at', 'metadata'])]
 class Deposit extends Model
 {
     /** @use HasFactory<DepositFactory> */
@@ -40,6 +40,22 @@ class Deposit extends Model
         return $this->status === DepositStatus::Pending;
     }
 
+    /**
+     * Total yang harus ditransfer pengguna: nominal top up + biaya admin.
+     */
+    public function totalDue(): int
+    {
+        return (int) $this->amount + (int) $this->fee;
+    }
+
+    /**
+     * Saldo yang dikreditkan dari nominal yang diterima: diterima - biaya admin.
+     */
+    public function creditedFrom(int $receivedAmount): int
+    {
+        return max(0, $receivedAmount - (int) $this->fee);
+    }
+
     public function isExpired(): bool
     {
         return $this->expires_at !== null && $this->expires_at->isPast();
@@ -52,6 +68,8 @@ class Deposit extends Model
     {
         return [
             'amount' => 'integer',
+            'fee' => 'integer',
+            'received_amount' => 'integer',
             'payment_method' => PaymentMethod::class,
             'status' => DepositStatus::class,
             'expires_at' => 'datetime',

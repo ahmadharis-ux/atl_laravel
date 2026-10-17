@@ -70,7 +70,10 @@ Route::middleware(['auth', 'non-admin', 'verified'])->group(function () {
     Route::post('/saldo/topup', [UserDepositController::class, 'store'])->name('deposits.store');
     Route::get('/saldo/topup/riwayat', [UserDepositController::class, 'index'])->name('deposits.index');
     Route::get('/saldo/topup/{deposit}', [UserDepositController::class, 'show'])->name('deposits.show');
-    Route::post('/saldo/topup/{deposit}/bayar', [UserDepositController::class, 'pay'])->name('deposits.pay');
+
+    if (! app()->environment('production')) {
+        Route::post('/saldo/topup/{deposit}/bayar', [UserDepositController::class, 'pay'])->name('deposits.pay');
+    }
     Route::post('/saldo/ewallet/link', [UserEwalletTokenizationController::class, 'link'])->name('ewallet.link');
 
     Route::get('/produk/lookup/{type}', UserLookupController::class)->name('products.lookup');
@@ -96,6 +99,7 @@ Route::middleware(['auth', 'non-admin', 'verified'])->group(function () {
     Route::get('/transaksi/{order}', [UserOrderController::class, 'show'])->name('orders.show');
     Route::post('/transaksi/{order}/bayar', [UserOrderController::class, 'pay'])->name('orders.pay');
     Route::post('/transaksi/{order}/cek-status', [UserOrderController::class, 'sync'])->name('orders.sync');
+    Route::get('/transaksi/{order}/invoice', [UserOrderController::class, 'invoice'])->name('orders.invoice');
 
     Route::get('/notifikasi', [NotificationController::class, 'index'])->name('notifications.index');
     Route::get('/notifikasi/daftar', [NotificationController::class, 'list'])->name('notifications.list');

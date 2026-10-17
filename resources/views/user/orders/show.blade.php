@@ -25,7 +25,8 @@
             <h1 class="fw-bold fs-5 m-0">Detail Pesanan</h1>
             <p class="tx-mute fs-12 m-0">{{ $order->order_number }}</p>
         </div>
-        <span class="pill ms-auto {{ $order->status->tone() }}">{{ $order->status->label() }}</span>
+        <a href="{{ route('orders.invoice', $order) }}" target="_blank" rel="noopener" class="ap-icon-btn ms-auto" data-tip="Cetak Invoice"><span class="ms ms-md">receipt_long</span></a>
+        <span class="pill {{ $order->status->tone() }}">{{ $order->status->label() }}</span>
     </div>
 
     @if (session('status'))

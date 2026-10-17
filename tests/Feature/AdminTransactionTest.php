@@ -81,6 +81,36 @@ class AdminTransactionTest extends TestCase
             ->assertSee($order->user->name);
     }
 
+    public function test_admin_can_view_the_transaction_invoice(): void
+    {
+        $admin = $this->admin();
+        $product = $this->product(['name' => 'Diamond Mobile Legends']);
+        $order = Order::factory()->create([
+            'order_number' => 'TRX-20261010-INVOICE',
+            'product_id' => $product->getKey(),
+            'amount' => 25_000,
+            'status' => OrderStatus::Success,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.transactions.invoice', $order))
+            ->assertOk()
+            ->assertSee('INVOICE')
+            ->assertSee('TRX-20261010-INVOICE')
+            ->assertSee('Diamond Mobile Legends')
+            ->assertSee('Rp 25.000');
+    }
+
+    public function test_invoice_requires_the_view_permission(): void
+    {
+        $admin = $this->admin(['dashboard.view']);
+        $order = Order::factory()->create();
+
+        $this->actingAs($admin)
+            ->get(route('admin.transactions.invoice', $order))
+            ->assertForbidden();
+    }
+
     public function test_transaction_list_can_be_filtered_by_status(): void
     {
         $admin = $this->admin();

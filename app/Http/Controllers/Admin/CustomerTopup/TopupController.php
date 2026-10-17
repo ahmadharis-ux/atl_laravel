@@ -71,7 +71,11 @@ class TopupController extends Controller
      */
     public function settle(Request $request, Deposit $deposit): RedirectResponse
     {
-        $settled = DepositSettler::settle($deposit, $request->user());
+        $validated = $request->validate([
+            'received_amount' => ['nullable', 'integer', 'min:0', 'max:1000000000'],
+        ]);
+
+        $settled = DepositSettler::settle($deposit, $request->user(), $validated['received_amount'] ?? null);
 
         return redirect()
             ->route('admin.topup.index')

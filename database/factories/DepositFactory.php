@@ -25,6 +25,8 @@ class DepositFactory extends Factory
             'user_id' => User::factory(),
             'reference' => 'DEP-'.now()->format('Ymd').'-'.Str::upper(Str::random(8)),
             'amount' => fake()->numberBetween(10_000, 1_000_000),
+            'fee' => 0,
+            'received_amount' => null,
             'payment_method' => PaymentMethod::Qris,
             'payment_channel' => null,
             'payment_code' => null,
@@ -37,9 +39,10 @@ class DepositFactory extends Factory
 
     public function paid(): static
     {
-        return $this->state(fn (): array => [
+        return $this->state(fn (array $attributes): array => [
             'status' => DepositStatus::Paid,
             'paid_at' => now(),
+            'received_amount' => (int) ($attributes['amount'] ?? 0) + (int) ($attributes['fee'] ?? 0),
         ]);
     }
 }

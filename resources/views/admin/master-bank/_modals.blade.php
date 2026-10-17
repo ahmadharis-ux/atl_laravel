@@ -10,6 +10,7 @@
                     :options="$bankOptions" :value="$bank->bank_name" />
                 <x-ui.input name="account_number" label="Nomor rekening" :value="$bank->account_number" />
                 <x-ui.input name="account_holder" label="Atas nama" :value="$bank->account_holder" />
+                <x-ui.currency-input name="admin_fee" label="Biaya admin" :value="$bank->admin_fee" hint="Ditambahkan di atas nominal top up. Isi 0 bila tanpa biaya." />
                 <x-ui.input name="sort_order" type="number" label="Urutan tampil" :value="$bank->sort_order" />
                 <x-ui.switch name="is_active" label="Aktif" :checked="$bank->is_active" class="mt-2" />
             </form>

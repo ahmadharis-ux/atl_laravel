@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable(['type', 'bank_name', 'account_number', 'account_holder', 'is_active', 'sort_order'])]
+#[Fillable(['type', 'bank_name', 'account_number', 'account_holder', 'admin_fee', 'is_active', 'sort_order'])]
 class MasterBank extends Model
 {
     /** @use HasFactory<MasterBankFactory> */
@@ -25,6 +25,7 @@ class MasterBank extends Model
         return [
             'is_active' => 'boolean',
             'sort_order' => 'integer',
+            'admin_fee' => 'integer',
         ];
     }
 

@@ -66,6 +66,14 @@ class TransactionController extends Controller
         ]);
     }
 
+    public function invoice(Order $order): View
+    {
+        return view('orders.invoice', [
+            'order' => $order->load(['user', 'product.brand', 'product.category']),
+            'backUrl' => route('admin.transactions.show', $order),
+        ]);
+    }
+
     public function refund(Order $order): RedirectResponse
     {
         if ($order->status !== OrderStatus::Failed) {

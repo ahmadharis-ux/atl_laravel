@@ -13,6 +13,8 @@
     $qrUrl = $midtrans['qr_url'] ?? null;
     $qrString = $midtrans['qr_string'] ?? null;
     $isQris = $method === \App\Enums\PaymentMethod::Qris;
+    $fee = (int) $deposit->fee;
+    $totalDue = $deposit->totalDue();
 @endphp
 
 <div class="d-flex flex-column gap-3"
@@ -62,20 +64,41 @@
                     <ul class="list-unstyled m-0 d-flex flex-column gap-2 fs-13">
                         <li class="d-flex align-items-center justify-content-between">
                             <span class="tx-mute">Nomor tujuan</span>
-                            <span class="num fw-semibold">{{ $masterBank->account_number }}</span>
+                            <span class="d-flex align-items-center gap-2">
+                                <span class="num fw-semibold">{{ $masterBank->account_number }}</span>
+                                <button type="button" class="ap-icon-btn" data-copy="{{ $masterBank->account_number }}" data-copy-label="Nomor tujuan" data-tip="Salin nomor"><span class="ms ms-sm">content_copy</span></button>
+                            </span>
                         </li>
                         <li class="d-flex align-items-center justify-content-between">
                             <span class="tx-mute">Atas nama</span>
                             <span class="fw-semibold">{{ $masterBank->account_holder }}</span>
                         </li>
-                    <li class="d-flex align-items-center justify-content-between pt-2 border-top">
-                        <span class="fw-bold">Jumlah transfer</span>
-                        <span class="num fw-bold tx-tealt">Rp {{ number_format($deposit->amount, 0, ',', '.') }}</span>
-                    </li>
-                </ul>
+                        <li class="d-flex align-items-center justify-content-between">
+                            <span class="tx-mute">Nominal top up</span>
+                            <span class="num fw-semibold">Rp {{ number_format($deposit->amount, 0, ',', '.') }}</span>
+                        </li>
+                        @if ($fee > 0)
+                            <li class="d-flex align-items-center justify-content-between">
+                                <span class="tx-mute">Biaya admin</span>
+                                <span class="num fw-semibold">Rp {{ number_format($fee, 0, ',', '.') }}</span>
+                            </li>
+                        @endif
+                        <li class="d-flex align-items-center justify-content-between pt-2 border-top">
+                            <span class="fw-bold">Jumlah transfer</span>
+                            <span class="d-flex align-items-center gap-2">
+                                <span class="num fw-bold tx-tealt">Rp {{ number_format($totalDue, 0, ',', '.') }}</span>
+                                <button type="button" class="ap-icon-btn" data-copy="{{ $totalDue }}" data-copy-label="Total transfer" data-tip="Salin nominal"><span class="ms ms-sm">content_copy</span></button>
+                            </span>
+                        </li>
+                    </ul>
                     @if ($deposit->expires_at)
                         <p class="fs-12 tx-mute m-0">Transfer sebelum {{ $deposit->expires_at->locale('id')->translatedFormat('d M Y, H:i') }}.</p>
                     @endif
+                    <p class="fs-12 tx-mute m-0">Pembayaran akan dikonfirmasi admin setelah dana diterima.</p>
+                    <div class="alert-ap r-sm bg-glass d-flex align-items-start gap-2 px-3 py-2">
+                        <span class="ms ms-sm tx-teal">info</span>
+                        <span class="fs-12">Bila dana yang kamu transfer kurang dari total tagihan, saldo yang ditambahkan akan menyesuaikan dana yang benar-benar diterima (setelah dikurangi biaya admin).</span>
+                    </div>
                 </div>
             @else
                 <div class="d-flex flex-column align-items-center gap-2 text-center">
@@ -110,24 +133,17 @@
             </x-ui.card>
         @endif
 
-        @if (! $midtransEnabled || $method !== \App\Enums\PaymentMethod::Qris)
-            <x-ui.card title="Mode Development">
-                <div class="d-flex flex-column gap-2">
-                    <p class="fs-12 tx-mute m-0">Belum ada payment gateway. Tekan tombol di bawah untuk menyimulasikan pembayaran dan menambah saldo.</p>
-                    <form method="POST" action="{{ route('deposits.pay', $deposit) }}" id="deposit-pay-form">
-                        @csrf
-                        <button
-                            type="submit"
-                            class="btn-ap btn-mint justify-content-center w-100"
-                            data-confirm="Saldo akan ditambah Rp {{ number_format($deposit->amount, 0, ',', '.') }}. Lanjutkan?"
-                            data-confirm-title="Simulasi Pembayaran"
-                            data-confirm-ok="Ya, Bayar"
-                            data-submit-form="deposit-pay-form"
-                        >Simulasikan Pembayaran</button>
-                    </form>
+        @unless ($isQris)
+            <x-ui.card title="Konfirmasi Pembayaran">
+                <div class="d-flex align-items-start gap-2">
+                    <span class="ms tx-gold">hourglass_top</span>
+                    <div class="d-flex flex-column gap-1">
+                        <span class="fs-13 fw-semibold">Menunggu konfirmasi admin</span>
+                        <span class="fs-12 tx-mute">Setelah transfer ke tujuan di atas diterima, admin akan memverifikasi dan menambahkan saldo ke akunmu.</span>
+                    </div>
                 </div>
             </x-ui.card>
-        @endif
+        @endunless
     @elseif ($paid)
         <x-ui.card>
             <div class="d-flex flex-column align-items-center gap-2 text-center">
@@ -173,9 +189,15 @@
                     <span class="fw-semibold">{{ $deposit->paid_at->format('d M Y, H:i') }}</span>
                 </li>
             @endif
+            @if ($fee > 0)
+                <li class="d-flex align-items-center justify-content-between">
+                    <span class="tx-mute">Biaya admin</span>
+                    <span class="fw-semibold">Rp {{ number_format($fee, 0, ',', '.') }}</span>
+                </li>
+            @endif
             <li class="d-flex align-items-center justify-content-between pt-2 border-top">
                 <span class="fw-bold">Total</span>
-                <span class="num fw-bold tx-tealt">Rp {{ number_format($deposit->amount, 0, ',', '.') }}</span>
+                <span class="num fw-bold tx-tealt">Rp {{ number_format($totalDue, 0, ',', '.') }}</span>
             </li>
         </ul>
     </x-ui.card>

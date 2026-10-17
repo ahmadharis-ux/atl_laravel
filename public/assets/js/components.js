@@ -1407,6 +1407,49 @@
     });
   }
 
+  // ---------------- Salin ke clipboard ----------------
+  // <button data-copy="100000" data-copy-label="Nominal">Salin</button>
+  // menyalin nilai data-copy ke clipboard dan menampilkan toast.
+  function initCopy() {
+    document.addEventListener('click', function (e) {
+      var trigger = e.target.closest('[data-copy]');
+      if (!trigger) return;
+      e.preventDefault();
+
+      var value = trigger.getAttribute('data-copy');
+      if (!value) return;
+
+      var label = trigger.getAttribute('data-copy-label') || 'Teks';
+
+      function done(ok) {
+        if (window.AP && window.AP.showToast) {
+          window.AP.showToast(
+            ok ? label + ' disalin.' : 'Gagal menyalin. Salin manual ya.',
+            ok ? 'success' : 'error'
+          );
+        }
+      }
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(value).then(function () { done(true); }).catch(function () { done(false); });
+        return;
+      }
+
+      var helper = document.createElement('textarea');
+      helper.value = value;
+      helper.setAttribute('readonly', '');
+      helper.style.position = 'fixed';
+      helper.style.top = '-1000px';
+      helper.style.opacity = '0';
+      document.body.appendChild(helper);
+      helper.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (err) { ok = false; }
+      document.body.removeChild(helper);
+      done(ok);
+    });
+  }
+
   // ---------------- Preset nominal ----------------
   // Tombol <button data-amount-set="20000" data-amount-target="input[name=amount]">
   // mengisi field nominal terkait saat diklik.
@@ -1915,6 +1958,7 @@
     initMinLoaderForms();
     initAmountPresets();
     initCurrencyInputs();
+    initCopy();
     initTooltips();
     initActions();
     initModals();

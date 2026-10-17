@@ -198,7 +198,7 @@ body{min-height:100vh}
 </form>
 @if (config('services.google.client_id'))
 <div class="divider">atau</div>
-<a href="{{ route('auth.google.redirect') }}" class="btn-alt"><span class="ms ms-md">g_translate</span>Daftar dengan Google</a>
+<a href="{{ route('auth.google.redirect') }}" class="btn-alt">@include('partials.google-logo')Daftar dengan Google</a>
 @endif
         <p class="text-center m-0 mt-4 tx-mute">Sudah punya akun? <a href="{{ route('login') }}" class="lnk">Masuk</a></p>
       </div>

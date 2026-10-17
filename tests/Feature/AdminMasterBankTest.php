@@ -50,6 +50,7 @@ class AdminMasterBankTest extends TestCase
             'bank_name' => 'BNI',
             'account_number' => '111222333',
             'account_holder' => 'PT Atlantic Pedia',
+            'admin_fee' => '2500',
             'is_active' => '1',
             'sort_order' => 2,
         ])->assertSessionHas('status');
@@ -57,6 +58,7 @@ class AdminMasterBankTest extends TestCase
         $bank = MasterBank::query()->sole();
         $this->assertSame('BNI', $bank->bank_name);
         $this->assertSame(MasterBank::TYPE_BANK, $bank->type);
+        $this->assertSame(2_500, $bank->admin_fee);
         $this->assertTrue($bank->is_active);
 
         $this->actingAs($admin)->put(route('admin.master-banks.update', $bank), [
@@ -64,6 +66,7 @@ class AdminMasterBankTest extends TestCase
             'bank_name' => 'BNI',
             'account_number' => '111222333',
             'account_holder' => 'PT Atlantic Pedia Baru',
+            'admin_fee' => '5000',
             'is_active' => '1',
             'sort_order' => 5,
         ])->assertSessionHas('status');
@@ -71,6 +74,7 @@ class AdminMasterBankTest extends TestCase
         $bank->refresh();
         $this->assertSame(MasterBank::TYPE_EWALLET, $bank->type);
         $this->assertSame('PT Atlantic Pedia Baru', $bank->account_holder);
+        $this->assertSame(5_000, $bank->admin_fee);
         $this->assertSame(5, $bank->sort_order);
 
         $this->actingAs($admin)

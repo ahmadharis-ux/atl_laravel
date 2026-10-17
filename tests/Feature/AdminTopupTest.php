@@ -122,6 +122,55 @@ class AdminTopupTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_settle_a_topup_with_a_partial_received_amount(): void
+    {
+        $admin = $this->admin();
+        $user = User::factory()->create(['balance' => 0]);
+        $deposit = Deposit::factory()->create([
+            'user_id' => $user->getKey(),
+            'amount' => 50_000,
+            'fee' => 2_500,
+            'status' => DepositStatus::Pending,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.topup.settle', $deposit), ['received_amount' => 50_000])
+            ->assertRedirect(route('admin.topup.index'));
+
+        $deposit->refresh();
+        $this->assertSame(DepositStatus::Paid, $deposit->status);
+        $this->assertSame(50_000, $deposit->received_amount);
+        $this->assertSame(47_500, $user->fresh()->balance);
+
+        $this->assertDatabaseHas('wallet_transactions', [
+            'user_id' => $user->getKey(),
+            'type' => WalletTransactionType::Deposit->value,
+            'direction' => WalletTransactionDirection::Credit->value,
+            'amount' => 47_500,
+            'reference_id' => $deposit->getKey(),
+        ]);
+    }
+
+    public function test_settling_without_received_amount_credits_the_full_nominal(): void
+    {
+        $admin = $this->admin();
+        $user = User::factory()->create(['balance' => 0]);
+        $deposit = Deposit::factory()->create([
+            'user_id' => $user->getKey(),
+            'amount' => 50_000,
+            'fee' => 2_500,
+            'status' => DepositStatus::Pending,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.topup.settle', $deposit))
+            ->assertRedirect(route('admin.topup.index'));
+
+        $deposit->refresh();
+        $this->assertSame(52_500, $deposit->received_amount);
+        $this->assertSame(50_000, $user->fresh()->balance);
+    }
+
     public function test_settling_an_already_paid_topup_does_not_credit_twice(): void
     {
         $admin = $this->admin();

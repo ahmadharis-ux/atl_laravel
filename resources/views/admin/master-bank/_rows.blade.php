@@ -24,6 +24,13 @@
         <td class="fw-semibold">{{ $bank->bank_name }}</td>
         <td class="num">{{ $bank->account_number }}</td>
         <td class="tx-mute fs-12">{{ $bank->account_holder }}</td>
+        <td class="text-end num">
+            @if ($bank->admin_fee > 0)
+                Rp {{ number_format($bank->admin_fee, 0, ',', '.') }}
+            @else
+                <span class="tx-mute">&mdash;</span>
+            @endif
+        </td>
         <td>
             @if ($bank->is_active)
                 <span class="pill bg-mint-l tx-mintt">Aktif</span>
@@ -46,7 +53,7 @@
     </tr>
 @empty
     <tr>
-        <td colspan="7">
+        <td colspan="8">
             <x-ui.empty-state icon="account_balance" title="Belum ada master bank"
                 description="Tambahkan rekening bank tujuan deposit agar pengguna dapat melakukan transfer." />
         </td>

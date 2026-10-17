@@ -46,6 +46,19 @@ class OrderController extends Controller
     }
 
     /**
+     * Tampilan invoice siap cetak untuk pesanan milik pengguna.
+     */
+    public function invoice(Request $request, Order $order): View
+    {
+        abort_unless($order->user_id === $request->user()->getKey(), 403);
+
+        return view('orders.invoice', [
+            'order' => $order->load(['user', 'product.brand', 'product.category']),
+            'backUrl' => route('orders.show', $order),
+        ]);
+    }
+
+    /**
      * Simulasi konfirmasi pembayaran untuk metode non-saldo (belum ada
      * payment gateway). Menandai pesanan pending menjadi sukses.
      */

@@ -17,9 +17,8 @@
         <div class="d-flex align-items-center gap-2">
             <span class="pill {{ $deposit->status->tone() }}">{{ $deposit->status->label() }}</span>
             @if ($deposit->isPending() && auth()->user()->can('topups.update'))
-                <form id="topup-settle-show" method="POST" action="{{ route('admin.topup.settle', $deposit) }}" class="d-none">@csrf</form>
                 <form id="topup-expire-show" method="POST" action="{{ route('admin.topup.expire', $deposit) }}" class="d-none">@csrf</form>
-                <button type="button" class="btn-navy" data-confirm="Tandai top up {{ $deposit->reference }} sebagai lunas dan tambahkan saldo pengguna?" data-submit-form="topup-settle-show">
+                <button type="button" class="btn-navy" data-modal-open="modalSettleTopup">
                     <span class="ms ms-sm align-middle me-1">check_circle</span>Tandai Lunas
                 </button>
                 <button type="button" class="btn-soft tx-err" data-confirm="Batalkan top up {{ $deposit->reference }}?" data-confirm-danger data-submit-form="topup-expire-show">
@@ -40,6 +39,17 @@
 
                     <dt class="col-sm-5 tx-mute fw-normal">Nominal</dt>
                     <dd class="col-sm-7 m-0 fw-semibold">Rp {{ number_format($deposit->amount, 0, ',', '.') }}</dd>
+
+                    <dt class="col-sm-5 tx-mute fw-normal">Biaya admin</dt>
+                    <dd class="col-sm-7 m-0 fw-semibold">Rp {{ number_format($deposit->fee, 0, ',', '.') }}</dd>
+
+                    <dt class="col-sm-5 tx-mute fw-normal">Total tagihan</dt>
+                    <dd class="col-sm-7 m-0 fw-semibold">Rp {{ number_format($deposit->totalDue(), 0, ',', '.') }}</dd>
+
+                    @if ($deposit->received_amount !== null)
+                        <dt class="col-sm-5 tx-mute fw-normal">Nominal diterima</dt>
+                        <dd class="col-sm-7 m-0 fw-semibold">Rp {{ number_format($deposit->received_amount, 0, ',', '.') }}</dd>
+                    @endif
 
                     <dt class="col-sm-5 tx-mute fw-normal">Dibuat</dt>
                     <dd class="col-sm-7 m-0">{{ $deposit->created_at->locale('id')->translatedFormat('d F Y, H:i') }}</dd>
@@ -101,4 +111,23 @@
         @endif
     </x-ui.card>
 </div>
+
+@if ($deposit->isPending() && auth()->user()->can('topups.update'))
+    <x-ui.modal id="modalSettleTopup" title="Konfirmasi Top Up" size="sm">
+        <form id="topup-settle-form" method="POST" action="{{ route('admin.topup.settle', $deposit) }}">
+            @csrf
+            <p class="fs-13 tx-mute mb-3">
+                Total tagihan <span class="fw-semibold">Rp {{ number_format($deposit->totalDue(), 0, ',', '.') }}</span>
+                (nominal Rp {{ number_format($deposit->amount, 0, ',', '.') }} + biaya admin Rp {{ number_format($deposit->fee, 0, ',', '.') }}).
+            </p>
+            <x-ui.currency-input name="received_amount" label="Nominal diterima" :value="$deposit->totalDue()" hint="Saldo yang masuk = nominal diterima − biaya admin." />
+        </form>
+        <x-slot:footer>
+            <button type="button" class="btn-soft" data-modal-close>Batal</button>
+            <button type="submit" form="topup-settle-form" class="btn-navy">
+                <span class="ms ms-sm align-middle me-1">check_circle</span>Tandai Lunas
+            </button>
+        </x-slot:footer>
+    </x-ui.modal>
+@endif
 @endsection

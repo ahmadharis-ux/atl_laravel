@@ -22,6 +22,7 @@ class MasterBankFactory extends Factory
             'bank_name' => fake()->randomElement(['BCA', 'BNI', 'BRI', 'Mandiri', 'CIMB Niaga']),
             'account_number' => (string) fake()->unique()->numerify('##########'),
             'account_holder' => fake()->company(),
+            'admin_fee' => 0,
             'is_active' => true,
             'sort_order' => fake()->numberBetween(0, 10),
         ];

@@ -66,7 +66,7 @@
                                     name="master_bank_id"
                                     id="master_bank_id_bank"
                                     label="Pilih Bank Tujuan"
-                                    :options="$bankTargets->mapWithKeys(fn ($bank) => [$bank->getKey() => $bank->bank_name.' — '.$bank->account_number])->all()"
+                                    :options="$bankTargets->mapWithKeys(fn ($bank) => [$bank->getKey() => $bank->bank_name.' — '.$bank->account_number.($bank->admin_fee > 0 ? ' (biaya admin Rp '.number_format($bank->admin_fee, 0, ',', '.').')' : '')])->all()"
                                     placeholder="Pilih bank tujuan"
                                 />
                             @endif
@@ -80,7 +80,7 @@
                                     name="master_bank_id"
                                     id="master_bank_id_ewallet"
                                     label="Pilih E-Wallet Tujuan"
-                                    :options="$ewalletTargets->mapWithKeys(fn ($wallet) => [$wallet->getKey() => $wallet->bank_name.' — '.$wallet->account_number])->all()"
+                                    :options="$ewalletTargets->mapWithKeys(fn ($wallet) => [$wallet->getKey() => $wallet->bank_name.' — '.$wallet->account_number.($wallet->admin_fee > 0 ? ' (biaya admin Rp '.number_format($wallet->admin_fee, 0, ',', '.').')' : '')])->all()"
                                     placeholder="Pilih e-wallet tujuan"
                                 />
                             @endif
@@ -100,10 +100,10 @@
 
         <div class="col-lg-5">
             <div class="d-flex flex-column gap-3">
-                <x-ui.card title="Mode Development">
+                <x-ui.card title="Pembayaran Manual">
                     <p class="fs-13 tx-mute m-0">
-                        Pembayaran belum terhubung ke payment gateway sungguhan. Setelah membuat permintaan top up,
-                        kamu bisa menekan tombol <b>Simulasikan Pembayaran</b> untuk menambah saldo secara otomatis.
+                        Untuk transfer bank &amp; e-wallet, bayar sesuai nominal ke rekening tujuan lalu tunggu
+                        konfirmasi admin. Saldo bertambah setelah pembayaran diverifikasi.
                     </p>
                 </x-ui.card>
 

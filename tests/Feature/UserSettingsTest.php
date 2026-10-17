@@ -5,8 +5,8 @@ namespace Tests\Feature;
 use App\Models\BankAccount;
 use App\Models\MasterBank;
 use App\Models\User;
+use App\Notifications\VerifyEmailNotification;
 use App\Support\TwoFactorAuthentication;
-use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
@@ -74,7 +74,7 @@ class UserSettingsTest extends TestCase
         $user->refresh();
         $this->assertSame('baru@example.com', $user->email);
         $this->assertNull($user->email_verified_at);
-        Notification::assertSentTo($user, VerifyEmail::class);
+        Notification::assertSentTo($user, VerifyEmailNotification::class);
     }
 
     public function test_a_user_can_change_their_password(): void

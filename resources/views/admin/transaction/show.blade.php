@@ -14,7 +14,10 @@
                 <p class="tx-mute fs-12 m-0">Dibuat {{ $order->created_at->locale('id')->translatedFormat('d F Y, H:i') }}</p>
             </div>
         </div>
-        <span class="pill {{ $order->status->tone() }}">{{ $order->status->label() }}</span>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ route('admin.transactions.invoice', $order) }}" target="_blank" rel="noopener" class="ap-icon-btn" data-tip="Cetak Invoice"><span class="ms ms-md">receipt_long</span></a>
+            <span class="pill {{ $order->status->tone() }}">{{ $order->status->label() }}</span>
+        </div>
     </div>
 
     <div class="row g-3">
