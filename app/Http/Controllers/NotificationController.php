@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Collection;
@@ -20,6 +23,8 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class NotificationController extends Controller
 {
+    private const PER_PAGE = 10;
+
     public function index(Request $request): View|Response
     {
         $user = $request->user();
@@ -47,22 +52,11 @@ class NotificationController extends Controller
             ]);
         }
 
-        $filter = (string) $request->query('filter', 'all');
-        $filter = in_array($filter, ['all', 'unread', 'read'], true) ? $filter : 'all';
-        $search = trim((string) $request->query('q', ''));
+        $filter = $this->resolveFilter($request);
+        $search = $this->resolveSearch($request);
 
-        $notifications = $user->notifications()
-            ->when($filter === 'unread', fn ($query) => $query->whereNull('read_at'))
-            ->when($filter === 'read', fn ($query) => $query->whereNotNull('read_at'))
-            ->when($search !== '', function ($query) use ($search): void {
-                $term = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $search).'%';
-                $query->where(function ($q) use ($term): void {
-                    $q->where('data', 'like', $term);
-                });
-            })
-            ->orderByDesc('created_at')
-            ->orderByDesc('id')
-            ->paginate(20)
+        $notifications = $this->notificationsQuery($user, $filter, $search)
+            ->paginate(self::PER_PAGE)
             ->withQueryString();
 
         return view('notifications.index', [
@@ -73,7 +67,73 @@ class NotificationController extends Controller
             'total' => $user->notifications()->count(),
             'readCount' => $user->notifications()->whereNotNull('read_at')->count(),
             'reorderProducts' => $this->reorderProducts($notifications->getCollection()),
+            'emptyMessage' => $this->emptyMessage($filter, $search),
         ]);
+    }
+
+    /**
+     * Muat lebih banyak (AJAX): kembalikan baris berikutnya beserta footer
+     * tombol "Muat lebih banyak" untuk halaman notifikasi.
+     */
+    public function list(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $filter = $this->resolveFilter($request);
+        $search = $this->resolveSearch($request);
+
+        $notifications = $this->notificationsQuery($user, $filter, $search)
+            ->paginate(self::PER_PAGE)
+            ->withQueryString();
+
+        return response()->json([
+            'rows' => view('partials.notifications-list', [
+                'notifications' => $notifications,
+                'reorderProducts' => $this->reorderProducts($notifications->getCollection()),
+                'emptyMessage' => $this->emptyMessage($filter, $search),
+            ])->render(),
+            'footer' => view('partials.notifications-footer', ['notifications' => $notifications])->render(),
+        ]);
+    }
+
+    /**
+     * Notifikasi milik user dengan filter tab + pencarian, siap dipaginasi.
+     */
+    private function notificationsQuery(User $user, string $filter, string $search): MorphMany
+    {
+        return $user->notifications()
+            ->when($filter === 'unread', fn ($query) => $query->whereNull('read_at'))
+            ->when($filter === 'read', fn ($query) => $query->whereNotNull('read_at'))
+            ->when($search !== '', function ($query) use ($search): void {
+                $term = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $search).'%';
+                $query->where(fn ($q) => $q->where('data', 'like', $term));
+            })
+            ->orderByDesc('created_at')
+            ->orderByDesc('id');
+    }
+
+    private function resolveFilter(Request $request): string
+    {
+        $filter = (string) $request->query('filter', 'all');
+
+        return in_array($filter, ['all', 'unread', 'read'], true) ? $filter : 'all';
+    }
+
+    private function resolveSearch(Request $request): string
+    {
+        return trim((string) $request->query('q', ''));
+    }
+
+    private function emptyMessage(string $filter, string $search): string
+    {
+        if ($search !== '') {
+            return 'Tidak ada notifikasi yang cocok dengan pencarian.';
+        }
+
+        return match ($filter) {
+            'unread' => 'Tidak ada notifikasi yang belum dibaca.',
+            'read' => 'Belum ada notifikasi yang sudah dibaca.',
+            default => 'Belum ada notifikasi.',
+        };
     }
 
     public function open(Request $request, string $notification): RedirectResponse

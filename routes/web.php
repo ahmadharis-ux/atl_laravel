@@ -98,6 +98,7 @@ Route::middleware(['auth', 'non-admin', 'verified'])->group(function () {
     Route::post('/transaksi/{order}/cek-status', [UserOrderController::class, 'sync'])->name('orders.sync');
 
     Route::get('/notifikasi', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifikasi/daftar', [NotificationController::class, 'list'])->name('notifications.list');
     Route::get('/notifikasi/{notification}/buka', [NotificationController::class, 'open'])->name('notifications.open');
     Route::post('/notifikasi/baca-semua', [NotificationController::class, 'readAll'])->name('notifications.read-all');
 

@@ -49,19 +49,20 @@
         </form>
     </div>
 
-    <x-ui.card>
-        <div class="notif-page">
-            @include('partials.notifications-list', [
-                'notifications' => $notifications,
-                'emptyMessage' => $search !== ''
-                    ? 'Tidak ada notifikasi yang cocok dengan pencarian.'
-                    : ($filter === 'unread' ? 'Tidak ada notifikasi yang belum dibaca.' : ($filter === 'read' ? 'Belum ada notifikasi yang sudah dibaca.' : 'Belum ada notifikasi.')),
-            ])
-        </div>
-    </x-ui.card>
+    <div data-ajax
+         data-ajax-url="{{ route('notifications.list', array_filter(['filter' => $filter !== 'all' ? $filter : null, 'q' => $search !== '' ? $search : null])) }}">
+        <x-ui.card>
+            <div class="notif-page" data-ajax-rows>
+                @include('partials.notifications-list', [
+                    'notifications' => $notifications,
+                    'emptyMessage' => $emptyMessage,
+                ])
+            </div>
+        </x-ui.card>
 
-    <div class="d-flex justify-content-center">
-        {{ $notifications->links() }}
+        <div class="d-flex justify-content-center mt-3" data-ajax-footer>
+            @include('partials.notifications-footer', ['notifications' => $notifications])
+        </div>
     </div>
 </div>
 @endsection

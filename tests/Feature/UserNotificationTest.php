@@ -248,4 +248,50 @@ class UserNotificationTest extends TestCase
             ->assertOk()
             ->assertDontSee('Beli Lagi');
     }
+
+    public function test_notification_page_shows_only_ten_items_with_load_more(): void
+    {
+        $user = User::factory()->create();
+        for ($i = 1; $i <= 12; $i++) {
+            $user->notify(new TransactionResult("Pesan $i", "BODY-$i."));
+        }
+
+        $response = $this->actingAs($user)->get(route('notifications.index'))->assertOk();
+
+        $this->assertSame(10, substr_count($response->getContent(), 'notif-row-link'));
+        $response->assertSee('Muat lebih banyak')
+            ->assertSee('data-page="2"', false)
+            ->assertSee(route('notifications.list'), false);
+    }
+
+    public function test_notification_list_endpoint_returns_rows_and_footer(): void
+    {
+        $user = User::factory()->create();
+        for ($i = 1; $i <= 12; $i++) {
+            $user->notify(new TransactionResult("Pesan $i", "BODY-$i."));
+        }
+
+        $page2 = $this->actingAs($user)->getJson(route('notifications.list', ['page' => 2]));
+
+        $page2->assertOk();
+        // 12 item, 10 per halaman -> halaman 2 menyisakan 2 baris.
+        $this->assertSame(2, substr_count($page2->json('rows'), 'notif-row-link'));
+        // Halaman terakhir tidak menyisakan tombol.
+        $this->assertStringNotContainsString('data-ajax-more', $page2->json('footer'));
+    }
+
+    public function test_notification_list_endpoint_respects_filter(): void
+    {
+        $user = User::factory()->create();
+        $user->notify(new TransactionResult('Baru', 'ALPHAONLY.'));
+        $user->notify(new TransactionResult('Lama', 'BETAONLY.'));
+
+        $user->notifications()->get()->firstWhere('data.title', 'Lama')->markAsRead();
+
+        $response = $this->actingAs($user)->getJson(route('notifications.list', ['filter' => 'unread']));
+
+        $response->assertOk();
+        $this->assertStringContainsString('ALPHAONLY.', $response->json('rows'));
+        $this->assertStringNotContainsString('BETAONLY.', $response->json('rows'));
+    }
 }
