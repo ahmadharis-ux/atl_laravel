@@ -60,8 +60,9 @@ body{min-height:100vh}
 <body>
 <div class="row g-0 auth">
   <aside class="col-lg-6 d-none d-lg-flex brand-panel flex-column justify-content-between">
-    <img src="{{ asset('assets/images/9.png') }}" alt="Atlantic Pedia Tab" style="height:2.75rem;width:auto">
     <div style="max-width:28rem">
+      <img src="{{ asset('assets/im
+      ages/9.png') }}" alt="Atlantic Pedia Tab" style="width:80%">
       <h2 class="fw-bold mb-3" style="font-size:2.25rem;line-height:1.2;letter-spacing:-.02em">Kelola semua transaksi PPOB dari satu tempat.</h2>
       <div class="d-flex flex-column gap-3">
         <div class="feat"><span class="ms">bolt</span><div>Kelola transaksi PPOB cepat, aman, dan otomatis 24 jam.</div></div>

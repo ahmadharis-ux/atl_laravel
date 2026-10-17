@@ -11,7 +11,6 @@
     $paid = $deposit->status === \App\Enums\DepositStatus::Paid;
     $midtrans = $deposit->metadata['midtrans'] ?? [];
     $qrUrl = $midtrans['qr_url'] ?? null;
-    $qrString = $midtrans['qr_string'] ?? null;
     $isQris = $method === \App\Enums\PaymentMethod::Qris;
     $fee = (int) $deposit->fee;
     $totalDue = $deposit->totalDue();
@@ -114,24 +113,6 @@
                 </div>
             @endif
         </x-ui.card>
-
-        @if ($isQris && ! empty($midtrans) && ! config('midtrans.is_production'))
-            <x-ui.card title="Data Testing (Sandbox Midtrans)">
-                <div class="d-flex flex-column gap-3">
-                    <p class="fs-12 tx-mute m-0">
-                        Salin nilai di bawah untuk uji di
-                        <a href="https://simulator.sandbox.midtrans.com/v2/qris/index" target="_blank" rel="noopener" class="tx-mute fw-semibold">QRIS Simulator</a>.
-                    </p>
-                    <x-ui.input name="test_order_id" label="Order ID" :value="$deposit->reference" readonly />
-                    @if ($qrUrl)
-                        <x-ui.input name="test_qr_url" label="QR Image URL" :value="$qrUrl" readonly />
-                    @endif
-                    @if ($qrString)
-                        <x-ui.textarea name="test_qr_string" label="QR String" :value="$qrString" readonly rows="3" />
-                    @endif
-                </div>
-            </x-ui.card>
-        @endif
 
         @unless ($isQris)
             <x-ui.card title="Konfirmasi Pembayaran">

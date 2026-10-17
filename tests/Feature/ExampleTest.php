@@ -17,12 +17,12 @@ class ExampleTest extends TestCase
         $this->get('/login')->assertStatus(200);
     }
 
-    public function test_login_page_shows_demo_accounts(): void
+    public function test_login_page_does_not_show_demo_accounts(): void
     {
         $this->get('/login')
             ->assertOk()
-            ->assertSee('Akun demo')
-            ->assertSee('user@atlantic.test')
-            ->assertSee('admin@atlantic.test');
+            ->assertDontSee('Akun demo')
+            ->assertDontSee('user@atlantic.test')
+            ->assertDontSee('admin@atlantic.test');
     }
 }

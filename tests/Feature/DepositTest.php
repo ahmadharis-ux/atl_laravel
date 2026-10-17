@@ -89,7 +89,7 @@ class DepositTest extends TestCase
             ->assertSee('data-copy="50000"', false);
     }
 
-    public function test_deposit_show_exposes_sandbox_qris_testing_data(): void
+    public function test_deposit_show_shows_qris_without_sandbox_testing_data(): void
     {
         config()->set('midtrans.is_production', false);
 
@@ -109,34 +109,10 @@ class DepositTest extends TestCase
         $this->actingAs($user)
             ->get(route('deposits.show', $deposit))
             ->assertOk()
-            ->assertSee('Data Testing (Sandbox Midtrans)')
             ->assertSee('https://api.sandbox.midtrans.com/v2/qris/qr.png', false)
-            ->assertSee('00020101021226610014ID.CO.QRIS.WWW', false)
-            ->assertSee('simulator.sandbox.midtrans.com/v2/qris/index', false);
-    }
-
-    public function test_sandbox_testing_data_is_hidden_in_production(): void
-    {
-        config()->set('midtrans.is_production', true);
-
-        $user = User::factory()->create();
-        $deposit = Deposit::factory()->create([
-            'user_id' => $user->getKey(),
-            'payment_method' => PaymentMethod::Qris,
-            'status' => DepositStatus::Pending,
-            'metadata' => [
-                'midtrans' => [
-                    'qr_url' => 'https://api.midtrans.com/v2/qris/qr.png',
-                    'qr_string' => '00020101021226610014ID.CO.QRIS.WWW',
-                ],
-            ],
-        ]);
-
-        $this->actingAs($user)
-            ->get(route('deposits.show', $deposit))
-            ->assertOk()
             ->assertDontSee('Data Testing (Sandbox Midtrans)')
-            ->assertDontSee('00020101021226610014ID.CO.QRIS.WWW', false);
+            ->assertDontSee('00020101021226610014ID.CO.QRIS.WWW', false)
+            ->assertDontSee('simulator.sandbox.midtrans.com/v2/qris/index', false);
     }
 
     public function test_top_up_history_lists_all_deposits_for_the_user(): void

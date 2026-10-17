@@ -53,7 +53,7 @@ class MidtransOrderTest extends TestCase
         ];
     }
 
-    public function test_order_show_shows_qris_data_and_sandbox_testing(): void
+    public function test_order_show_shows_qris_data_without_sandbox_testing(): void
     {
         $this->configureMidtrans();
 
@@ -74,8 +74,8 @@ class MidtransOrderTest extends TestCase
             ->get(route('orders.show', $order))
             ->assertOk()
             ->assertSee('https://api.sandbox.midtrans.com/v2/qris/qr.png', false)
-            ->assertSee('00020101021226610014ID.CO.QRIS.WWW', false)
-            ->assertSee('Data Testing (Sandbox Midtrans)');
+            ->assertDontSee('00020101021226610014ID.CO.QRIS.WWW', false)
+            ->assertDontSee('Data Testing (Sandbox Midtrans)');
     }
 
     public function test_webhook_settles_order_and_starts_fulfillment_for_provider_products(): void
