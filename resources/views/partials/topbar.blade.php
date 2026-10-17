@@ -47,6 +47,7 @@
 
 {{-- Header mobile --}}
 <header class="d-flex d-lg-none align-items-center gap-3 px-3 pt-3 pb-2">
+    <div class="ibox bg-deep rounded-circle" style="width:2rem;height:2rem"><span class="ms ms-md text-white">person</span></div>
     <div class="d-flex align-items-center gap-3 min-w-0">
         @hasSection('breadcrumb')
             @yield('breadcrumb')
