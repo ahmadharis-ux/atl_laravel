@@ -61,7 +61,7 @@
                             </button>
                         </form>
                     </div>
-                    <p class="fs-11 tx-mute m-0">Sudah membayar? Tekan "Cek Status" untuk memperbarui pembayaran secara manual.</p>
+                    {{-- <p class="fs-11 tx-mute m-0">Sudah membayar? Tekan "Cek Status" untuk memperbarui pembayaran secara manual.</p> --}}
                 </div>
             @elseif ($masterBank)
                 <div class="d-flex flex-column gap-3">

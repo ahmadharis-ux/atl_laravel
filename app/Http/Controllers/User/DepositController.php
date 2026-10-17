@@ -6,11 +6,13 @@ use App\Enums\DepositStatus;
 use App\Enums\PaymentMethod;
 use App\Http\Controllers\Controller;
 use App\Models\Deposit;
-use App\Models\User;
 use App\Models\MasterBank;
+use App\Models\User;
+use App\Notifications\TransactionResult;
 use App\Services\MidtransService;
 use App\Support\DepositSettler;
 use App\Support\PaymentInstruction;
+use App\Support\Roles;
 use App\Support\TransactionLogger;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
@@ -108,6 +110,16 @@ class DepositController extends Controller
             'amount' => $amount,
             'payment_method' => $method->value,
         ], null, $request->user());
+
+        User::whereHas('roles', fn ($q) => $q->where('name', Roles::ADMIN))
+            ->get()
+            ->each(fn ($user) => $user->notify(new TransactionResult(
+                title: 'Permintaan Top Up Baru',
+                body: 'Pengguna '.$deposit->user->name.' ('.$deposit->user->email.') membuat permintaan topup Rp '.number_format($deposit->amount, 0, ',', '.').' - Ref. '.$deposit->reference,
+                level: 'info',
+                url: route('admin.topup.show', $deposit),
+                context: ['type' => 'deposit_new', 'reference' => $deposit->reference],
+            )));
 
         return redirect()
             ->route('deposits.show', $deposit)

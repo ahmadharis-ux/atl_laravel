@@ -70,7 +70,7 @@
                             </button>
                         </form>
                     </div>
-                    <p class="fs-11 tx-mute m-0 mt-1">Sudah membayar? Tekan "Cek Status" untuk memperbarui pembayaran secara manual.</p>
+                    {{-- <p class="fs-11 tx-mute m-0 mt-1">Sudah membayar? Tekan "Cek Status" untuk memperbarui pembayaran secara manual.</p> --}}
                 @endif
             </div>
         </x-ui.card>
