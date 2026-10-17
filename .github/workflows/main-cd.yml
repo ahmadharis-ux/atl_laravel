@@ -41,6 +41,7 @@ jobs:
             --exclude='/storage/framework/cache/data' \
             --exclude='/storage/framework/sessions' \
             --exclude='/storage/framework/views' \
+            --exclude='/storage/app/firebase' \
             -e "ssh -i ~/.ssh/id_rsa -o ProxyCommand='cloudflared access ssh --hostname $SSH_HOST' -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
             ./ $SSH_USER@$SSH_HOST:/var/www/atl_laravel/
 
