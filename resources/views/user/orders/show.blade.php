@@ -111,6 +111,18 @@
                         <span class="pill bg-glass tx-mute">{{ $product->category->name }}</span>
                     @endif
                 </div>
+                @if ($product && $product->status)
+                    @php
+                        $reorderQuery = array_filter([
+                            'target' => $order->target,
+                            'zone' => $order->target_zone,
+                        ], fn ($value) => $value !== null && $value !== '');
+                        $reorderUrl = route('checkout.show', $product).($reorderQuery !== [] ? '?'.http_build_query($reorderQuery) : '');
+                    @endphp
+                    <a href="{{ $reorderUrl }}" class="btn-ap btn-mint justify-content-center w-100 mt-3">
+                        <span class="ms ms-sm align-middle me-1" aria-hidden="true">refresh</span>Beli Lagi
+                    </a>
+                @endif
             </x-ui.card>
         </div>
 

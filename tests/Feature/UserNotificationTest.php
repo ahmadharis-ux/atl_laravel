@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Deposit;
 use App\Models\Order;
+use App\Models\Product;
 use App\Models\User;
 use App\Notifications\TransactionResult;
 use App\Support\DepositSettler;
@@ -180,5 +181,71 @@ class UserNotificationTest extends TestCase
             ->assertOk()
             ->assertSee('TRX-999')
             ->assertDontSee('TRX-001');
+    }
+
+    public function test_order_notification_offers_beli_lagi_for_purchasable_product(): void
+    {
+        $user = User::factory()->create();
+        $product = Product::factory()->create(['status' => true]);
+        $order = Order::factory()->create([
+            'user_id' => $user->getKey(),
+            'product_id' => $product->getKey(),
+            'target' => '081234567890',
+        ]);
+
+        OrderNotifier::success($order);
+
+        $this->actingAs($user)
+            ->get(route('notifications.index'))
+            ->assertOk()
+            ->assertSee('Beli Lagi')
+            ->assertSee(route('checkout.show', $product).'?target=081234567890', false);
+    }
+
+    public function test_order_notification_offers_beli_lagi_in_dropdown_json(): void
+    {
+        $user = User::factory()->create();
+        $product = Product::factory()->create(['status' => true]);
+        $order = Order::factory()->create([
+            'user_id' => $user->getKey(),
+            'product_id' => $product->getKey(),
+            'target' => '081234567890',
+        ]);
+
+        OrderNotifier::failed($order, 'Gagal di provider.');
+
+        $response = $this->actingAs($user)->getJson(route('notifications.index'));
+
+        $response->assertOk();
+        $this->assertStringContainsString('Beli Lagi', $response->json('html'));
+    }
+
+    public function test_order_notification_hides_beli_lagi_when_product_inactive(): void
+    {
+        $user = User::factory()->create();
+        $product = Product::factory()->create(['status' => false]);
+        $order = Order::factory()->create([
+            'user_id' => $user->getKey(),
+            'product_id' => $product->getKey(),
+            'target' => '081234567890',
+        ]);
+
+        OrderNotifier::success($order);
+
+        $this->actingAs($user)
+            ->get(route('notifications.index'))
+            ->assertOk()
+            ->assertDontSee('Beli Lagi');
+    }
+
+    public function test_non_order_notification_has_no_beli_lagi(): void
+    {
+        $user = User::factory()->create();
+        $user->notify(new TransactionResult('Top up berhasil', 'Saldo bertambah.'));
+
+        $this->actingAs($user)
+            ->get(route('notifications.index'))
+            ->assertOk()
+            ->assertDontSee('Beli Lagi');
     }
 }

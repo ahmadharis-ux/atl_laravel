@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Notifications\DatabaseNotification;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -39,6 +42,7 @@ class NotificationController extends Controller
                 'latest_unread' => $latest !== null && $latest->read_at === null,
                 'html' => view('partials.notifications-list', [
                     'notifications' => $notifications,
+                    'reorderProducts' => $this->reorderProducts($notifications),
                 ])->render(),
             ]);
         }
@@ -68,6 +72,7 @@ class NotificationController extends Controller
             'search' => $search,
             'total' => $user->notifications()->count(),
             'readCount' => $user->notifications()->whereNotNull('read_at')->count(),
+            'reorderProducts' => $this->reorderProducts($notifications->getCollection()),
         ]);
     }
 
@@ -84,6 +89,34 @@ class NotificationController extends Controller
         return is_string($url) && $url !== ''
             ? redirect()->to($this->sameHostTarget($url))
             : redirect()->route('notifications.index');
+    }
+
+    /**
+     * Peta status produk yang direferensikan notifikasi pesanan, agar tombol
+     * "Beli Lagi" hanya tampil saat produk masih dapat dibeli.
+     *
+     * @param  Collection<int, DatabaseNotification>  $notifications
+     * @return array<int|string, bool>
+     */
+    private function reorderProducts($notifications): array
+    {
+        $ids = $notifications
+            ->map(fn ($notification) => data_get($notification->data, 'context.type') === 'order'
+                ? data_get($notification->data, 'context.product_id')
+                : null)
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($ids->isEmpty()) {
+            return [];
+        }
+
+        return Product::query()
+            ->whereIn('id', $ids)
+            ->pluck('status', 'id')
+            ->map(fn ($status) => (bool) $status)
+            ->all();
     }
 
     /**

@@ -303,4 +303,7 @@ body.ap-modal-open{overflow:hidden}
 .notif-empty{padding:1.5rem .9rem;text-align:center;color:var(--mute);font-size:.82rem}
 .notif-foot{display:block;text-align:center;padding:.65rem;font-size:.78rem;font-weight:700;color:var(--tealt);text-decoration:none;border-top:1px solid var(--line)}
 .notif-foot:hover{background:rgba(159,240,247,.18)}
+.notif-row-link{display:flex;gap:.65rem;flex:1;min-width:0;text-decoration:none;color:inherit}
+.notif-reorder{flex:none;align-self:center;display:inline-flex;align-items:center;gap:.2rem;padding:.35rem .65rem;border-radius:50rem;background:rgba(100,253,185,.25);color:var(--tealt);font-size:.72rem;font-weight:800;text-decoration:none;white-space:nowrap;transition:background .15s,color .15s}
+.notif-reorder:hover{background:var(--teal);color:#fff}
 

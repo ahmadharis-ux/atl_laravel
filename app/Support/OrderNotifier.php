@@ -27,7 +27,7 @@ final class OrderNotifier
             level: 'success',
             icon: 'check_circle',
             url: route('orders.show', $order),
-            context: ['type' => 'order', 'order_number' => $order->order_number],
+            context: self::orderContext($order),
         ));
     }
 
@@ -45,7 +45,24 @@ final class OrderNotifier
             level: 'error',
             icon: 'error',
             url: route('orders.show', $order),
-            context: ['type' => 'order', 'order_number' => $order->order_number],
+            context: self::orderContext($order),
         ));
+    }
+
+    /**
+     * Konteks notifikasi pesanan. Menyimpan data produk & tujuan asal supaya
+     * pusat notifikasi bisa menawarkan tombol "Beli Lagi" (order produk sama).
+     *
+     * @return array<string, mixed>
+     */
+    private static function orderContext(Order $order): array
+    {
+        return [
+            'type' => 'order',
+            'order_number' => $order->order_number,
+            'product_id' => $order->product?->getKey(),
+            'target' => $order->target,
+            'target_zone' => $order->target_zone,
+        ];
     }
 }
