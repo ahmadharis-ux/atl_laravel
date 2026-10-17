@@ -176,8 +176,8 @@ class CheckoutController extends Controller
         return redirect()
             ->route('orders.show', $order)
             ->with('status', $method->isInstant()
-                ? 'Pembayaran berhasil. Pesanan kamu sedang diproses.'
-                : 'Pesanan dibuat. Selesaikan pembayaran untuk memproses pesanan.');
+                ? 'Pembayaran berhasil. Pesanan '.$order->order_number.' sedang diproses.'
+                : 'Pesanan '.$order->order_number.' dibuat. Selesaikan pembayaran untuk memproses pesanan.');
     }
 
     /**

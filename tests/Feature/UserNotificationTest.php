@@ -129,4 +129,56 @@ class UserNotificationTest extends TestCase
 
         $this->assertSame(1, DatabaseNotification::query()->whereNull('read_at')->count());
     }
+
+    public function test_notification_page_shows_all_read_and_unread_with_tabs(): void
+    {
+        $user = User::factory()->create();
+        $user->notify(new TransactionResult('Ada yang baru', 'MARKER-UNREAD.'));
+        $user->notify(new TransactionResult('Sudah selesai', 'MARKER-READ.'));
+
+        $read = $user->notifications()->get()->firstWhere('data.title', 'Sudah selesai');
+        $read->markAsRead();
+
+        $this->actingAs($user)
+            ->get(route('notifications.index'))
+            ->assertOk()
+            ->assertSee('MARKER-UNREAD')
+            ->assertSee('MARKER-READ')
+            ->assertSee('seg-tabs', false);
+    }
+
+    public function test_notification_page_can_filter_read_and_unread(): void
+    {
+        $user = User::factory()->create();
+        $user->notify(new TransactionResult('Pesan belum', 'MARKER-UNREAD.'));
+        $user->notify(new TransactionResult('Pesan sudah', 'MARKER-READ.'));
+
+        $read = $user->notifications()->get()->firstWhere('data.title', 'Pesan sudah');
+        $read->markAsRead();
+
+        $this->actingAs($user)
+            ->get(route('notifications.index', ['filter' => 'unread']))
+            ->assertOk()
+            ->assertSee('MARKER-UNREAD')
+            ->assertDontSee('MARKER-READ');
+
+        $this->actingAs($user)
+            ->get(route('notifications.index', ['filter' => 'read']))
+            ->assertOk()
+            ->assertSee('MARKER-READ')
+            ->assertDontSee('MARKER-UNREAD');
+    }
+
+    public function test_notification_page_can_search_by_keyword(): void
+    {
+        $user = User::factory()->create();
+        $user->notify(new TransactionResult('Top up berhasil', 'TRX-001 sukses.'));
+        $user->notify(new TransactionResult('Transaksi gagal', 'TRX-999 gagal.'));
+
+        $this->actingAs($user)
+            ->get(route('notifications.index', ['q' => 'TRX-999']))
+            ->assertOk()
+            ->assertSee('TRX-999')
+            ->assertDontSee('TRX-001');
+    }
 }

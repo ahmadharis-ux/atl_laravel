@@ -23,7 +23,7 @@ final class OrderNotifier
 
         $user->notify(new TransactionResult(
             title: 'Transaksi berhasil',
-            body: ($order->product?->name ?? 'Pesanan '.$order->order_number).' berhasil diproses.',
+            body: ($order->product?->name ?? 'Pesanan').' '.$order->order_number.' berhasil diproses.',
             level: 'success',
             icon: 'check_circle',
             url: route('orders.show', $order),

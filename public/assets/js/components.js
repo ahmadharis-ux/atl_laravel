@@ -1748,8 +1748,15 @@
       }
 
       function updDot(data) {
+        var count = data.unread || 0;
+        var display = count > 99 ? '99+' : count.toString();
         document.querySelectorAll('[data-notif-dot]').forEach(function (d) {
-          d.hidden = !(data.unread > 0);
+          if (count > 0) {
+            d.textContent = display;
+            d.hidden = false;
+          } else {
+            d.hidden = true;
+          }
         });
       }
 
@@ -1768,8 +1775,11 @@
         var hasBaseline = lastSeen !== null;
 
         if (announce && incoming !== null && incoming !== lastSeen && data.latest_unread) {
-          if (data.latest_title && window.AP && window.AP.showToast) {
-            window.AP.showToast(data.latest_title, data.latest_level || 'info');
+          if (window.AP && window.AP.showToast) {
+            var message = data.latest_body || data.latest_title;
+            if (message) {
+              window.AP.showToast(message, data.latest_level || 'info');
+            }
           }
           if (!pop.hidden) renderList(data);
         }

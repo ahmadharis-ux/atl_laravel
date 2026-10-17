@@ -34,6 +34,7 @@ class NotificationController extends Controller
                 'unread' => $unread,
                 'latest_id' => $latest?->id,
                 'latest_title' => $latest !== null ? data_get($latest->data, 'title') : null,
+                'latest_body' => $latest !== null ? data_get($latest->data, 'body') : null,
                 'latest_level' => $latest !== null ? data_get($latest->data, 'level', 'info') : null,
                 'latest_unread' => $latest !== null && $latest->read_at === null,
                 'html' => view('partials.notifications-list', [
@@ -42,12 +43,31 @@ class NotificationController extends Controller
             ]);
         }
 
+        $filter = (string) $request->query('filter', 'all');
+        $filter = in_array($filter, ['all', 'unread', 'read'], true) ? $filter : 'all';
+        $search = trim((string) $request->query('q', ''));
+
+        $notifications = $user->notifications()
+            ->when($filter === 'unread', fn ($query) => $query->whereNull('read_at'))
+            ->when($filter === 'read', fn ($query) => $query->whereNotNull('read_at'))
+            ->when($search !== '', function ($query) use ($search): void {
+                $term = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $search).'%';
+                $query->where(function ($q) use ($term): void {
+                    $q->where('data', 'like', $term);
+                });
+            })
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->paginate(20)
+            ->withQueryString();
+
         return view('notifications.index', [
-            'notifications' => $user->unreadNotifications()
-                ->orderByDesc('created_at')
-                ->orderByDesc('id')
-                ->paginate(20),
+            'notifications' => $notifications,
             'unread' => $unread,
+            'filter' => $filter,
+            'search' => $search,
+            'total' => $user->notifications()->count(),
+            'readCount' => $user->notifications()->whereNotNull('read_at')->count(),
         ]);
     }
 

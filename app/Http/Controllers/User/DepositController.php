@@ -190,7 +190,7 @@ class DepositController extends Controller
 
         return redirect()
             ->route('deposits.show', $deposit)
-            ->with('status', 'Top up berhasil. Saldo kamu sudah bertambah.');
+            ->with('status', 'Top up '.$deposit->reference.' berhasil. Saldo kamu sudah bertambah.');
     }
 
     /**

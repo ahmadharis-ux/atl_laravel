@@ -13,5 +13,5 @@
         </span>
     </a>
 @empty
-    <div class="notif-empty">Tidak ada notifikasi baru.</div>
+    <div class="notif-empty">{{ $emptyMessage ?? 'Tidak ada notifikasi baru.' }}</div>
 @endforelse

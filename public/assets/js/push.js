@@ -169,9 +169,28 @@
             return;
         }
         m.onMessage(function (payload) {
+            var notification = (payload && payload.notification) || {};
             var data = (payload && payload.data) || {};
+            var title = data.title || notification.title || 'Notifikasi baru';
+            var body = data.body || notification.body || '';
+            var url = data.url || (notification.click_action || '') || '/';
+
             if (window.AP && window.AP.showToast) {
-                window.AP.showToast(data.title || data.body || 'Notifikasi baru', data.level || 'info');
+                window.AP.showToast(data.body || title, data.level || 'info');
+            }
+
+            // Saat aplikasi terbuka, FCM tidak menampilkan notifikasi sistem
+            // otomatis; tampilkan manual agar tetap sampai ke perangkat.
+            if ('Notification' in window && Notification.permission === 'granted') {
+                registration().then(function (reg) {
+                    return reg.showNotification(title, {
+                        body: body,
+                        icon: '/assets/images/6.png',
+                        badge: '/assets/images/6.png',
+                        data: { url: url },
+                        tag: data.order_number || data.reference || ('atl-' + Date.now()),
+                    });
+                }).catch(function (err) { log('showNotification gagal:', err && err.message); });
             }
         });
     }

@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Log;
 use Kreait\Firebase\Contract\Messaging;
 use Kreait\Firebase\Factory;
 use Kreait\Firebase\Messaging\CloudMessage;
-use Kreait\Firebase\Messaging\Notification;
 use Kreait\Firebase\Messaging\WebPushConfig;
 use Throwable;
 
@@ -116,8 +115,10 @@ final class FcmSender
         $body = (string) ($payload['body'] ?? '');
         $level = (string) ($payload['level'] ?? 'info');
         $url = (string) ($payload['url'] ?? '');
-        $icon = (string) ($payload['icon'] ?? '');
 
+        // Pesan data-only: penampilan & klik notifikasi ditangani sepenuhnya oleh
+        // service worker (firebase-messaging-sw.js) supaya tidak dobel tampil dan
+        // tautan tujuan bisa dikustom.
         $data = array_filter([
             'title' => $title,
             'body' => $body,
@@ -125,25 +126,11 @@ final class FcmSender
             'url' => $url,
         ], static fn (string $value): bool => $value !== '');
 
-        $notification = array_filter([
-            'title' => $title,
-            'body' => $body,
-            'icon' => $icon,
-            'data' => array_filter([
-                'url' => $url,
-                'level' => $level,
-            ], static fn (string $value): bool => $value !== ''),
-        ], static fn (string|array $value): bool => $value !== '' && $value !== []);
-
-        $webPush = ['notification' => $notification];
-
-        if ($url !== '') {
-            $webPush['fcm_options'] = ['link' => $url];
-        }
-
         return CloudMessage::new()
             ->withData($data)
-            ->withNotification(Notification::create($title, $body))
-            ->withWebPushConfig(WebPushConfig::fromArray($webPush));
+            ->withWebPushConfig(WebPushConfig::fromArray([
+                'headers' => ['Urgency' => 'high', 'TTL' => '2419200'],
+                'fcm_options' => ['link' => $url !== '' ? $url : '/'],
+            ]));
     }
 }

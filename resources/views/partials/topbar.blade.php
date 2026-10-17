@@ -36,7 +36,11 @@
         <div class="notif" data-notif data-notif-url="{{ route('notifications.index') }}" data-notif-interval="15000" data-notif-user="{{ auth()->id() }}">
             <button class="sq" type="button" aria-label="Notifikasi" data-notif-toggle>
                 <span class="ms">notifications</span>
-                <span class="dot" data-notif-dot style="top:.5rem;right:.5rem;background:var(--err)" @if ($unreadNotifications === 0) hidden @endif></span>
+                @if ($unreadNotifications > 0)
+                    <span class="pill text-white" data-notif-dot style="position:absolute;top:-.25rem;right:-.25rem;min-width:1.25rem;height:1.25rem;font-size:.6875rem;padding:.125rem .25rem;border-radius:999px;line-height:1;display:flex;align-items:center;justify-content:center;background:var(--err)">
+                        {{ $unreadNotifications > 99 ? '99+' : $unreadNotifications }}
+                    </span>
+                @endif
             </button>
             <div class="notif-pop" data-notif-pop hidden>
                 <div class="notif-head">
@@ -77,7 +81,11 @@
     <div class="d-flex align-items-center gap-3 flex-shrink-0 ms-auto">
         <a href="{{ route('notifications.index') }}" class="sq rounded-circle shadow-sm flex-shrink-0 position-relative" style="width:2.75rem;height:2.75rem" aria-label="Notifikasi">
             <span class="ms">notifications</span>
-            <span class="dot bg-mintt" data-notif-dot style="top:.65rem;right:.8rem" @if ($unreadNotifications === 0) hidden @endif></span>
+            @if ($unreadNotifications > 0)
+                <span class="pill text-white" data-notif-dot style="position:absolute;top:-.25rem;right:-.25rem;min-width:1.25rem;height:1.25rem;font-size:.6875rem;padding:.125rem .25rem;border-radius:999px;line-height:1;display:flex;align-items:center;justify-content:center;background:var(--err)">
+                    {{ $unreadNotifications > 99 ? '99+' : $unreadNotifications }}
+                </span>
+            @endif
         </a>
         <form action="{{ route('logout') }}" method="POST" class="d-flex m-0">
             @csrf

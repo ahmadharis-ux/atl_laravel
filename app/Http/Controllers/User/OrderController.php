@@ -77,7 +77,7 @@ class OrderController extends Controller
 
         return redirect()
             ->route('orders.show', $order)
-            ->with('status', 'Pembayaran berhasil dikonfirmasi.');
+            ->with('status', 'Pembayaran pesanan '.$order->order_number.' berhasil dikonfirmasi.');
     }
 
     /**
@@ -107,10 +107,10 @@ class OrderController extends Controller
 
         $message = match ($status) {
             null => 'Status tidak dapat diambil dari Midtrans.',
-            'settlement', 'capture' => 'Pembayaran terverifikasi. Pesanan sedang diproses.',
-            'expire' => 'Kode QRIS sudah kedaluwarsa.',
-            'deny', 'cancel', 'failure' => 'Pembayaran ditolak atau dibatalkan.',
-            default => 'Status pembayaran: '.$status.'.',
+            'settlement', 'capture' => 'Pembayaran '.$order->order_number.' terverifikasi. Pesanan sedang diproses.',
+            'expire' => 'Kode QRIS pesanan '.$order->order_number.' sudah kedaluwarsa.',
+            'deny', 'cancel', 'failure' => 'Pembayaran pesanan '.$order->order_number.' ditolak atau dibatalkan.',
+            default => 'Status pembayaran '.$order->order_number.': '.$status.'.',
         };
 
         return redirect()->route('orders.show', $order)->with('status', $message);

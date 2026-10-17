@@ -46,7 +46,7 @@ final class DepositSettler
 
             $owner->notify(new TransactionResult(
                 title: 'Top up berhasil',
-                body: 'Saldo Rp '.number_format((int) $locked->amount, 0, ',', '.').' telah ditambahkan ke akunmu.',
+                body: 'Top up '.$locked->reference.' (Rp '.number_format((int) $locked->amount, 0, ',', '.').') berhasil. Saldo telah ditambahkan ke akunmu.',
                 level: 'success',
                 icon: 'account_balance_wallet',
                 url: route('deposits.show', $locked),
