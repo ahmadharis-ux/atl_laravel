@@ -195,6 +195,53 @@
         });
     }
 
+    var PROMPT_KEY = 'atl_push_prompt';
+
+    function promptDismissed() {
+        try { return localStorage.getItem(PROMPT_KEY); } catch (e) { return null; }
+    }
+
+    function dismissPrompt() {
+        try { localStorage.setItem(PROMPT_KEY, '1'); } catch (e) { /* ignore */ }
+    }
+
+    // Browser memblokir Notification.requestPermission() tanpa gesture user,
+    // jadi tampilkan banner kecil; izin diminta saat tombol diklik.
+    function showPromptBanner() {
+        if (promptDismissed() || flag() === '0') {
+            return;
+        }
+        if (!document.body) {
+            return;
+        }
+
+        var banner = document.createElement('div');
+        banner.className = 'atl-push-prompt';
+        banner.innerHTML =
+            '<span class="atl-push-prompt-text">' +
+            '<strong>Aktifkan notifikasi</strong>' +
+            '<span>Terima update status pesanan & top up langsung di perangkatmu.</span>' +
+            '</span>' +
+            '<span class="atl-push-prompt-actions">' +
+            '<button type="button" class="atl-push-prompt-dismiss">Nanti</button>' +
+            '<button type="button" class="atl-push-prompt-enable btn-navy">Aktifkan</button>' +
+            '</span>';
+        document.body.appendChild(banner);
+
+        banner.querySelector('.atl-push-prompt-dismiss').addEventListener('click', function () {
+            dismissPrompt();
+            banner.remove();
+        });
+        banner.querySelector('.atl-push-prompt-enable').addEventListener('click', function () {
+            enable().then(function (ok) {
+                if (ok) {
+                    dismissPrompt();
+                }
+                banner.remove();
+            });
+        });
+    }
+
     function bootstrap() {
         if (!supported || !cfg.configured) {
             return;
@@ -210,6 +257,8 @@
                     return registerToken(token);
                 }
             }).catch(function (err) { log('Sinkronisasi token gagal:', err && err.message); });
+        } else if (Notification.permission === 'default' && cfg.loggedIn) {
+            showPromptBanner();
         }
     }
 

@@ -195,3 +195,13 @@ a{text-decoration:none;color:inherit}
 .sync-log-container .tx-err{color:#ff7b72}
 .sync-log-container .tx-gold{color:#e3b341}
 .sync-log-container .tx-mintt{color:#3fb950}
+/* Banner izin push notification */
+.atl-push-prompt{position:fixed;left:1rem;right:1rem;bottom:1rem;z-index:1900;display:flex;align-items:center;gap:1rem;justify-content:space-between;padding:.875rem 1rem;border-radius:.75rem;background:#fff;box-shadow:0 10px 30px rgba(6,40,58,.18);border:1px solid rgba(6,40,58,.08)}
+.atl-push-prompt-text{display:flex;flex-direction:column;gap:.125rem;min-width:0}
+.atl-push-prompt-text strong{font-size:.875rem;color:var(--navy)}
+.atl-push-prompt-text span{font-size:.75rem;color:var(--mute)}
+.atl-push-prompt-actions{display:flex;align-items:center;gap:.5rem;flex:none}
+.atl-push-prompt-dismiss{background:transparent;border:0;font-size:.8125rem;font-weight:700;color:var(--mute);cursor:pointer;padding:.5rem .75rem;border-radius:.5rem}
+.atl-push-prompt-dismiss:hover{color:var(--navy)}
+.atl-push-prompt-enable{font-size:.8125rem;padding:.5rem 1rem;white-space:nowrap}
+@media (min-width:480px){.atl-push-prompt{left:auto;max-width:26rem}}
