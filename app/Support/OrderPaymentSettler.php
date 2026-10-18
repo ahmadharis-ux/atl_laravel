@@ -47,6 +47,7 @@ final class OrderPaymentSettler
         $order->refresh();
 
         if ($order->status === OrderStatus::Success) {
+            $order->user?->addPoint();
             OrderNotifier::success($order);
         }
 

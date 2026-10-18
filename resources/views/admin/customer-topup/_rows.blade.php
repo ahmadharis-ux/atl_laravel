@@ -8,8 +8,7 @@
                 'label' => 'Tandai Lunas',
                 'icon' => 'check_circle',
                 'tone' => 'tx-mintt',
-                'form' => 'topup-settle-'.$deposit->id,
-                'confirm' => 'Tandai top up '.$deposit->reference.' sebagai lunas dan tambahkan saldo pengguna?',
+                'modal' => 'modalSettleTopup-'.$deposit->id,
             ];
             $actions[] = [
                 'label' => 'Batalkan',
@@ -45,6 +44,25 @@
             @endif
         </td>
     </tr>
+
+    @if ($deposit->isPending() && auth()->user()->can('topups.update'))
+        <x-ui.modal id="modalSettleTopup-{{ $deposit->id }}" title="Konfirmasi Top Up" size="sm">
+            <form id="topup-settle-form-{{ $deposit->id }}" method="POST" action="{{ route('admin.topup.settle', $deposit) }}">
+                @csrf
+                <p class="fs-13 tx-mute mb-3">
+                    Total tagihan <span class="fw-semibold">Rp {{ number_format($deposit->totalDue(), 0, ',', '.') }}</span>
+                    (nominal Rp {{ number_format($deposit->amount, 0, ',', '.') }} + biaya admin Rp {{ number_format($deposit->fee, 0, ',', '.') }}).
+                </p>
+                <x-ui.currency-input name="received_amount" label="Nominal diterima" :value="$deposit->totalDue()" hint="Saldo yang masuk = nominal diterima − biaya admin." />
+            </form>
+            <x-slot:footer>
+                <button type="button" class="btn-soft" data-modal-close>Batal</button>
+                <button type="submit" form="topup-settle-form-{{ $deposit->id }}" class="btn-navy">
+                    <span class="ms ms-sm align-middle me-1">check_circle</span>Tandai Lunas
+                </button>
+            </x-slot:footer>
+        </x-ui.modal>
+    @endif
 @empty
     <tr>
         <td colspan="8" class="text-center tx-mute py-4">Belum ada data top up yang cocok.</td>

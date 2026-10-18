@@ -165,6 +165,8 @@ final class OrderFulfillment
             'sn' => $data['sn'] ?? null,
         ], $order, $order->user);
 
+        $order->user?->addPoint();
+
         OrderNotifier::success($order);
     }
 
