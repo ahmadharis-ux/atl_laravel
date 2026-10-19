@@ -6,13 +6,17 @@ use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\WalletTransactionType;
 use App\Http\Controllers\Controller;
+use App\Models\MasterBank;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\User;
+use App\Notifications\TransactionResult;
 use App\Services\MidtransService;
 use App\Support\OrderFulfillment;
 use App\Support\OrderTarget;
 use App\Support\PaymentInstruction;
 use App\Support\PhoneOperator;
+use App\Support\Roles;
 use App\Support\TransactionLogger;
 use App\Support\Wallet as WalletSupport;
 use App\Support\WalletLedger;
@@ -31,6 +35,12 @@ class CheckoutController extends Controller
     {
         $this->ensurePurchasable($product);
 
+        $targets = MasterBank::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('bank_name')
+            ->get();
+
         return view('user.checkout.show', [
             'product' => $product->load(['brand', 'category']),
             'targetLabel' => OrderTarget::label($product->category?->slug),
@@ -41,7 +51,8 @@ class CheckoutController extends Controller
             'balance' => (int) $request->user()->balance,
             'adminFee' => WalletSupport::ADMIN_FEE,
             'paymentMethods' => PaymentMethod::cases(),
-            'channels' => PaymentMethod::channelOptions(),
+            'bankTargets' => $targets->where('type', MasterBank::TYPE_BANK)->values(),
+            'ewalletTargets' => $targets->where('type', MasterBank::TYPE_EWALLET)->values(),
             'selectedMethod' => old('payment_method', PaymentMethod::Saldo->value),
         ]);
     }
@@ -54,17 +65,17 @@ class CheckoutController extends Controller
             'target' => ['required', 'string', 'min:3', 'max:64'],
             'zone' => [OrderTarget::requiresZone($product->brand?->slug) ? 'required' : 'nullable', 'string', 'max:20'],
             'payment_method' => ['required', Rule::enum(PaymentMethod::class)],
-            'payment_channel' => ['nullable', 'string', Rule::in(array_keys(PaymentMethod::channelOptions()))],
+            'master_bank_id' => ['nullable', 'integer'],
         ]);
 
         $this->ensureOperatorMatches($product, (string) $validated['target']);
 
         $method = PaymentMethod::from($validated['payment_method']);
-        $channel = PaymentInstruction::channel($method, $validated['payment_channel'] ?? null);
+        $masterBank = $this->resolveMasterBank($method, $validated['master_bank_id'] ?? null);
         $amount = $product->selling_price;
 
         try {
-            $order = DB::transaction(function () use ($request, $product, $validated, $amount, $method, $channel): Order {
+            $order = DB::transaction(function () use ($request, $product, $validated, $amount, $method, $masterBank): Order {
                 $account = $request->user()->newQuery()
                     ->whereKey($request->user()->getKey())
                     ->lockForUpdate()
@@ -103,14 +114,16 @@ class CheckoutController extends Controller
                     'target' => $validated['target'],
                     'target_zone' => $validated['zone'] ?? null,
                     'amount' => $amount,
+                    'fee' => $masterBank?->admin_fee ?? 0,
                     'status' => $status,
                     'provider' => $provider,
                     'provider_ref' => $provider !== null ? $orderNumber : null,
                     'payment_method' => $method,
-                    'payment_channel' => $channel,
-                    'payment_code' => $paid ? null : PaymentInstruction::code($method),
+                    'payment_channel' => $masterBank?->bank_name,
+                    'payment_code' => $paid ? null : ($masterBank?->account_number ?? PaymentInstruction::code($method)),
+                    'master_bank_id' => $masterBank?->getKey(),
                     'paid_at' => $paid ? now() : null,
-                    'expires_at' => ! $paid && $method === PaymentMethod::Qris ? now()->addHours(DepositController::EXPIRY_HOURS) : null,
+                    'expires_at' => ! $paid ? now()->addHours(DepositController::EXPIRY_HOURS) : null,
                 ]);
 
                 if ($paid) {
@@ -132,7 +145,8 @@ class CheckoutController extends Controller
                 } else {
                     TransactionLogger::info('order.awaiting_payment', 'Menunggu pembayaran '.$method->label().'.', [
                         'payment_code' => $order->payment_code,
-                        'payment_channel' => $channel,
+                        'payment_channel' => $order->payment_channel,
+                        'fee' => $order->fee,
                     ], $order, $account);
                 }
 
@@ -173,6 +187,18 @@ class CheckoutController extends Controller
             }
         }
 
+        if ($method->requiresChannel()) {
+            User::whereHas('roles', fn ($q) => $q->where('name', Roles::ADMIN))
+                ->get()
+                ->each(fn ($user) => $user->notify(new TransactionResult(
+                    title: 'Pembayaran Pesanan Baru',
+                    body: 'Pengguna '.$order->user->name.' membuat pesanan '.$order->order_number.' (Rp '.number_format($order->totalDue(), 0, ',', '.').'). Transfer '.$method->label().' ke '.$order->payment_channel.' menunggu verifikasi.',
+                    level: 'info',
+                    url: route('admin.transactions.show', $order),
+                    context: ['type' => 'order_new', 'reference' => $order->order_number],
+                )));
+        }
+
         return redirect()
             ->route('orders.show', $order)
             ->with('status', $method->isInstant()
@@ -209,6 +235,34 @@ class CheckoutController extends Controller
                 'target' => 'Nomor ini terdeteksi operator '.$detected['operator'].'. Silakan pilih produk yang sesuai.',
             ]);
         }
+    }
+
+    /**
+     * Ambil master bank tujuan sesuai metode. Wajib untuk VA & e-wallet.
+     */
+    private function resolveMasterBank(PaymentMethod $method, ?int $id): ?MasterBank
+    {
+        if (! $method->requiresChannel()) {
+            return null;
+        }
+
+        $type = $method === PaymentMethod::EWallet ? MasterBank::TYPE_EWALLET : MasterBank::TYPE_BANK;
+
+        $masterBank = MasterBank::query()
+            ->where('is_active', true)
+            ->where('type', $type)
+            ->whereKey($id)
+            ->first();
+
+        if ($masterBank === null) {
+            throw ValidationException::withMessages([
+                'master_bank_id' => $method === PaymentMethod::EWallet
+                    ? 'Pilih e-wallet tujuan yang tersedia.'
+                    : 'Pilih bank tujuan yang tersedia.',
+            ]);
+        }
+
+        return $masterBank;
     }
 
     private function generateOrderNumber(): string

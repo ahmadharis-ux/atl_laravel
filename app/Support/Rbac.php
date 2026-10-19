@@ -58,6 +58,18 @@ final class Rbac
                 'products.view' => 'Melihat daftar produk',
                 'products.update' => 'Mengubah produk',
             ],
+            'Merchandise' => [
+                'merchandise.view' => 'Melihat daftar merchandise',
+                'merchandise.update' => 'Menambah / mengubah merchandise',
+            ],
+            'Penukaran Poin' => [
+                'redemptions.view' => 'Melihat daftar penukaran poin',
+                'redemptions.update' => 'Memproses penukaran poin',
+            ],
+            'Pengaturan Loyalitas' => [
+                'loyalty.view' => 'Melihat pengaturan tier loyalitas',
+                'loyalty.update' => 'Mengubah threshold tier loyalitas',
+            ],
         ];
     }
 
@@ -113,6 +125,9 @@ final class Rbac
                 'master-brands.view', 'master-brands.update',
                 'login-banners.view', 'login-banners.update',
                 'dashboard-banners.view', 'dashboard-banners.update',
+                'merchandise.view', 'merchandise.update',
+                'redemptions.view', 'redemptions.update',
+                'loyalty.view', 'loyalty.update',
             ],
             Roles::STAFF => [
                 'dashboard.view',
@@ -124,6 +139,9 @@ final class Rbac
                 'master-brands.view', 'master-brands.update',
                 'login-banners.view', 'login-banners.update',
                 'dashboard-banners.view', 'dashboard-banners.update',
+                'merchandise.view', 'merchandise.update',
+                'redemptions.view', 'redemptions.update',
+                'loyalty.view', 'loyalty.update',
             ],
             Roles::CS => [
                 'dashboard.view',
@@ -134,6 +152,9 @@ final class Rbac
                 'master-brands.view',
                 'login-banners.view',
                 'dashboard-banners.view',
+                'merchandise.view',
+                'redemptions.view',
+                'loyalty.view',
             ],
             Roles::USER => [],
         ];

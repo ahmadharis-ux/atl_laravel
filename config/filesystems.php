@@ -75,6 +75,20 @@ return [
             'report' => false,
         ],
 
+        /*
+         * Gambar merchandise. Ditulis langsung ke folder public/uploads/merchandise
+         * tanpa symlink, sama seperti disk `banners` dan `brands`.
+         * Dipisah dari /merchandise agar tidak menabrak route halaman merchandise.
+         */
+        'merchandise' => [
+            'driver' => 'local',
+            'root' => public_path('uploads/merchandise'),
+            'url' => '/uploads/merchandise',
+            'visibility' => 'public',
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

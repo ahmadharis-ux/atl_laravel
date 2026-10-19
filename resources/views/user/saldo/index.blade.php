@@ -65,12 +65,15 @@
 
     <div class="row g-3">
         <div class="col-sm-6">
-            <div class="mini-poin r-sm p-3 h-100">
+            <div class="mini-poin r-sm {{ $tier->cssClass() }} p-3 h-100">
                 <div class="d-flex align-items-center justify-content-between">
                     <span class="d-flex align-items-center gap-1 fw-bold tx-gold"><span class="ms ms-sm f">star</span>Poin Reward</span>
-                    <a href="#" class="fs-12 fw-bold tx-gold px-2 py-1 rounded-pill bg-gold-soft">Tukar</a>
+                    <a href="{{ route('merchandise.index') }}" class="fs-12 fw-bold tx-gold px-2 py-1 rounded-pill bg-gold-soft">Tukar</a>
                 </div>
                 <div class="num fw-800 fs-4 mt-2">{{ number_format($points, 0, ',', '.') }} <span class="tx-gold fs-6">Poin</span></div>
+                <div class="d-flex align-items-center gap-1 mt-2">
+                    <span class="pill tier-{{ $tier->value }} fs-11"><span class="ms ms-sm me-1" style="font-size:12px">{{ $tier->icon() }}</span>{{ $tier->label() }}</span>
+                </div>
             </div>
         </div>
     </div>

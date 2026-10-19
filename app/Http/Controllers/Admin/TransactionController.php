@@ -7,6 +7,7 @@ use App\Enums\PaymentMethod;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Support\OrderFulfillment;
+use App\Support\OrderPaymentSettler;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -85,5 +86,36 @@ class TransactionController extends Controller
         }
 
         return back()->with('success', 'Refund berhasil diproses.');
+    }
+
+    /**
+     * Tandai lunas pesanan VA/e-wallet manual (mirip top up: admin memverifikasi
+     * transfer masuk), lalu lanjutkan fulfilment otomatis.
+     */
+    public function settle(Request $request, Order $order): RedirectResponse
+    {
+        if (! $order->isPending()) {
+            return back()->with('error', 'Hanya pesanan berstatus Menunggu Pembayaran yang dapat ditandai lunas.');
+        }
+
+        if (! OrderPaymentSettler::settle($order, $request->user())) {
+            return back()->with('error', 'Pesanan '.$order->order_number.' sudah lunas atau tidak dapat diproses.');
+        }
+
+        return back()->with('success', 'Pesanan '.$order->order_number.' ditandai lunas dan diproses.');
+    }
+
+    /**
+     * Batalkan pesanan yang belum dibayar dan kembalikan stoknya.
+     */
+    public function expire(Order $order): RedirectResponse
+    {
+        if (! $order->isPending()) {
+            return back()->with('error', 'Hanya pesanan berstatus Menunggu Pembayaran yang dapat dibatalkan.');
+        }
+
+        OrderFulfillment::expire($order);
+
+        return back()->with('success', 'Pesanan '.$order->order_number.' dibatalkan dan stok dikembalikan.');
     }
 }

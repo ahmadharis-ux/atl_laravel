@@ -212,4 +212,85 @@ class AdminTransactionTest extends TestCase
             'event' => 'order.paid',
         ]);
     }
+
+    public function test_admin_can_mark_a_pending_order_as_paid(): void
+    {
+        $admin = $this->admin(['dashboard.view', 'transactions.view', 'transactions.update']);
+        $order = Order::factory()->create([
+            'status' => OrderStatus::Pending,
+            'payment_method' => PaymentMethod::VirtualAccount,
+            'payment_channel' => 'bca',
+            'paid_at' => null,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.transactions.settle', $order))
+            ->assertRedirect();
+
+        $order->refresh();
+        $this->assertSame(OrderStatus::Success, $order->status);
+        $this->assertNotNull($order->paid_at);
+
+        $this->assertDatabaseHas('transaction_logs', [
+            'order_id' => $order->getKey(),
+            'event' => 'order.paid',
+        ]);
+    }
+
+    public function test_admin_cannot_settle_an_order_that_is_not_pending(): void
+    {
+        $admin = $this->admin(['dashboard.view', 'transactions.view', 'transactions.update']);
+        $order = Order::factory()->create([
+            'status' => OrderStatus::Success,
+            'payment_method' => PaymentMethod::VirtualAccount,
+            'paid_at' => now(),
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.transactions.settle', $order))
+            ->assertSessionHas('error');
+
+        $this->assertSame(OrderStatus::Success, $order->fresh()->status);
+    }
+
+    public function test_admin_can_cancel_a_pending_order_and_stock_is_returned(): void
+    {
+        $admin = $this->admin(['dashboard.view', 'transactions.view', 'transactions.update']);
+        $product = $this->product(['unlimited_stock' => false, 'stock' => 0, 'sold_count' => 1]);
+        $order = Order::factory()->create([
+            'product_id' => $product->getKey(),
+            'status' => OrderStatus::Pending,
+            'payment_method' => PaymentMethod::VirtualAccount,
+            'paid_at' => null,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.transactions.expire', $order))
+            ->assertRedirect();
+
+        $order->refresh();
+        $this->assertSame(OrderStatus::Expired, $order->status);
+        $this->assertSame(1, $product->fresh()->stock);
+        $this->assertSame(0, $product->fresh()->sold_count);
+    }
+
+    public function test_settle_and_expire_require_the_update_permission(): void
+    {
+        $admin = $this->admin(['dashboard.view', 'transactions.view']);
+        $order = Order::factory()->create([
+            'status' => OrderStatus::Pending,
+            'payment_method' => PaymentMethod::VirtualAccount,
+            'paid_at' => null,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.transactions.settle', $order))
+            ->assertForbidden();
+
+        $this->actingAs($admin)
+            ->post(route('admin.transactions.expire', $order))
+            ->assertForbidden();
+
+        $this->assertSame(OrderStatus::Pending, $order->fresh()->status);
+    }
 }

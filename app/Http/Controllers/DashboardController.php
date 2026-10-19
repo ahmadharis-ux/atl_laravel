@@ -47,6 +47,7 @@ class DashboardController extends Controller
             'dateShort' => $now->translatedFormat('l, d F'),
             'balance' => (int) $authUser->balance,
             'points' => (int) $authUser->points,
+            'tier' => $authUser->tier(),
             'searchHistory' => $history,
             'topQueries' => $topQueries,
             'recommended' => $this->recommendedFor($topQueries),

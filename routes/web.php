@@ -15,6 +15,7 @@ use App\Http\Controllers\User\DepositController as UserDepositController;
 use App\Http\Controllers\User\DeviceTokenController as UserDeviceTokenController;
 use App\Http\Controllers\User\EwalletTokenizationController as UserEwalletTokenizationController;
 use App\Http\Controllers\User\LookupController as UserLookupController;
+use App\Http\Controllers\User\MerchandiseController as UserMerchandiseController;
 use App\Http\Controllers\User\NicknameController as UserNicknameController;
 use App\Http\Controllers\User\OrderController as UserOrderController;
 use App\Http\Controllers\User\PhoneOperatorController as UserPhoneOperatorController;
@@ -66,6 +67,9 @@ Route::middleware(['auth', 'non-admin', 'verified'])->group(function () {
     Route::get('/saldo', [UserSaldoController::class, 'index'])->name('saldo.index');
     Route::get('/saldo/mutasi', [UserSaldoController::class, 'mutations'])->name('saldo.mutations');
 
+    Route::get('/merchandise', [UserMerchandiseController::class, 'index'])->name('merchandise.index');
+    Route::post('/merchandise/{merchandise}/tukar', [UserMerchandiseController::class, 'redeem'])->name('merchandise.redeem');
+
     Route::get('/saldo/topup', [UserDepositController::class, 'create'])->name('deposits.create');
     Route::post('/saldo/topup', [UserDepositController::class, 'store'])->name('deposits.store');
     Route::get('/saldo/topup/riwayat', [UserDepositController::class, 'index'])->name('deposits.index');
@@ -100,7 +104,9 @@ Route::middleware(['auth', 'non-admin', 'verified'])->group(function () {
 
     Route::get('/transaksi', [UserOrderController::class, 'index'])->name('orders.index');
     Route::get('/transaksi/{order}', [UserOrderController::class, 'show'])->name('orders.show');
-    Route::post('/transaksi/{order}/bayar', [UserOrderController::class, 'pay'])->name('orders.pay');
+    if (! app()->environment('production')) {
+        Route::post('/transaksi/{order}/bayar', [UserOrderController::class, 'pay'])->name('orders.pay');
+    }
     Route::post('/transaksi/{order}/cek-status', [UserOrderController::class, 'sync'])
         ->middleware('throttle:10,1')->name('orders.sync');
     Route::get('/transaksi/{order}/qris', [UserOrderController::class, 'downloadQris'])->name('orders.qris');

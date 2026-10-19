@@ -8,7 +8,10 @@ use App\Http\Controllers\Admin\DashboardBannerController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\LoginBannerController;
 use App\Http\Controllers\Admin\LookupController;
+use App\Http\Controllers\Admin\LoyaltySettingController;
 use App\Http\Controllers\Admin\MasterBankController;
+use App\Http\Controllers\Admin\MerchandiseController;
+use App\Http\Controllers\Admin\MerchandiseRedemptionController;
 use App\Http\Controllers\Admin\Product\ProductController as ProductModuleController;
 use App\Http\Controllers\Admin\Product\SyncDigiflazzController;
 use App\Http\Controllers\Admin\RoleController;
@@ -48,6 +51,8 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/transactions', [TransactionController::class, 'index'])->middleware('permission:transactions.view')->name('transactions.index');
     Route::get('/transactions/{order}', [TransactionController::class, 'show'])->middleware('permission:transactions.view')->name('transactions.show');
     Route::get('/transactions/{order}/invoice', [TransactionController::class, 'invoice'])->middleware('permission:transactions.view')->name('transactions.invoice');
+    Route::post('/transactions/{order}/settle', [TransactionController::class, 'settle'])->middleware('permission:transactions.update')->name('transactions.settle');
+    Route::post('/transactions/{order}/expire', [TransactionController::class, 'expire'])->middleware('permission:transactions.update')->name('transactions.expire');
     Route::post('/transactions/{order}/refund', [TransactionController::class, 'refund'])->middleware('permission:transactions.update')->name('transactions.refund');
 
     Route::prefix('master-bank')->name('master-banks.')->group(function () {
@@ -74,6 +79,24 @@ Route::middleware(['auth', 'admin'])->group(function () {
         Route::post('/', [DashboardBannerController::class, 'store'])->middleware('permission:dashboard-banners.update')->name('store');
         Route::put('/{dashboardBanner}', [DashboardBannerController::class, 'update'])->middleware('permission:dashboard-banners.update')->name('update');
         Route::delete('/{dashboardBanner}', [DashboardBannerController::class, 'destroy'])->middleware('permission:dashboard-banners.update')->name('destroy');
+    });
+
+    Route::prefix('merchandise')->name('merchandise.')->group(function () {
+        Route::get('/', [MerchandiseController::class, 'index'])->middleware('permission:merchandise.view')->name('index');
+        Route::post('/', [MerchandiseController::class, 'store'])->middleware('permission:merchandise.update')->name('store');
+        Route::put('/{merchandise}', [MerchandiseController::class, 'update'])->middleware('permission:merchandise.update')->name('update');
+        Route::delete('/{merchandise}', [MerchandiseController::class, 'destroy'])->middleware('permission:merchandise.update')->name('destroy');
+    });
+
+    Route::prefix('redemptions')->name('redemptions.')->group(function () {
+        Route::get('/', [MerchandiseRedemptionController::class, 'index'])->middleware('permission:redemptions.view')->name('index');
+        Route::post('/{redemption}/complete', [MerchandiseRedemptionController::class, 'complete'])->middleware('permission:redemptions.update')->name('complete');
+        Route::post('/{redemption}/cancel', [MerchandiseRedemptionController::class, 'cancel'])->middleware('permission:redemptions.update')->name('cancel');
+    });
+
+    Route::prefix('loyalty-settings')->name('loyalty-settings.')->group(function () {
+        Route::get('/', [LoyaltySettingController::class, 'index'])->middleware('permission:loyalty.view')->name('index');
+        Route::put('/', [LoyaltySettingController::class, 'update'])->middleware('permission:loyalty.update')->name('update');
     });
 
     Route::prefix('bot/digiflazz')->name('bot.digiflazz.')->group(function () {

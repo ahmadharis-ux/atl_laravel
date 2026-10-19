@@ -7,11 +7,14 @@
     $product = $order->product;
     $targetLabel = \App\Support\OrderTarget::label($product?->category?->slug);
     $method = $order->payment_method;
-    $channelLabel = $method?->channelLabel($order->payment_channel);
+    $masterBank = $order->masterBank;
+    $channelLabel = $masterBank?->bank_name ?? $method?->channelLabel($order->payment_channel);
     $pending = $order->status === \App\Enums\OrderStatus::Pending;
     $processing = $order->status === \App\Enums\OrderStatus::Processing;
     $midtrans = $order->metadata['midtrans'] ?? [];
     $qrUrl = $midtrans['qr_url'] ?? null;
+    $fee = (int) $order->fee;
+    $totalDue = $order->totalDue();
 @endphp
 
 <div class="d-flex flex-column gap-3"
@@ -41,38 +44,83 @@
         </div>
 
         <x-ui.card title="Selesaikan Pembayaran">
-            <div class="d-flex flex-column align-items-center gap-2 text-center">
-                <span class="ibox ibox-48 bg-mint-l tx-mintt"><span class="ms">{{ $method?->icon() }}</span></span>
-                @if ($method === \App\Enums\PaymentMethod::Qris)
-                    @if ($qrUrl)
-                        <img src="{{ $qrUrl }}" alt="QRIS" class="r-sm bg-white p-2" style="width:220px;height:220px;object-fit:contain">
-                    @else
-                        <div class="r-sm bg-glass d-flex align-items-center justify-content-center" style="width:140px;height:140px">
-                            <span class="ms" style="font-size:64px">qr_code_2</span>
+            @if ($masterBank)
+                <div class="d-flex flex-column gap-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="ibox ibox-40 bg-mint-l tx-mintt"><span class="ms">{{ $method?->icon() }}</span></span>
+                        <div>
+                            <div class="fw-semibold fs-13">{{ $masterBank->bank_name }}</div>
+                            <div class="tx-mute fs-12">{{ $masterBank->type === \App\Models\MasterBank::TYPE_EWALLET ? 'E-Wallet tujuan' : 'Bank tujuan' }}</div>
+                        </div>
+                    </div>
+                    <ul class="list-unstyled m-0 d-flex flex-column gap-2 fs-13">
+                        <li class="d-flex align-items-center justify-content-between">
+                            <span class="tx-mute">Nomor tujuan</span>
+                            <span class="d-flex align-items-center gap-2">
+                                <span class="num fw-semibold">{{ $masterBank->account_number }}</span>
+                                <button type="button" class="ap-icon-btn" data-copy="{{ $masterBank->account_number }}" data-copy-label="Nomor tujuan" data-tip="Salin nomor"><span class="ms ms-sm">content_copy</span></button>
+                            </span>
+                        </li>
+                        <li class="d-flex align-items-center justify-content-between">
+                            <span class="tx-mute">Atas nama</span>
+                            <span class="fw-semibold">{{ $masterBank->account_holder }}</span>
+                        </li>
+                        <li class="d-flex align-items-center justify-content-between">
+                            <span class="tx-mute">Harga produk</span>
+                            <span class="num fw-semibold">Rp {{ number_format($order->amount, 0, ',', '.') }}</span>
+                        </li>
+                        @if ($fee > 0)
+                            <li class="d-flex align-items-center justify-content-between">
+                                <span class="tx-mute">Biaya admin</span>
+                                <span class="num fw-semibold">Rp {{ number_format($fee, 0, ',', '.') }}</span>
+                            </li>
+                        @endif
+                        <li class="d-flex align-items-center justify-content-between pt-2 border-top">
+                            <span class="fw-bold">Jumlah transfer</span>
+                            <span class="d-flex align-items-center gap-2">
+                                <span class="num fw-bold tx-tealt">Rp {{ number_format($totalDue, 0, ',', '.') }}</span>
+                                <button type="button" class="ap-icon-btn" data-copy="{{ $totalDue }}" data-copy-label="Total transfer" data-tip="Salin nominal"><span class="ms ms-sm">content_copy</span></button>
+                            </span>
+                        </li>
+                    </ul>
+                    @if ($order->expires_at)
+                        <p class="fs-12 tx-mute m-0">Transfer sebelum {{ $order->expires_at->locale('id')->translatedFormat('d M Y, H:i') }}.</p>
+                    @endif
+                    <p class="fs-12 tx-mute m-0">Pembayaran akan dikonfirmasi admin setelah dana diterima.</p>
+                </div>
+            @else
+                <div class="d-flex flex-column align-items-center gap-2 text-center">
+                    <span class="ibox ibox-48 bg-mint-l tx-mintt"><span class="ms">{{ $method?->icon() }}</span></span>
+                    @if ($method === \App\Enums\PaymentMethod::Qris)
+                        @if ($qrUrl)
+                            <img src="{{ $qrUrl }}" alt="QRIS" class="r-sm bg-white p-2" style="width:220px;height:220px;object-fit:contain">
+                        @else
+                            <div class="r-sm bg-glass d-flex align-items-center justify-content-center" style="width:140px;height:140px">
+                                <span class="ms" style="font-size:64px">qr_code_2</span>
+                            </div>
+                        @endif
+                    @endif
+                    <div class="num fw-bold fs-4 tx-tealc">{{ $order->payment_code }}</div>
+                    <p class="fs-12 tx-mute m-0">{{ $method?->label() }}@if ($channelLabel) &middot; {{ $channelLabel }}@endif</p>
+                    <p class="fs-12 tx-mute m-0">Bayar tepat <b class="tx-tealt">Rp {{ number_format($order->amount, 0, ',', '.') }}</b>. Status pesanan akan otomatis diperbarui setelah pembayaran diterima.</p>
+
+                    @if ($method === \App\Enums\PaymentMethod::Qris)
+                        <div class="d-flex flex-wrap gap-2 justify-content-center w-100 mt-1">
+                            @if ($qrUrl)
+                                <a href="{{ route('orders.qris', $order) }}" class="btn-ap btn-ap-outline flex-fill" style="min-width:9rem">
+                                    <span class="ms ms-sm align-middle me-1">download</span>Unduh QRIS
+                                </a>
+                            @endif
+                            <form method="POST" action="{{ route('orders.sync', $order) }}" class="d-flex flex-fill m-0" style="min-width:9rem">
+                                @csrf
+                                <button type="submit" class="btn-ap btn-mint flex-fill justify-content-center w-100">
+                                    <span class="ms ms-sm align-middle me-1">refresh</span>Cek Status
+                                </button>
+                            </form>
                         </div>
                     @endif
-                @endif
-                <div class="num fw-bold fs-4 tx-tealc">{{ $order->payment_code }}</div>
-                <p class="fs-12 tx-mute m-0">{{ $method?->label() }}@if ($channelLabel) &middot; {{ $channelLabel }}@endif</p>
-                <p class="fs-12 tx-mute m-0">Bayar tepat <b class="tx-tealt">Rp {{ number_format($order->amount, 0, ',', '.') }}</b>. Status pesanan akan otomatis diperbarui setelah pembayaran diterima.</p>
-
-                @if ($method === \App\Enums\PaymentMethod::Qris)
-                    <div class="d-flex flex-wrap gap-2 justify-content-center w-100 mt-1">
-                        @if ($qrUrl)
-                            <a href="{{ route('orders.qris', $order) }}" class="btn-ap btn-ap-outline flex-fill" style="min-width:9rem">
-                                <span class="ms ms-sm align-middle me-1">download</span>Unduh QRIS
-                            </a>
-                        @endif
-                        <form method="POST" action="{{ route('orders.sync', $order) }}" class="d-flex flex-fill m-0" style="min-width:9rem">
-                            @csrf
-                            <button type="submit" class="btn-ap btn-mint flex-fill justify-content-center w-100">
-                                <span class="ms ms-sm align-middle me-1">refresh</span>Cek Status
-                            </button>
-                        </form>
-                    </div>
-                    {{-- <p class="fs-11 tx-mute m-0 mt-1">Sudah membayar? Tekan "Cek Status" untuk memperbarui pembayaran secara manual.</p> --}}
-                @endif
-            </div>
+                </div>
+            @endif
         </x-ui.card>
     @endif
 
@@ -151,9 +199,15 @@
                     <span class="num fw-semibold">{{ $order->provider_sn }}</span>
                 </li>
             @endif
+            @if ($fee > 0)
+                <li class="d-flex align-items-center justify-content-between">
+                    <span class="tx-mute">Biaya admin</span>
+                    <span class="num fw-semibold">Rp {{ number_format($fee, 0, ',', '.') }}</span>
+                </li>
+            @endif
             <li class="d-flex align-items-center justify-content-between pt-2 border-top">
                 <span class="fw-bold">Total</span>
-                <span class="num fw-bold tx-tealt">Rp {{ number_format($order->amount, 0, ',', '.') }}</span>
+                <span class="num fw-bold tx-tealt">Rp {{ number_format($totalDue, 0, ',', '.') }}</span>
             </li>
         </ul>
     </x-ui.card>

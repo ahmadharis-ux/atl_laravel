@@ -68,9 +68,28 @@
                     <dt class="col-sm-5 tx-mute fw-normal">Kode Bayar</dt>
                     <dd class="col-sm-7 m-0 fw-semibold">{{ $order->payment_code ?: '—' }}</dd>
 
+                    <dt class="col-sm-5 tx-mute fw-normal">Biaya Admin</dt>
+                    <dd class="col-sm-7 m-0 fw-semibold">Rp {{ number_format($order->fee, 0, ',', '.') }}</dd>
+
+                    <dt class="col-sm-5 tx-mute fw-normal">Total Tagihan</dt>
+                    <dd class="col-sm-7 m-0 fw-semibold">Rp {{ number_format($order->totalDue(), 0, ',', '.') }}</dd>
+
                     <dt class="col-sm-5 tx-mute fw-normal">Waktu Bayar</dt>
                     <dd class="col-sm-7 m-0 fw-semibold">{{ $order->paid_at?->locale('id')->translatedFormat('d M Y, H:i') ?? 'Belum dibayar' }}</dd>
                 </dl>
+
+                @if ($order->isPending())
+                    <form id="formSettle{{ $order->getKey() }}" method="POST" action="{{ route('admin.transactions.settle', $order) }}" class="d-none">@csrf</form>
+                    <form id="formExpire{{ $order->getKey() }}" method="POST" action="{{ route('admin.transactions.expire', $order) }}" class="d-none">@csrf</form>
+                    <div class="d-flex flex-wrap gap-2 pt-3 mt-3 border-top justify-content-end">
+                        <button type="button" class="btn-soft tx-err" data-confirm="Batalkan pesanan {{ $order->order_number }} dan kembalikan stok?" data-confirm-danger data-submit-form="formExpire{{ $order->getKey() }}">
+                            <span class="ms ms-sm align-middle me-1">cancel</span>Batalkan
+                        </button>
+                        <button type="button" class="btn-navy" data-confirm="Tandai pesanan {{ $order->order_number }} (Rp {{ number_format($order->totalDue(), 0, ',', '.') }}) sebagai lunas dan proses pesanan?" data-submit-form="formSettle{{ $order->getKey() }}">
+                            <span class="ms ms-sm align-middle me-1">check_circle</span>Tandai Lunas
+                        </button>
+                    </div>
+                @endif
             </x-ui.card>
         </div>
     </div>

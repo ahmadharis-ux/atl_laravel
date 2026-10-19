@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\PointTransactionType;
+use App\Enums\UserTier;
 use App\Notifications\ResetPasswordNotification;
 use App\Notifications\VerifyEmailNotification;
 use App\Support\Roles;
@@ -10,6 +12,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -57,9 +60,48 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(WalletTransaction::class)->latest('id');
     }
 
+    public function merchandiseRedemptions(): HasMany
+    {
+        return $this->hasMany(MerchandiseRedemption::class);
+    }
+
+    /**
+     * Tingkatan loyalitas berdasarkan akumulasi poin reward.
+     */
+    public function tier(): UserTier
+    {
+        return UserTier::fromPoints((int) $this->points);
+    }
+
     public function addPoint(): void
     {
-        $this->forceFill(['points' => ($this->points ?? 0) + 1])->save();
+        $this->changePoints(1, PointTransactionType::OrderReward, 'Bonus poin pembelian');
+    }
+
+    /**
+     * Ubah saldo poin user dan catat ledger point_transactions (dipanggil
+     * di dalam transaksi DB oleh pemanggil bila perlu atomik).
+     */
+    public function changePoints(int $delta, PointTransactionType $type, ?string $description = null, ?Model $reference = null): void
+    {
+        $after = (int) $this->points + $delta;
+
+        $this->forceFill(['points' => $after])->save();
+
+        $this->pointTransactions()->create([
+            'type' => $type,
+            'points_change' => $delta,
+            'points_after' => $after,
+            'reference_type' => $reference?->getMorphClass(),
+            'reference_id' => $reference?->getKey(),
+            'description' => $description,
+        ]);
+    }
+
+    /** @return HasMany<PointTransaction, $this> */
+    public function pointTransactions(): HasMany
+    {
+        return $this->hasMany(PointTransaction::class);
     }
 
     /**

@@ -180,6 +180,15 @@ a{text-decoration:none;color:inherit}
 .wallet .btn-eye{position:relative;z-index:2}
 .wallet-arrow{flex:none;color:rgba(255,255,255,.75)}
 .wallet .btn-ap{padding:.6rem .9rem;font-size:.8125rem;white-space:nowrap}
+/* Tier loyalty (perubahan warna kartu wallet & pill tier) */
+.wallet.tier-silver{background:linear-gradient(135deg,#5b6672,#2f3640);box-shadow:0 10px 24px -4px rgba(47,54,64,.35)}
+.wallet.tier-gold{background:linear-gradient(135deg,#b8860b,#6b4500);box-shadow:0 10px 24px -4px rgba(167,107,0,.4)}
+.wallet.tier-platinum{background:linear-gradient(135deg,#0b6f76,#053d43);box-shadow:0 10px 24px -4px rgba(11,111,118,.4)}
+.pill.tier-silver{background:rgba(91,102,114,.18);color:#4b5563}
+.pill.tier-gold{background:var(--gold);color:var(--goldt)}
+.pill.tier-platinum{background:var(--tealc);color:var(--tealt)}
+.mini-poin.tier-silver{background:rgba(91,102,114,.18);border:1px solid rgba(107,114,128,.35)}
+.mini-poin.tier-platinum{background:var(--tealc);border:1px solid rgba(11,111,118,.3)}
 .ap-toast-container{position:fixed;top:1rem;right:1rem;z-index:2000;display:flex;flex-direction:column;gap:.5rem;pointer-events:none}
 .ap-toast{min-width:14rem;max-width:22rem;padding:.625rem .875rem;border-radius:.5rem;background:var(--navy);color:#fff;font-size:.8125rem;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.18);opacity:0;transform:translateY(-8px);transition:opacity .2s ease,transform .2s ease;pointer-events:auto}
 .ap-toast.show{opacity:1;transform:translateY(0)}

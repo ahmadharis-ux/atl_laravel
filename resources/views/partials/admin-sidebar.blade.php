@@ -49,6 +49,17 @@
         ['label' => 'Master Brand',      'icon' => 'branding_watermark',  'url' => route('admin.master-brands.index'), 'active' => request()->routeIs('admin.master-brands.*'), 'show' => $auth?->can('master-brands.view') ?? false],
         ['label' => 'Master Bank',       'icon' => 'account_balance',     'url' => route('admin.master-banks.index'), 'active' => request()->routeIs('admin.master-banks.*'), 'show' => $auth?->can('master-banks.view') ?? false],
         ['label' => 'Banner Login',      'icon' => 'campaign',            'url' => route('admin.login-banners.index'), 'active' => request()->routeIs('admin.login-banners.*'), 'show' => $auth?->can('login-banners.view') ?? false],
+        [
+            'label' => 'Merchandise',
+            'icon' => 'redeem',
+            'active' => request()->routeIs('admin.merchandise.*') || request()->routeIs('admin.redemptions.*') || request()->routeIs('admin.loyalty-settings.*'),
+            'show' => ($auth?->can('merchandise.view') || $auth?->can('redemptions.view') || $auth?->can('loyalty.view')) ?? false,
+            'children' => [
+                ['label' => 'Katalog',      'url' => route('admin.merchandise.index'),  'active' => request()->routeIs('admin.merchandise.*'),  'show' => $auth?->can('merchandise.view') ?? false],
+                ['label' => 'Penukaran',    'url' => route('admin.redemptions.index'),  'active' => request()->routeIs('admin.redemptions.*'),  'show' => $auth?->can('redemptions.view') ?? false],
+                ['label' => 'Pengaturan Tier', 'url' => route('admin.loyalty-settings.index'), 'active' => request()->routeIs('admin.loyalty-settings.*'), 'show' => $auth?->can('loyalty.view') ?? false],
+            ],
+        ],
         ['label' => 'Banner Dashboard',  'icon' => 'view_carousel',       'url' => route('admin.dashboard-banners.index'), 'active' => request()->routeIs('admin.dashboard-banners.*'), 'show' => $auth?->can('dashboard-banners.view') ?? false],
     ];
 @endphp

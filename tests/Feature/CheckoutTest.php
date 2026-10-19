@@ -8,6 +8,7 @@ use App\Enums\WalletTransactionDirection;
 use App\Enums\WalletTransactionType;
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\MasterBank;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
@@ -106,25 +107,34 @@ class CheckoutTest extends TestCase
         $this->assertDatabaseCount('wallet_transactions', 0);
     }
 
-    public function test_virtual_account_requires_a_channel_and_rejects_a_mismatched_one(): void
+    public function test_virtual_account_requires_a_master_bank_and_rejects_a_mismatched_one(): void
     {
         $user = User::factory()->create(['balance' => 1_000_000]);
         $product = $this->product();
+        $bank = MasterBank::factory()->create([
+            'type' => MasterBank::TYPE_BANK,
+            'is_active' => true,
+            'admin_fee' => 300,
+        ]);
+        $ewallet = MasterBank::factory()->create([
+            'type' => MasterBank::TYPE_EWALLET,
+            'is_active' => true,
+        ]);
 
         $this->actingAs($user)
             ->post(route('checkout.store', $product), [
                 'target' => '123456789',
                 'payment_method' => PaymentMethod::VirtualAccount->value,
             ])
-            ->assertSessionHasErrors('payment_channel');
+            ->assertSessionHasErrors('master_bank_id');
 
         $this->actingAs($user)
             ->post(route('checkout.store', $product), [
                 'target' => '123456789',
                 'payment_method' => PaymentMethod::VirtualAccount->value,
-                'payment_channel' => 'dana',
+                'master_bank_id' => $ewallet->getKey(),
             ])
-            ->assertSessionHasErrors('payment_channel');
+            ->assertSessionHasErrors('master_bank_id');
 
         $this->assertSame(0, Order::query()->count());
 
@@ -132,14 +142,45 @@ class CheckoutTest extends TestCase
             ->post(route('checkout.store', $product), [
                 'target' => '123456789',
                 'payment_method' => PaymentMethod::VirtualAccount->value,
-                'payment_channel' => 'bca',
+                'master_bank_id' => $bank->getKey(),
             ])
             ->assertRedirect();
 
         $order = Order::query()->sole();
         $this->assertSame(PaymentMethod::VirtualAccount, $order->payment_method);
-        $this->assertSame('bca', $order->payment_channel);
+        $this->assertSame($bank->bank_name, $order->payment_channel);
+        $this->assertSame($bank->account_number, $order->payment_code);
+        $this->assertSame($bank->getKey(), $order->master_bank_id);
+        $this->assertSame(300, $order->fee);
+        $this->assertSame(10_300, $order->totalDue());
         $this->assertSame(OrderStatus::Pending, $order->status);
+        $this->assertNotNull($order->expires_at);
+    }
+
+    public function test_ewallet_checkout_uses_an_active_ewallet_master_bank(): void
+    {
+        $user = User::factory()->create(['balance' => 1_000_000]);
+        $product = $this->product();
+        $ewallet = MasterBank::factory()->create([
+            'type' => MasterBank::TYPE_EWALLET,
+            'is_active' => true,
+            'admin_fee' => 1000,
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('checkout.store', $product), [
+                'target' => '123456789',
+                'payment_method' => PaymentMethod::EWallet->value,
+                'master_bank_id' => $ewallet->getKey(),
+            ])
+            ->assertRedirect();
+
+        $order = Order::query()->sole();
+        $this->assertSame(PaymentMethod::EWallet, $order->payment_method);
+        $this->assertSame($ewallet->getKey(), $order->master_bank_id);
+        $this->assertSame(1000, $order->fee);
+        $this->assertSame(OrderStatus::Pending, $order->status);
+        $this->assertNotNull($order->expires_at);
     }
 
     public function test_checkout_requires_a_target(): void

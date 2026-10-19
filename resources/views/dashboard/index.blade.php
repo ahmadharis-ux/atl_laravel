@@ -17,7 +17,7 @@
             />
         </div>
         <div class="col-12 col-lg-4 order-lg-1">
-            <section class="wallet r-card d-flex align-items-center gap-3 h-100">
+            <section class="wallet r-card {{ $tier->cssClass() }} d-flex align-items-center gap-3 h-100">
                 <a href="{{ route('saldo.index') }}" class="wallet-fill" aria-label="Buka detail saldo"></a>
 
                 <div class="wallet-cell">
@@ -38,7 +38,9 @@
                     <span class="num wallet-value">{{ number_format($points, 0, ',', '.') }}<span class="wallet-sub"> Poin</span></span>
                 </div>
 
-                <span class="ms ms-sm ms-auto wallet-arrow" aria-hidden="true">chevron_right</span>
+                <span class="pill tier-{{ $tier->value }} ms-auto fs-11 flex-shrink-0" style="position:relative;z-index:2"><span class="ms ms-sm me-1" style="font-size:13px">{{ $tier->icon() }}</span>{{ $tier->label() }}</span>
+
+                <span class="ms ms-sm wallet-arrow" aria-hidden="true">chevron_right</span>
             </section>
         </div>
     </div>

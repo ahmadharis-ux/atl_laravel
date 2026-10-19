@@ -20,6 +20,7 @@
             ['label' => 'Autentikasi Dua Faktor', 'desc' => 'Keamanan tambahan akun', 'icon' => 'verified_user', 'tone' => 'bg-gold tx-gold', 'url' => route('settings.two-factor')],
             ['label' => 'Perangkat Aktif', 'desc' => 'Kelola sesi login', 'icon' => 'devices', 'tone' => 'bg-errc-l tx-err', 'url' => route('settings.sessions')],
             ['label' => 'Notifikasi', 'desc' => 'Push notifikasi perangkat', 'icon' => 'notifications', 'tone' => 'bg-sky-l tx-navy', 'url' => route('settings.notifications')],
+            ['label' => 'Merchandise', 'desc' => 'Tukar poin reward', 'icon' => 'redeem', 'tone' => 'bg-gold tx-gold', 'url' => route('merchandise.index')],
         ];
     @endphp
 
