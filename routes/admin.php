@@ -14,6 +14,12 @@ use App\Http\Controllers\Admin\MerchandiseController;
 use App\Http\Controllers\Admin\MerchandiseRedemptionController;
 use App\Http\Controllers\Admin\Product\ProductController as ProductModuleController;
 use App\Http\Controllers\Admin\Product\SyncDigiflazzController;
+use App\Http\Controllers\Admin\Report\CustomerReportController;
+use App\Http\Controllers\Admin\Report\ExportController;
+use App\Http\Controllers\Admin\Report\OverviewController;
+use App\Http\Controllers\Admin\Report\ProductReportController;
+use App\Http\Controllers\Admin\Report\ProviderReportController;
+use App\Http\Controllers\Admin\ResellerController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SearchController;
 use App\Http\Controllers\Admin\TransactionController;
@@ -54,6 +60,19 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('/transactions/{order}/settle', [TransactionController::class, 'settle'])->middleware('permission:transactions.update')->name('transactions.settle');
     Route::post('/transactions/{order}/expire', [TransactionController::class, 'expire'])->middleware('permission:transactions.update')->name('transactions.expire');
     Route::post('/transactions/{order}/refund', [TransactionController::class, 'refund'])->middleware('permission:transactions.update')->name('transactions.refund');
+
+    Route::get('/resellers', [ResellerController::class, 'index'])->middleware('permission:resellers.view')->name('resellers.index');
+
+    Route::prefix('reports')->name('reports.')->middleware('permission:reports.view')->group(function () {
+        Route::redirect('/', '/admin/reports/overview');
+        Route::get('/overview', OverviewController::class)->name('overview');
+        Route::get('/products', ProductReportController::class)->name('products');
+        Route::get('/providers', ProviderReportController::class)->name('providers');
+        Route::get('/customers', CustomerReportController::class)->name('customers');
+        Route::get('/{section}/export', ExportController::class)
+            ->whereIn('section', ['overview', 'products', 'providers', 'customers'])
+            ->name('export');
+    });
 
     Route::prefix('master-bank')->name('master-banks.')->group(function () {
         Route::get('/', [MasterBankController::class, 'index'])->middleware('permission:master-banks.view')->name('index');

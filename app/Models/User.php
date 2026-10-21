@@ -167,6 +167,8 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
             'is_admin' => 'boolean',
             'balance' => 'integer',
+            'is_reseller' => 'boolean',
+            'reseller_since' => 'datetime',
             'two_factor_secret' => 'encrypted',
             'two_factor_recovery_codes' => 'encrypted:array',
             'two_factor_confirmed_at' => 'datetime',

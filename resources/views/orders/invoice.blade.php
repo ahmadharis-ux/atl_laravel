@@ -16,7 +16,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="{{ asset('assets/css/atlantic.css') }}?v={{ filemtime(public_path('assets/css/atlantic.css')) }}" rel="stylesheet">
-    <link rel="icon" href="{{ asset('assets/images/6.png') }}">
+    <link rel="icon" href="{{ asset('assets/images/logo.png') }}">
 
     <style>
         body { background: var(--bg); }
@@ -47,7 +47,7 @@
         <div class="invoice-doc r-card shadow-sm">
             <div class="invoice-head d-flex justify-content-between align-items-start gap-3 flex-wrap p-4">
                 <div class="d-flex align-items-center gap-3">
-                    <img src="{{ asset('assets/images/9.png') }}" alt="Atlantic Pedia" style="height:42px">
+                    <img src="{{ asset('assets/images/logo_with_right_text.png') }}" alt="Atlantic Pedia" style="height:42px">
                     <div>
                         <div class="fw-bold fs-4 text-white lh-1">Atlantic Pedia</div>
                         <div class="brand-sub fs-12 mt-1">Atlantic Pedia Tab</div>

@@ -70,6 +70,12 @@ final class Rbac
                 'loyalty.view' => 'Melihat pengaturan tier loyalitas',
                 'loyalty.update' => 'Mengubah threshold tier loyalitas',
             ],
+            'Reseller' => [
+                'resellers.view' => 'Melihat laporan reseller',
+            ],
+            'Laporan' => [
+                'reports.view' => 'Melihat laporan & analitik',
+            ],
         ];
     }
 
@@ -128,6 +134,8 @@ final class Rbac
                 'merchandise.view', 'merchandise.update',
                 'redemptions.view', 'redemptions.update',
                 'loyalty.view', 'loyalty.update',
+                'resellers.view',
+                'reports.view',
             ],
             Roles::STAFF => [
                 'dashboard.view',
@@ -142,6 +150,8 @@ final class Rbac
                 'merchandise.view', 'merchandise.update',
                 'redemptions.view', 'redemptions.update',
                 'loyalty.view', 'loyalty.update',
+                'resellers.view',
+                'reports.view',
             ],
             Roles::CS => [
                 'dashboard.view',
@@ -155,6 +165,8 @@ final class Rbac
                 'merchandise.view',
                 'redemptions.view',
                 'loyalty.view',
+                'resellers.view',
+                'reports.view',
             ],
             Roles::USER => [],
         ];

@@ -16,7 +16,7 @@
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                                 <tr>
                                     <td align="left" valign="middle">
-                                        <img src="{{ asset('assets/images/9.png') }}" alt="Atlantic Pedia" height="30" style="height:30px;display:block;border:0;">
+                                        <img src="{{ asset('assets/images/logo_with_right_text.png') }}" alt="Atlantic Pedia" height="30" style="height:30px;display:block;border:0;">
                                         <div style="color:#9ff0f7;font-size:11px;font-weight:600;letter-spacing:.02em;margin-top:8px;">Atlantic Pedia Tab</div>
                                     </td>
                                 </tr>

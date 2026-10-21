@@ -38,8 +38,6 @@
                     <span class="num wallet-value">{{ number_format($points, 0, ',', '.') }}<span class="wallet-sub"> Poin</span></span>
                 </div>
 
-                <span class="pill tier-{{ $tier->value }} ms-auto fs-11 flex-shrink-0" style="position:relative;z-index:2"><span class="ms ms-sm me-1" style="font-size:13px">{{ $tier->icon() }}</span>{{ $tier->label() }}</span>
-
                 <span class="ms ms-sm wallet-arrow" aria-hidden="true">chevron_right</span>
             </section>
         </div>

@@ -44,7 +44,19 @@
                 ['label' => 'Semua Transaksi', 'url' => route('admin.transactions.index'), 'active' => request()->routeIs('admin.transactions.*'), 'show' => $auth?->can('transactions.view') ?? false],
             ],
         ],
-        ['label' => 'Laporan',           'icon' => 'bar_chart',          'url' => '#',                        'active' => false,                                'show' => true],
+        [
+            'label' => 'Laporan',
+            'icon' => 'bar_chart',
+            'active' => request()->routeIs('admin.reports.*') || request()->routeIs('admin.resellers.*'),
+            'show' => ($auth?->can('reports.view') || $auth?->can('resellers.view')) ?? false,
+            'children' => [
+                ['label' => 'Ringkasan',  'url' => route('admin.reports.overview'),  'active' => request()->routeIs('admin.reports.overview'),  'show' => $auth?->can('reports.view') ?? false],
+                ['label' => 'Produk',     'url' => route('admin.reports.products'),  'active' => request()->routeIs('admin.reports.products'),  'show' => $auth?->can('reports.view') ?? false],
+                ['label' => 'Provider',   'url' => route('admin.reports.providers'), 'active' => request()->routeIs('admin.reports.providers'), 'show' => $auth?->can('reports.view') ?? false],
+                ['label' => 'Pelanggan',  'url' => route('admin.reports.customers'), 'active' => request()->routeIs('admin.reports.customers'), 'show' => $auth?->can('reports.view') ?? false],
+                ['label' => 'Reseller',   'url' => route('admin.resellers.index'),   'active' => request()->routeIs('admin.resellers.*'),      'show' => $auth?->can('resellers.view') ?? false],
+            ],
+        ],
         ['label' => 'Komponen',          'icon' => 'widgets',            'url' => route('admin.components'),  'active' => request()->routeIs('admin.components'), 'show' => true],
         ['label' => 'Master Brand',      'icon' => 'branding_watermark',  'url' => route('admin.master-brands.index'), 'active' => request()->routeIs('admin.master-brands.*'), 'show' => $auth?->can('master-brands.view') ?? false],
         ['label' => 'Master Bank',       'icon' => 'account_balance',     'url' => route('admin.master-banks.index'), 'active' => request()->routeIs('admin.master-banks.*'), 'show' => $auth?->can('master-banks.view') ?? false],
@@ -68,8 +80,8 @@
     <div class="d-flex flex-column gap-4">
         <div class="side-head d-flex align-items-center justify-content-between gap-2 px-3 py-2">
             <div class="d-flex align-items-center gap-2 brand">
-                <img src="{{ asset('assets/images/9.png') }}" alt="Atlantic Pedia" class="brand-logo" style="width:7.5rem;height:3.25rem;border-radius:.75rem;object-fit:cover">
-                <img src="{{ asset('assets/images/8.png') }}" alt="Atlantic Pedia" class="brand-logo-sm" style="width:2.25rem;height:2.25rem;border-radius:.75rem;object-fit:cover">
+                <img src="{{ asset('assets/images/logo_with_right_text.png') }}" alt="Atlantic Pedia" class="brand-logo" style="width:7.5rem;height:3.25rem;border-radius:.75rem;object-fit:cover">
+                <img src="{{ asset('') }}" alt="Atlantic Pedia" class="brand-logo-sm" style="width:2.25rem;height:2.25rem;border-radius:.75rem;object-fit:cover">
             </div>
             {{-- <button class="btn btn-sm text-white border-0 d-none d-lg-flex align-items-center justify-content-center js-sidebar-toggle" type="button" aria-label="Perluas / perkecil sidebar" title="Perluas / perkecil sidebar" style="cursor:pointer;width:2rem;height:2rem;background:rgba(255,255,255,.1);border-radius:.5rem">
                 <span class="ms ms-sm ico-expanded">menu_open</span>

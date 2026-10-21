@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <title>@yield('title', 'Atlantic Pedia Tab')</title>
-<link rel="icon" href="{{ asset('assets/images/6.png') }}">
-<link rel="icon" type="image/png" sizes="16x16" href="{{ asset('assets/images/6.png') }}">
-<link rel="icon" type="image/png" sizes="32x32" href="{{ asset('assets/images/6.png') }}">
+<link rel="icon" href="{{ asset('assets/images/logo.png') }}">
+<link rel="icon" type="image/png" sizes="16x16" href="{{ asset('assets/images/logo.png') }}">
+<link rel="icon" type="image/png" sizes="32x32" href="{{ asset('assets/images/logo.png') }}">
 <link rel="apple-touch-icon" href="{{ asset('assets/images/apple-touch-icon.png') }}">
 <link rel="manifest" href="{{ asset('assets/images/site.webmanifest') }}">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
@@ -61,7 +61,7 @@ body{min-height:100vh}
 <div class="row g-0 auth">
   <aside class="col-lg-6 d-none d-lg-flex brand-panel flex-column justify-content-between">
     <div style="max-width:28rem">
-      <img src="{{ asset('assets/images/9.png') }}" alt="Atlantic Pedia Tab" style="width:80%">
+      <img src="{{ asset('assets/images/logo_with_right_text.png') }}" alt="Atlantic Pedia Tab" style="width:80%">
       <h2 class="fw-bold mb-3" style="font-size:2.25rem;line-height:1.2;letter-spacing:-.02em">Kelola semua transaksi PPOB dari satu tempat.</h2>
       <div class="d-flex flex-column gap-3">
         <div class="feat"><span class="ms">bolt</span><div>Kelola transaksi PPOB cepat, aman, dan otomatis 24 jam.</div></div>
@@ -73,7 +73,7 @@ body{min-height:100vh}
   <main class="col-lg-6 d-flex align-items-center justify-content-center p-3 p-sm-4" style="padding-top:env(safe-area-inset-top,0px)">
     <div class="form-wrap py-4">
       <div class="d-flex d-lg-none align-items-center justify-content-center gap-2 mb-4">
-        <img src="{{ asset('assets/images/9.png') }}" alt="Atlantic Pedia Tab" style="height:2.25rem;width:auto">
+        <img src="{{ asset('assets/images/logo_with_right_text.png') }}" alt="Atlantic Pedia Tab" style="height:2.25rem;width:auto">
       </div>
       <div class="form-card">
         @yield('content')

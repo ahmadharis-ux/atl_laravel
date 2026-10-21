@@ -455,7 +455,7 @@
 
         <x-ui.banner-popup
             id="modalBannerDemo"
-            :image="asset('assets/images/9.png')"
+            :image="asset('assets/images/logo_with_right_text.png')"
             title="Promo Spesial"
             body="Overlay transparan — hanya banner yang tampil, tanpa kotak modal."
         />

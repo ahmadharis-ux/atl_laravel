@@ -30,7 +30,7 @@
 {{-- Header mobile --}}
 <header class="d-flex d-lg-none align-items-center justify-content-between gap-3 px-3 pt-3 pb-2">
     <div class="d-flex align-items-center gap-2">
-        <img src="{{ asset('assets/images/9.png') }}" alt="Atlantic Pedia" style="height:2.25rem;width:auto;border-radius:.65rem">
+        <img src="{{ asset('assets/images/logo_with_right_text.png') }}" alt="Atlantic Pedia" style="height:2.25rem;width:auto;border-radius:.65rem">
     </div>
     <div class="d-flex align-items-center gap-2">
         <button class="sq rounded-circle shadow-sm" style="width:2.75rem;height:2.75rem" aria-label="Notifikasi">

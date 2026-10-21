@@ -71,9 +71,6 @@
                     <a href="{{ route('merchandise.index') }}" class="fs-12 fw-bold tx-gold px-2 py-1 rounded-pill bg-gold-soft">Tukar</a>
                 </div>
                 <div class="num fw-800 fs-4 mt-2">{{ number_format($points, 0, ',', '.') }} <span class="tx-gold fs-6">Poin</span></div>
-                <div class="d-flex align-items-center gap-1 mt-2">
-                    <span class="pill tier-{{ $tier->value }} fs-11"><span class="ms ms-sm me-1" style="font-size:12px">{{ $tier->icon() }}</span>{{ $tier->label() }}</span>
-                </div>
             </div>
         </div>
     </div>

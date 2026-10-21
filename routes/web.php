@@ -21,6 +21,7 @@ use App\Http\Controllers\User\OrderController as UserOrderController;
 use App\Http\Controllers\User\PhoneOperatorController as UserPhoneOperatorController;
 use App\Http\Controllers\User\ProductController as UserProductController;
 use App\Http\Controllers\User\PulsaController as UserPulsaController;
+use App\Http\Controllers\User\ResellerController as UserResellerController;
 use App\Http\Controllers\User\SaldoController as UserSaldoController;
 use App\Http\Controllers\User\SearchHistoryController as UserSearchHistoryController;
 use App\Http\Controllers\User\SettingsController as UserSettingsController;
@@ -121,6 +122,12 @@ Route::middleware(['auth', 'non-admin', 'verified'])->group(function () {
     Route::delete('/notifikasi/token', [UserDeviceTokenController::class, 'destroy'])->name('notifications.token.destroy');
 
     Route::get('/pengaturan', [UserSettingsController::class, 'index'])->name('settings.index');
+
+    Route::get('/pengaturan/reseller', [UserResellerController::class, 'show'])->name('settings.reseller');
+    Route::get('/pengaturan/reseller/dokumentasi', [UserResellerController::class, 'docs'])->name('settings.reseller.docs');
+    Route::post('/pengaturan/reseller/aktifkan', [UserResellerController::class, 'activate'])->name('settings.reseller.activate');
+    Route::post('/pengaturan/reseller/buat-ulang', [UserResellerController::class, 'regenerate'])->name('settings.reseller.regenerate');
+    Route::post('/pengaturan/reseller/nonaktifkan', [UserResellerController::class, 'deactivate'])->name('settings.reseller.deactivate');
 
     Route::get('/pengaturan/profil', [UserSettingsController::class, 'profile'])->name('settings.profile');
     Route::put('/pengaturan/profil', [UserSettingsController::class, 'updateProfile'])->name('settings.profile.update');

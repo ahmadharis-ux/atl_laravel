@@ -13,9 +13,9 @@ use App\Models\User;
 use App\Notifications\TransactionResult;
 use App\Services\MidtransService;
 use App\Support\OrderFulfillment;
+use App\Support\OrderNumber;
 use App\Support\OrderTarget;
 use App\Support\PaymentInstruction;
-use App\Support\PhoneOperator;
 use App\Support\Roles;
 use App\Support\TransactionLogger;
 use App\Support\Wallet as WalletSupport;
@@ -24,7 +24,6 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Throwable;
@@ -68,7 +67,7 @@ class CheckoutController extends Controller
             'master_bank_id' => ['nullable', 'integer'],
         ]);
 
-        $this->ensureOperatorMatches($product, (string) $validated['target']);
+        OrderTarget::ensureOperatorMatches($product, (string) $validated['target']);
 
         $method = PaymentMethod::from($validated['payment_method']);
         $masterBank = $this->resolveMasterBank($method, $validated['master_bank_id'] ?? null);
@@ -93,7 +92,7 @@ class CheckoutController extends Controller
 
                 $paid = $method->isInstant();
                 $provider = $item->provider;
-                $orderNumber = $this->generateOrderNumber();
+                $orderNumber = OrderNumber::generate();
 
                 if (! $item->unlimited_stock) {
                     $item->decrement('stock');
@@ -216,28 +215,6 @@ class CheckoutController extends Controller
     }
 
     /**
-     * Untuk produk pulsa/paket data, operator nomor tujuan wajib sama dengan
-     * brand produk. Mencegah user membeli paket Telkomsel untuk nomor Indosat.
-     */
-    private function ensureOperatorMatches(Product $product, string $target): void
-    {
-        $categorySlug = (string) $product->category?->slug;
-
-        if (! in_array($categorySlug, Product::OPERATOR_CATEGORY_SLUGS, true)) {
-            return;
-        }
-
-        $detected = PhoneOperator::detect($target);
-        $productBrandSlug = (string) $product->brand?->slug;
-
-        if ($detected !== null && $productBrandSlug !== '' && $detected['brand_slug'] !== $productBrandSlug) {
-            throw ValidationException::withMessages([
-                'target' => 'Nomor ini terdeteksi operator '.$detected['operator'].'. Silakan pilih produk yang sesuai.',
-            ]);
-        }
-    }
-
-    /**
      * Ambil master bank tujuan sesuai metode. Wajib untuk VA & e-wallet.
      */
     private function resolveMasterBank(PaymentMethod $method, ?int $id): ?MasterBank
@@ -263,14 +240,5 @@ class CheckoutController extends Controller
         }
 
         return $masterBank;
-    }
-
-    private function generateOrderNumber(): string
-    {
-        do {
-            $number = 'TRX-'.now()->format('Ymd').'-'.Str::upper(Str::random(6));
-        } while (Order::query()->where('order_number', $number)->exists());
-
-        return $number;
     }
 }
