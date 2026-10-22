@@ -6,6 +6,10 @@ use App\Http\Controllers\Admin\CustomerTopup\ProductController;
 use App\Http\Controllers\Admin\CustomerTopup\TopupController;
 use App\Http\Controllers\Admin\DashboardBannerController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\Landing\FaqController as LandingFaqController;
+use App\Http\Controllers\Admin\Landing\ServiceController as LandingServiceController;
+use App\Http\Controllers\Admin\Landing\SettingController as LandingSettingController;
+use App\Http\Controllers\Admin\Landing\TestimonialController as LandingTestimonialController;
 use App\Http\Controllers\Admin\LoginBannerController;
 use App\Http\Controllers\Admin\LookupController;
 use App\Http\Controllers\Admin\LoyaltySettingController;
@@ -22,6 +26,7 @@ use App\Http\Controllers\Admin\Report\ProviderReportController;
 use App\Http\Controllers\Admin\ResellerController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SearchController;
+use App\Http\Controllers\Admin\TicketController;
 use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
@@ -63,6 +68,13 @@ Route::middleware(['auth', 'admin'])->group(function () {
 
     Route::get('/resellers', [ResellerController::class, 'index'])->middleware('permission:resellers.view')->name('resellers.index');
 
+    Route::prefix('tickets')->name('tickets.')->group(function () {
+        Route::get('/', [TicketController::class, 'index'])->middleware('permission:tickets.view')->name('index');
+        Route::get('/{ticket}', [TicketController::class, 'show'])->middleware('permission:tickets.view')->name('show');
+        Route::post('/{ticket}/balas', [TicketController::class, 'reply'])->middleware('permission:tickets.update')->name('reply');
+        Route::put('/{ticket}/status', [TicketController::class, 'updateStatus'])->middleware('permission:tickets.update')->name('status');
+    });
+
     Route::prefix('reports')->name('reports.')->middleware('permission:reports.view')->group(function () {
         Route::redirect('/', '/admin/reports/overview');
         Route::get('/overview', OverviewController::class)->name('overview');
@@ -72,6 +84,26 @@ Route::middleware(['auth', 'admin'])->group(function () {
         Route::get('/{section}/export', ExportController::class)
             ->whereIn('section', ['overview', 'products', 'providers', 'customers'])
             ->name('export');
+    });
+
+    Route::prefix('landing')->name('landing.')->group(function () {
+        Route::get('/', [LandingSettingController::class, 'index'])->middleware('permission:landing.view')->name('settings');
+        Route::put('/', [LandingSettingController::class, 'update'])->middleware('permission:landing.update')->name('settings.update');
+
+        Route::get('/layanan', [LandingServiceController::class, 'index'])->middleware('permission:landing.view')->name('services');
+        Route::post('/layanan', [LandingServiceController::class, 'store'])->middleware('permission:landing.update')->name('services.store');
+        Route::put('/layanan/{service}', [LandingServiceController::class, 'update'])->middleware('permission:landing.update')->name('services.update');
+        Route::delete('/layanan/{service}', [LandingServiceController::class, 'destroy'])->middleware('permission:landing.update')->name('services.destroy');
+
+        Route::get('/testimoni', [LandingTestimonialController::class, 'index'])->middleware('permission:landing.view')->name('testimonials');
+        Route::post('/testimoni', [LandingTestimonialController::class, 'store'])->middleware('permission:landing.update')->name('testimonials.store');
+        Route::put('/testimoni/{testimonial}', [LandingTestimonialController::class, 'update'])->middleware('permission:landing.update')->name('testimonials.update');
+        Route::delete('/testimoni/{testimonial}', [LandingTestimonialController::class, 'destroy'])->middleware('permission:landing.update')->name('testimonials.destroy');
+
+        Route::get('/faq', [LandingFaqController::class, 'index'])->middleware('permission:landing.view')->name('faqs');
+        Route::post('/faq', [LandingFaqController::class, 'store'])->middleware('permission:landing.update')->name('faqs.store');
+        Route::put('/faq/{faq}', [LandingFaqController::class, 'update'])->middleware('permission:landing.update')->name('faqs.update');
+        Route::delete('/faq/{faq}', [LandingFaqController::class, 'destroy'])->middleware('permission:landing.update')->name('faqs.destroy');
     });
 
     Route::prefix('master-bank')->name('master-banks.')->group(function () {

@@ -223,7 +223,7 @@ class ProductSearchTest extends TestCase
         Product::factory()->prabayar()->create(['name' => 'Pulsa Telkomsel 50K', 'category_id' => $pulsa->getKey(), 'status' => true, 'sold_count' => 99]);
         Product::factory()->prabayar()->create(['name' => 'Diamond ML', 'status' => true, 'sold_count' => 1]);
 
-        $this->actingAs($user)->get('/')
+        $this->actingAs($user)->get(route('dashboard'))
             ->assertOk()
             ->assertSee('Diamond ML')
             ->assertDontSee('Pulsa Telkomsel 50K');

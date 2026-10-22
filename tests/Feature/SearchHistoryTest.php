@@ -97,7 +97,7 @@ class SearchHistoryTest extends TestCase
         $user = User::factory()->create();
         SearchHistory::remember($user->id, 'diamond ml');
 
-        $this->actingAs($user)->get('/')->assertOk()->assertSee('diamond ml');
+        $this->actingAs($user)->get(route('dashboard'))->assertOk()->assertSee('diamond ml');
     }
 
     public function test_remember_increments_hits(): void
@@ -128,7 +128,7 @@ class SearchHistoryTest extends TestCase
         Product::factory()->create(['name' => 'Pulsa Telkomsel 50.000', 'status' => true]);
         SearchHistory::factory()->for($user)->create(['query' => 'telkomsel', 'hits' => 3]);
 
-        $this->actingAs($user)->get('/')
+        $this->actingAs($user)->get(route('dashboard'))
             ->assertOk()
             ->assertSee('Sesuai Pencarianmu')
             ->assertSee('Pulsa Telkomsel 50.000');
@@ -140,11 +140,11 @@ class SearchHistoryTest extends TestCase
         Product::factory()->create(['name' => 'Pulsa Telkomsel 50.000', 'status' => true]);
         SearchHistory::factory()->for($user)->create(['query' => 'telkomsel', 'hits' => 3]);
 
-        $this->actingAs($user)->get('/')->assertSee('Sesuai Pencarianmu');
+        $this->actingAs($user)->get(route('dashboard'))->assertSee('Sesuai Pencarianmu');
 
         $this->actingAs($user)->deleteJson(route('search.history.clear'))->assertOk();
 
-        $this->actingAs($user)->get('/')
+        $this->actingAs($user)->get(route('dashboard'))
             ->assertOk()
             ->assertSee('Sesuai Pencarianmu')
             ->assertSee('Pulsa Telkomsel 50.000');
@@ -155,6 +155,6 @@ class SearchHistoryTest extends TestCase
         $user = User::factory()->create();
         Product::factory()->create(['name' => 'Pulsa Telkomsel 50.000', 'status' => true]);
 
-        $this->actingAs($user)->get('/')->assertOk()->assertDontSee('Sesuai Pencarianmu');
+        $this->actingAs($user)->get(route('dashboard'))->assertOk()->assertDontSee('Sesuai Pencarianmu');
     }
 }

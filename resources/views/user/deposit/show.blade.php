@@ -160,6 +160,12 @@
                 <span class="ibox ibox-48 bg-glass tx-mute"><span class="ms">{{ $deposit->status->icon() }}</span></span>
                 <p class="fs-13 tx-mute m-0">{{ $deposit->status->label() }}. Silakan buat permintaan top up baru.</p>
                 <a href="{{ route('deposits.create') }}" class="btn-ap btn-mint justify-content-center">Buat Top Up Baru</a>
+                @php
+                    $helpUrl = \App\Support\SupportWhatsapp::depositIssueUrl($deposit);
+                @endphp
+                @if ($helpUrl)
+                    <x-ui.whatsapp-help :url="$helpUrl" label="Laporkan ke CS via WhatsApp" class="mt-1" />
+                @endif
             </div>
         </x-ui.card>
     @endif

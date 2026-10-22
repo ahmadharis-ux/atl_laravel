@@ -17,6 +17,14 @@ final class Rbac
             'Dashboard' => [
                 'dashboard.view' => 'Melihat dashboard admin',
             ],
+            'Landing Page' => [
+                'landing.view' => 'Melihat konten landing page',
+                'landing.update' => 'Mengubah konten landing page',
+            ],
+            'Tiket & Aduan' => [
+                'tickets.view' => 'Melihat tiket & aduan',
+                'tickets.update' => 'Membalas / memproses tiket',
+            ],
             'Pengguna' => [
                 'users.view' => 'Melihat daftar pengguna',
                 'users.create' => 'Menambah pengguna',
@@ -123,6 +131,8 @@ final class Rbac
             Roles::SUPERADMIN => self::all(),
             Roles::ADMIN => [
                 'dashboard.view',
+                'landing.view', 'landing.update',
+                'tickets.view', 'tickets.update',
                 'users.view', 'users.create', 'users.update', 'users.delete', 'users.assign-role',
                 'roles.view', 'roles.create', 'roles.update',
                 'topups.view', 'topups.update', 'transactions.view', 'transactions.update',
@@ -139,6 +149,8 @@ final class Rbac
             ],
             Roles::STAFF => [
                 'dashboard.view',
+                'landing.view', 'landing.update',
+                'tickets.view', 'tickets.update',
                 'users.view', 'users.create', 'users.update', 'users.assign-role',
                 'roles.view',
                 'topups.view', 'topups.update', 'transactions.view', 'transactions.update',
@@ -155,6 +167,7 @@ final class Rbac
             ],
             Roles::CS => [
                 'dashboard.view',
+                'tickets.view', 'tickets.update',
                 'users.view',
                 'topups.view', 'topups.update', 'transactions.view', 'transactions.update',
                 'products.view',

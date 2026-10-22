@@ -142,6 +142,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(DeviceToken::class);
     }
 
+    public function tickets(): HasMany
+    {
+        return $this->hasMany(Ticket::class);
+    }
+
     /**
      * Menandai email berubah: verifikasi lama tidak lagi berlaku.
      */

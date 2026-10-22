@@ -131,6 +131,21 @@
         </div>
     @endif
 
+    @php
+        $helpUrl = in_array($order->status, [\App\Enums\OrderStatus::Failed, \App\Enums\OrderStatus::Expired], true)
+            ? \App\Support\SupportWhatsapp::orderIssueUrl($order)
+            : null;
+    @endphp
+    @if ($helpUrl)
+        <div class="alert-ap r-sm {{ $order->status->tone() }} d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <span class="ms">help</span>
+                <span class="fs-13">Ada kendala dengan pesanan ini? Hubungi CS dengan detail pesanan yang sudah terisi otomatis.</span>
+            </div>
+            <x-ui.whatsapp-help :url="$helpUrl" class="btn-sm" />
+        </div>
+    @endif
+
     <div class="row g-3">
         <div class="col-lg-7">
             <x-ui.card title="Produk">

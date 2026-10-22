@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FirebaseServiceWorkerController;
+use App\Http\Controllers\LandingController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\User\BankAccountController as UserBankAccountController;
 use App\Http\Controllers\User\CheckoutController as UserCheckoutController;
@@ -25,6 +26,7 @@ use App\Http\Controllers\User\ResellerController as UserResellerController;
 use App\Http\Controllers\User\SaldoController as UserSaldoController;
 use App\Http\Controllers\User\SearchHistoryController as UserSearchHistoryController;
 use App\Http\Controllers\User\SettingsController as UserSettingsController;
+use App\Http\Controllers\User\TicketController as UserTicketController;
 use App\Http\Controllers\Webhook\DigiflazzWebhookController;
 use App\Http\Controllers\Webhook\MidtransWebhookController;
 use Illuminate\Support\Facades\Route;
@@ -33,6 +35,8 @@ Route::post('/webhook/digiflazz', DigiflazzWebhookController::class)->name('webh
 Route::post('/webhook/midtrans', MidtransWebhookController::class)->name('webhook.midtrans');
 
 Route::get('/firebase-messaging-sw.js', FirebaseServiceWorkerController::class)->name('firebase.sw');
+
+Route::get('/', LandingController::class)->name('landing');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -63,7 +67,7 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::middleware(['auth', 'non-admin', 'verified'])->group(function () {
-    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/saldo', [UserSaldoController::class, 'index'])->name('saldo.index');
     Route::get('/saldo/mutasi', [UserSaldoController::class, 'mutations'])->name('saldo.mutations');
@@ -112,6 +116,12 @@ Route::middleware(['auth', 'non-admin', 'verified'])->group(function () {
         ->middleware('throttle:10,1')->name('orders.sync');
     Route::get('/transaksi/{order}/qris', [UserOrderController::class, 'downloadQris'])->name('orders.qris');
     Route::get('/transaksi/{order}/invoice', [UserOrderController::class, 'invoice'])->name('orders.invoice');
+
+    Route::get('/bantuan', [UserTicketController::class, 'index'])->name('tickets.index');
+    Route::get('/bantuan/baru', [UserTicketController::class, 'create'])->name('tickets.create');
+    Route::post('/bantuan', [UserTicketController::class, 'store'])->name('tickets.store');
+    Route::get('/bantuan/{ticket}', [UserTicketController::class, 'show'])->name('tickets.show');
+    Route::post('/bantuan/{ticket}/balas', [UserTicketController::class, 'reply'])->name('tickets.reply');
 
     Route::get('/notifikasi', [NotificationController::class, 'index'])->name('notifications.index');
     Route::get('/notifikasi/daftar', [NotificationController::class, 'list'])->name('notifications.list');

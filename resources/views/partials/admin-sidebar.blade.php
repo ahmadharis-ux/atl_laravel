@@ -3,6 +3,18 @@
     $menu = [
         ['label' => 'Dashboard',         'icon' => 'space_dashboard',    'url' => route('admin.dashboard'),   'active' => request()->routeIs('admin.dashboard'), 'show' => true],
         [
+            'label' => 'Landing Page',
+            'icon' => 'web',
+            'active' => request()->routeIs('admin.landing.*'),
+            'show' => $auth?->can('landing.view') ?? false,
+            'children' => [
+                ['label' => 'Pengaturan', 'url' => route('admin.landing.settings'),     'active' => request()->routeIs('admin.landing.settings'),     'show' => $auth?->can('landing.view') ?? false],
+                ['label' => 'Layanan',    'url' => route('admin.landing.services'),     'active' => request()->routeIs('admin.landing.services'),     'show' => $auth?->can('landing.view') ?? false],
+                ['label' => 'Testimoni',  'url' => route('admin.landing.testimonials'), 'active' => request()->routeIs('admin.landing.testimonials'), 'show' => $auth?->can('landing.view') ?? false],
+                ['label' => 'FAQ',        'url' => route('admin.landing.faqs'),         'active' => request()->routeIs('admin.landing.faqs'),         'show' => $auth?->can('landing.view') ?? false],
+            ],
+        ],
+        [
             'label' => 'Customer Topup',
             'icon' => 'point_of_sale',
             'active' => request()->routeIs('admin.topup.*') || request()->routeIs('admin.product.*'),
@@ -44,6 +56,7 @@
                 ['label' => 'Semua Transaksi', 'url' => route('admin.transactions.index'), 'active' => request()->routeIs('admin.transactions.*'), 'show' => $auth?->can('transactions.view') ?? false],
             ],
         ],
+        ['label' => 'Tiket',              'icon' => 'support_agent',      'url' => route('admin.tickets.index'), 'active' => request()->routeIs('admin.tickets.*'), 'show' => $auth?->can('tickets.view') ?? false],
         [
             'label' => 'Laporan',
             'icon' => 'bar_chart',
