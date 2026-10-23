@@ -1479,6 +1479,23 @@
                 btns3.forEach(function (b) { b.disabled = false; });
                 return;
               }
+            } else {
+              // try to find sisa text
+              var allText = form.innerText || '';
+              if (allText.match(/Sisa setelah transaksi.*Rp\s*[-]?\d/)) {
+                var m = allText.match(/Rp\s*(-\d[\d\.]*)/);
+                if (m) {
+                  if (window.AP && window.AP.showToast) {
+                    window.AP.showToast('Saldo tidak mencukupi.', 'error');
+                  } else {
+                    alert('Saldo tidak mencukupi.');
+                  }
+                  form.dataset.submitting = '';
+                  var btns3b = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+                  btns3b.forEach(function (b) { b.disabled = false; });
+                  return;
+                }
+              }
             }
           }
         }
