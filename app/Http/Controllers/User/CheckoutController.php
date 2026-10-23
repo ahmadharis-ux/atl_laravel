@@ -125,7 +125,7 @@ class CheckoutController extends Controller
                     'payment_code' => $paid ? null : ($masterBank?->account_number ?? PaymentInstruction::code($method)),
                     'master_bank_id' => $masterBank?->getKey(),
                     'paid_at' => $paid ? now() : null,
-                    'expires_at' => ! $paid ? now()->addHours(DepositController::EXPIRY_HOURS) : null,
+                    'expires_at' => ! $paid ? now()->addMinutes(3) : null,
                 ]);
 
                 if ($paid) {

@@ -780,10 +780,15 @@
       var cb = confirmCb;
       closeModal(confirmEl);
       confirmCb = null;
-      if (cb) cb();
+      if (cb) cb(true);
     });
     confirmEl.addEventListener('click', function (e) {
-      if (e.target.closest('[data-modal-close]')) confirmCb = null;
+      if (e.target.closest('[data-modal-close]')) {
+        var cb = confirmCb;
+        closeModal(confirmEl);
+        confirmCb = null;
+        if (cb) cb(false);
+      }
     });
     return confirmEl;
   }
@@ -795,7 +800,14 @@
     var ok = el.querySelector('.ap-confirm-ok');
     ok.textContent = o.okLabel || 'Ya, Lanjutkan';
     ok.style.background = o.danger ? 'var(--err)' : '';
-    confirmCb = cb || null;
+    confirmCb = function () { if (typeof cb === 'function') { cb(true); } };
+    var cancelBtn = el.querySelector('[data-modal-close]');
+    var oldCancel = cancelBtn._apCancel;
+    if (oldCancel) cancelBtn.removeEventListener('click', oldCancel);
+    cancelBtn._apCancel = function () {
+      if (typeof cb === 'function') { cb(false); }
+    };
+    cancelBtn.addEventListener('click', cancelBtn._apCancel);
     showModal(el);
   }
 
@@ -1373,6 +1385,17 @@
           var field = block.querySelector('select, input, textarea');
           if (field) field.disabled = !on;
         });
+
+        var saldoWrap = document.querySelector('[data-checkout-saldo]');
+        if (saldoWrap) {
+          if (value === 'saldo') {
+            saldoWrap.classList.remove('d-none');
+            saldoWrap.classList.add('d-flex');
+          } else {
+            saldoWrap.classList.add('d-none');
+            saldoWrap.classList.remove('d-flex');
+          }
+        }
       }
 
       inputs.forEach(function (input) { input.addEventListener('change', sync); });
@@ -1391,34 +1414,87 @@
         e.preventDefault();
         form.dataset.submitting = '1';
 
-        var min = parseInt(form.dataset.minLoader, 10);
-        if (isNaN(min) || min < 0) min = 2000;
-        var started = Date.now();
-        var data = new FormData(form);
+        var methodInput = form.querySelector('input[name="payment_method"]:checked');
+        var methodVal = methodInput ? methodInput.value : '';
+        var isCheckout = form.action && form.action.indexOf('/checkout/') !== -1;
+        var msg = isCheckout ? 'Apakah pesanan dilanjutkan?' : 'Apakah transaksi ini dilanjutkan?';
+        var title = isCheckout ? 'Konfirmasi Pesanan' : 'Konfirmasi Transaksi';
+        if (window.AP && typeof window.AP.confirm === 'function') {
+          window.AP.confirm({ message: msg, title: title, okLabel: 'Lanjutkan' }, function (ok) {
+            if (!ok) {
+              form.dataset.submitting = '';
+              var buttons = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+              buttons.forEach(function (b) { b.disabled = false; });
+              return;
+            }
+            var min = parseInt(form.dataset.minLoader, 10);
+            if (isNaN(min) || min < 0) min = 2000;
+            var started = Date.now();
+            var data = new FormData(form);
 
-        var buttons = form.querySelectorAll('button[type="submit"], input[type="submit"]');
-        buttons.forEach(function (b) { b.disabled = true; });
+            var buttons = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+            buttons.forEach(function (b) { b.disabled = true; });
+
+            if (window.AP && AP.showLoader) AP.showLoader();
+
+            fetch(form.action, {
+              method: (form.getAttribute('method') || 'post').toUpperCase(),
+              body: data,
+              credentials: 'same-origin',
+              headers: { 'Accept': 'text/html' },
+            }).then(function (response) {
+              var wait = Math.max(0, min - (Date.now() - started));
+              setTimeout(function () {
+                if (response.redirected && response.url) {
+                  window.location.assign(response.url);
+                } else {
+                  window.location.reload();
+                }
+              }, wait);
+            }).catch(function () {
+              if (window.AP && AP.hideLoader) AP.hideLoader();
+              form.dataset.submitting = '';
+              var buttons2f = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+              buttons2f.forEach(function (b) { b.disabled = false; });
+            });
+          });
+          return;
+        }
+
+        var min2 = parseInt(form.dataset.minLoader, 10);
+        if (isNaN(min2) || min2 < 0) min2 = 2000;
+        var started2 = Date.now();
+        var data2 = new FormData(form);
+
+        var buttons2f = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+        buttons2f.forEach(function (b) { b.disabled = true; });
 
         if (window.AP && AP.showLoader) AP.showLoader();
 
         fetch(form.action, {
           method: (form.getAttribute('method') || 'post').toUpperCase(),
-          body: data,
+          body: data2,
           credentials: 'same-origin',
           headers: { 'Accept': 'text/html' },
         }).then(function (response) {
-          var wait = Math.max(0, min - (Date.now() - started));
+          var wait = Math.max(0, min2 - (Date.now() - started2));
           setTimeout(function () {
             if (response.redirected && response.url) {
               window.location.assign(response.url);
             } else {
+              // Show validation message if present
+              if (window.AP && AP.showToast) {
+                try {
+                  // best effort: just reload
+                } catch (e) {}
+              }
               window.location.reload();
             }
           }, wait);
         }).catch(function () {
           if (window.AP && AP.hideLoader) AP.hideLoader();
           form.dataset.submitting = '';
-          buttons.forEach(function (b) { b.disabled = false; });
+          buttons2f.forEach(function (b) { b.disabled = false; });
           form.submit();
         });
       });

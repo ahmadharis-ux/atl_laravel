@@ -20,7 +20,7 @@
 
     <div class="row g-3">
         <div class="col-lg-7 order-2 order-lg-1">
-            <form method="POST" action="{{ route('checkout.store', $product) }}" class="d-flex flex-column gap-3" data-min-loader="2000">
+            <form method="POST" action="{{ route('checkout.store', $product) }}" class="d-flex flex-column gap-3" data-min-loader="2000" id="checkoutForm">
                 @csrf
                 <x-ui.card title="Data Tujuan">
                     <div class="d-flex flex-column gap-3">
@@ -50,7 +50,12 @@
 
                 <x-ui.card title="Metode Pembayaran">
                     <div class="d-flex flex-column gap-2" data-payment-methods>
+                        @php($allowed = ['saldo', 'qris'])
                         @foreach ($paymentMethods as $method)
+                            @php($val = $method->value)
+                            @if (! in_array($val, $allowed, true))
+                                @continue
+                            @endif
                             <x-ui.radio-card
                                 name="payment_method"
                                 :value="$method->value"
@@ -59,32 +64,10 @@
                             />
                         @endforeach
 
-                        <div data-payment-channel="va" class="mt-1">
-                            @if ($bankTargets->isEmpty())
-                                <div class="alert-ap r-sm bg-errc-l tx-err fs-12 px-3 py-2">Belum ada rekening bank tujuan. Silakan hubungi admin.</div>
-                            @else
-                                <x-ui.select
-                                    name="master_bank_id"
-                                    id="master_bank_id_bank"
-                                    label="Pilih Bank Tujuan"
-                                    :options="$bankTargets->mapWithKeys(fn ($bank) => [$bank->getKey() => $bank->bank_name.' — '.$bank->account_number.($bank->admin_fee > 0 ? ' (biaya admin Rp '.number_format($bank->admin_fee, 0, ',', '.').')' : '')])->all()"
-                                    placeholder="Pilih bank tujuan"
-                                />
-                            @endif
+                        <div data-payment-channel="va" class="mt-1 d-none">
                         </div>
 
-                        <div data-payment-channel="ewallet" class="mt-1">
-                            @if ($ewalletTargets->isEmpty())
-                                <div class="alert-ap r-sm bg-errc-l tx-err fs-12 px-3 py-2">Belum ada e-wallet tujuan. Silakan hubungi admin.</div>
-                            @else
-                                <x-ui.select
-                                    name="master_bank_id"
-                                    id="master_bank_id_ewallet"
-                                    label="Pilih E-Wallet Tujuan"
-                                    :options="$ewalletTargets->mapWithKeys(fn ($wallet) => [$wallet->getKey() => $wallet->bank_name.' — '.$wallet->account_number.($wallet->admin_fee > 0 ? ' (biaya admin Rp '.number_format($wallet->admin_fee, 0, ',', '.').')' : '')])->all()"
-                                    placeholder="Pilih e-wallet tujuan"
-                                />
-                            @endif
+                        <div data-payment-channel="ewallet" class="mt-1 d-none">
                         </div>
 
                         @error('payment_method')<div class="err show">{{ $message }}</div>@enderror
@@ -128,13 +111,15 @@
                         </li>
                     </ul>
 
-                    <div class="d-flex align-items-center justify-content-between fs-12 tx-skyd border-top pt-2">
-                        <span>Saldo kamu</span>
-                        <span class="num">Rp {{ number_format($balance, 0, ',', '.') }}</span>
-                    </div>
-                    <div class="d-flex align-items-center justify-content-between fs-12 {{ $sisaSaldo < 0 ? 'tx-err' : 'tx-skyd' }}">
-                        <span>Sisa setelah transaksi</span>
-                        <span class="num">Rp {{ number_format($sisaSaldo, 0, ',', '.') }}</span>
+                    <div data-checkout-saldo class="d-none flex-column gap-2">
+                        <div class="d-flex align-items-center justify-content-between fs-12 tx-skyd border-top pt-2">
+                            <span>Saldo kamu</span>
+                            <span class="num">Rp {{ number_format($balance, 0, ',', '.') }}</span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between fs-12 {{ $sisaSaldo < 0 ? 'tx-err' : 'tx-skyd' }}">
+                            <span>Sisa setelah transaksi</span>
+                            <span class="num" data-sisa-saldo>Rp {{ number_format($sisaSaldo, 0, ',', '.') }}</span>
+                        </div>
                     </div>
                 </div>
 
