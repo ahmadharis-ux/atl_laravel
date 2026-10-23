@@ -25,6 +25,7 @@
             ],
         ],
         ['label' => 'Pengguna',          'icon' => 'group',              'url' => route('admin.users.index'), 'active' => request()->routeIs('admin.users.*'),   'show' => $auth?->can('users.view') ?? false],
+        ['label' => 'Manajemen Halaman', 'icon' => 'toggle_on',          'url' => route('admin.features.index'), 'active' => request()->routeIs('admin.features.*'), 'show' => $auth?->can('features.view') ?? false],
         ['label' => 'Role & Permission', 'icon' => 'admin_panel_settings','url' => route('admin.roles.index'), 'active' => request()->routeIs('admin.roles.*'),   'show' => $auth?->can('roles.view') ?? false],
         [
             'label' => 'Bot Digiflazz',

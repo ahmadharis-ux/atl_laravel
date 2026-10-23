@@ -8,6 +8,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FirebaseServiceWorkerController;
 use App\Http\Controllers\LandingController;
+use App\Http\Controllers\LandingController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\User\BankAccountController as UserBankAccountController;
 use App\Http\Controllers\User\CheckoutController as UserCheckoutController;
@@ -23,9 +24,11 @@ use App\Http\Controllers\User\PhoneOperatorController as UserPhoneOperatorContro
 use App\Http\Controllers\User\ProductController as UserProductController;
 use App\Http\Controllers\User\PulsaController as UserPulsaController;
 use App\Http\Controllers\User\ResellerController as UserResellerController;
+use App\Http\Controllers\User\ResellerController as UserResellerController;
 use App\Http\Controllers\User\SaldoController as UserSaldoController;
 use App\Http\Controllers\User\SearchHistoryController as UserSearchHistoryController;
 use App\Http\Controllers\User\SettingsController as UserSettingsController;
+use App\Http\Controllers\User\TicketController as UserTicketController;
 use App\Http\Controllers\User\TicketController as UserTicketController;
 use App\Http\Controllers\Webhook\DigiflazzWebhookController;
 use App\Http\Controllers\Webhook\MidtransWebhookController;
@@ -35,6 +38,8 @@ Route::post('/webhook/digiflazz', DigiflazzWebhookController::class)->name('webh
 Route::post('/webhook/midtrans', MidtransWebhookController::class)->name('webhook.midtrans');
 
 Route::get('/firebase-messaging-sw.js', FirebaseServiceWorkerController::class)->name('firebase.sw');
+
+Route::get('/', LandingController::class)->name('landing');
 
 Route::get('/', LandingController::class)->name('landing');
 
@@ -68,12 +73,13 @@ Route::middleware('auth')->group(function () {
 
 Route::middleware(['auth', 'non-admin', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/saldo', [UserSaldoController::class, 'index'])->name('saldo.index');
     Route::get('/saldo/mutasi', [UserSaldoController::class, 'mutations'])->name('saldo.mutations');
 
-    Route::get('/merchandise', [UserMerchandiseController::class, 'index'])->name('merchandise.index');
-    Route::post('/merchandise/{merchandise}/tukar', [UserMerchandiseController::class, 'redeem'])->name('merchandise.redeem');
+    Route::get('/merchandise', [UserMerchandiseController::class, 'index'])->middleware('feature:merchandise')->name('merchandise.index');
+    Route::post('/merchandise/{merchandise}/tukar', [UserMerchandiseController::class, 'redeem'])->middleware('feature:merchandise')->name('merchandise.redeem');
 
     Route::get('/saldo/topup', [UserDepositController::class, 'create'])->name('deposits.create');
     Route::post('/saldo/topup', [UserDepositController::class, 'store'])->name('deposits.store');

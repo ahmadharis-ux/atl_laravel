@@ -84,7 +84,7 @@
                         </li>
                     </ul>
                     @if ($order->expires_at)
-                        <p class="fs-12 tx-mute m-0">Transfer sebelum {{ $order->expires_at->locale('id')->translatedFormat('d M Y, H:i') }}.</p>
+                        <p class="fs-12 tx-mute m-0">Transfer sebelum {{ $order->expires_at->locale('id')->translatedFormat('d M Y, H:i') }} <span class="tx-err fw-semibold" data-expiry-timer="{{ $order->expires_at->toIso8601String() }}">(00:00)</span>.</p>
                     @endif
                     <p class="fs-12 tx-mute m-0">Pembayaran akan dikonfirmasi admin setelah dana diterima.</p>
                 </div>
@@ -103,6 +103,9 @@
                     <div class="num fw-bold fs-4 tx-tealc">{{ $order->payment_code }}</div>
                     <p class="fs-12 tx-mute m-0">{{ $method?->label() }}@if ($channelLabel) &middot; {{ $channelLabel }}@endif</p>
                     <p class="fs-12 tx-mute m-0">Bayar tepat <b class="tx-tealt">Rp {{ number_format($order->amount, 0, ',', '.') }}</b>. Status pesanan akan otomatis diperbarui setelah pembayaran diterima.</p>
+                    @if ($order->expires_at)
+                        <p class="fs-12 tx-mute m-0">Selesaikan pembayaran sebelum <span class="tx-err fw-semibold" data-expiry-timer="{{ $order->expires_at->toIso8601String() }}">(00:00)</span></p>
+                    @endif</p>
 
                     @if ($method === \App\Enums\PaymentMethod::Qris)
                         <div class="d-flex flex-wrap gap-2 justify-content-center w-100 mt-1">

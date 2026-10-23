@@ -32,6 +32,10 @@ final class Rbac
                 'users.delete' => 'Menghapus pengguna',
                 'users.assign-role' => 'Menetapkan peran pengguna',
             ],
+            'Manajemen Halaman' => [
+                'features.view' => 'Melihat pengaturan halaman pengguna',
+                'features.update' => 'Mengaktifkan / menonaktifkan halaman pengguna',
+            ],
             'Role & Permission' => [
                 'roles.view' => 'Melihat daftar peran',
                 'roles.create' => 'Menambah peran',
@@ -135,6 +139,7 @@ final class Rbac
                 'tickets.view', 'tickets.update',
                 'users.view', 'users.create', 'users.update', 'users.delete', 'users.assign-role',
                 'roles.view', 'roles.create', 'roles.update',
+                'features.view', 'features.update',
                 'topups.view', 'topups.update', 'transactions.view', 'transactions.update',
                 'products.view', 'products.update',
                 'master-banks.view', 'master-banks.update',

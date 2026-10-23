@@ -9,6 +9,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -65,6 +66,25 @@ class ProductController extends Controller
             ->with('status', 'Produk "'.$product->name.'" berhasil diperbarui.');
     }
 
+    public function bulkMarkup(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'product_ids' => ['required', 'array', 'min:1'],
+            'product_ids.*' => ['integer', 'exists:products,id'],
+            'markup_type' => ['required', Rule::enum(MarkupType::class)],
+            'markup_value' => ['required', 'numeric', 'min:0'],
+        ]);
+
+        $updated = Product::query()
+            ->whereIn('id', $data['product_ids'])
+            ->update([
+                'markup_type' => $data['markup_type'],
+                'markup_value' => $data['markup_value'],
+            ]);
+
+        return back()->with('status', 'Markup berhasil diperbarui untuk '.$updated.' produk.');
+    }
+
     private function listing(Request $request, ProductPaymentType $paymentType): View|JsonResponse
     {
         $products = Product::query()
@@ -89,6 +109,7 @@ class ProductController extends Controller
         $data = [
             'products' => $products,
             'paymentType' => $paymentType,
+            'markupTypes' => MarkupType::options(),
             'listRoute' => $paymentType === ProductPaymentType::Prabayar
                 ? route('admin.products.prepay.index')
                 : route('admin.products.postpaid.index'),

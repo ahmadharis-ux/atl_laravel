@@ -47,4 +47,16 @@ return [
     */
     'tokenization_enabled' => env('MIDTRANS_TOKENIZATION_ENABLED', false),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Biaya Admin QRIS
+    |--------------------------------------------------------------------------
+    |
+    | Persentase MDR QRIS Midtrans yang dibebankan ke pengguna. Nilai di-gross-up
+    | sehingga nominal yang diterima merchant tetap sebesar harga transaksi.
+    | Contoh: 0.7 berarti 0,7%.
+    |
+    */
+    'qris_fee_percent' => (float) env('MIDTRANS_QRIS_FEE_PERCENT', 0.7),
+
 ];

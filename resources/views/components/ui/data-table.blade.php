@@ -70,7 +70,7 @@
             <div class="d-flex align-items-center gap-2 flex-wrap">
                 <span class="pill bg-tealc-m tx-tealt"><span class="js-dt-count">0</span> dipilih</span>
                 @foreach ($bulkActions as $a)
-                    <button type="button" class="btn btn-sm {{ $a['tone'] ?? 'btn-soft' }}" data-dt-action="{{ $a['value'] }}">
+                    <button type="button" class="btn btn-sm {{ $a['tone'] ?? 'btn-soft' }}" data-dt-action="{{ $a['value'] }}" @isset($a['modal']) data-dt-modal="{{ $a['modal'] }}" @endisset>
                         @if (! empty($a['icon']))<span class="ms ms-sm align-middle">{{ $a['icon'] }}</span>@endif
                         {{ $a['label'] }}
                     </button>

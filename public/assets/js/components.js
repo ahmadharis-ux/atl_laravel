@@ -102,6 +102,24 @@
           selected().forEach(c => c.closest('tr').remove());
           if (checkAll) checkAll.checked = false;
           sync();
+        } else if (btn.dataset.dtModal) {
+          var modal = document.getElementById(btn.dataset.dtModal);
+          if (!modal) return;
+          var holder = modal.querySelector('[data-bulk-ids]');
+          if (holder) {
+            holder.innerHTML = '';
+            var fieldName = holder.dataset.bulkField || 'product_ids[]';
+            selected().forEach(function (c) {
+              var input = document.createElement('input');
+              input.type = 'hidden';
+              input.name = fieldName;
+              input.value = c.value;
+              holder.appendChild(input);
+            });
+          }
+          var modalCount = modal.querySelector('[data-bulk-count]');
+          if (modalCount) modalCount.textContent = n;
+          openModal(btn.dataset.dtModal);
         } else {
           alert('Aksi "' + btn.dataset.dtAction + '" untuk ' + n + ' data terpilih.');
         }
@@ -762,10 +780,15 @@
       var cb = confirmCb;
       closeModal(confirmEl);
       confirmCb = null;
-      if (cb) cb();
+      if (cb) cb(true);
     });
     confirmEl.addEventListener('click', function (e) {
-      if (e.target.closest('[data-modal-close]')) confirmCb = null;
+      if (e.target.closest('[data-modal-close]')) {
+        var cb = confirmCb;
+        closeModal(confirmEl);
+        confirmCb = null;
+        if (cb) cb(false);
+      }
     });
     return confirmEl;
   }
@@ -777,7 +800,14 @@
     var ok = el.querySelector('.ap-confirm-ok');
     ok.textContent = o.okLabel || 'Ya, Lanjutkan';
     ok.style.background = o.danger ? 'var(--err)' : '';
-    confirmCb = cb || null;
+    confirmCb = function () { if (typeof cb === 'function') { cb(true); } };
+    var cancelBtn = el.querySelector('[data-modal-close]');
+    var oldCancel = cancelBtn._apCancel;
+    if (oldCancel) cancelBtn.removeEventListener('click', oldCancel);
+    cancelBtn._apCancel = function () {
+      if (typeof cb === 'function') { cb(false); }
+    };
+    cancelBtn.addEventListener('click', cancelBtn._apCancel);
     showModal(el);
   }
 
@@ -1355,6 +1385,17 @@
           var field = block.querySelector('select, input, textarea');
           if (field) field.disabled = !on;
         });
+
+        var saldoWrap = document.querySelector('[data-checkout-saldo]');
+        if (saldoWrap) {
+          if (value === 'saldo') {
+            saldoWrap.classList.remove('d-none');
+            saldoWrap.classList.add('d-flex');
+          } else {
+            saldoWrap.classList.add('d-none');
+            saldoWrap.classList.remove('d-flex');
+          }
+        }
       }
 
       inputs.forEach(function (input) { input.addEventListener('change', sync); });
@@ -1373,34 +1414,168 @@
         e.preventDefault();
         form.dataset.submitting = '1';
 
-        var min = parseInt(form.dataset.minLoader, 10);
-        if (isNaN(min) || min < 0) min = 2000;
-        var started = Date.now();
-        var data = new FormData(form);
+        var isCheckout = form.hasAttribute('data-checkout-form') || (form.action && form.action.indexOf('/checkout/') !== -1);
+        if (isCheckout) {
+          var targetInput = form.querySelector('input[name="target"]');
+          var targetVal = targetInput ? targetInput.value.trim() : '';
+          if (targetVal === '') {
+            if (window.AP && window.AP.showToast) {
+              window.AP.showToast('Isi tujuan terlebih dahulu.', 'error');
+            } else {
+              alert('Isi tujuan terlebih dahulu.');
+            }
+            form.dataset.submitting = '';
+            var btns = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+            btns.forEach(function (b) { b.disabled = false; });
+            if (targetInput) { targetInput.focus(); targetInput.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+            return;
+          }
+          var zoneInput = form.querySelector('input[name="zone"]');
+          if (zoneInput && zoneInput.closest('.d-none') === null) {
+            var zoneVal = zoneInput.value.trim();
+            if (zoneVal === '') {
+              if (window.AP && window.AP.showToast) {
+                window.AP.showToast('Zone wajib diisi.', 'error');
+              } else {
+                alert('Zone wajib diisi.');
+              }
+              form.dataset.submitting = '';
+              var btns2 = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+              btns2.forEach(function (b) { b.disabled = false; });
+              if (zoneInput) { zoneInput.focus(); zoneInput.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+              return;
+            }
+          } else if (zoneInput && zoneInput.required) {
+            var zoneVal2 = zoneInput.value.trim();
+            if (zoneVal2 === '') {
+              if (window.AP && window.AP.showToast) {
+                window.AP.showToast('Zone wajib diisi.', 'error');
+              } else {
+                alert('Zone wajib diisi.');
+              }
+              form.dataset.submitting = '';
+              var btns2b = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+              btns2b.forEach(function (b) { b.disabled = false; });
+              if (zoneInput) { zoneInput.focus(); zoneInput.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+              return;
+            }
+          }
+          var methodChk = form.querySelector('input[name="payment_method"]:checked');
+          var methodChkVal = methodChk ? methodChk.value : '';
+          if (methodChkVal === 'saldo') {
+            var sisa = document.querySelector('[data-sisa-saldo]');
+            if (sisa) {
+              var st = sisa.textContent.replace(/\D/g, '');
+              if (st !== '' && parseInt(st, 10) < 0) {
+                if (window.AP && window.AP.showToast) {
+                  window.AP.showToast('Saldo tidak mencukupi.', 'error');
+                } else {
+                  alert('Saldo tidak mencukupi.');
+                }
+                form.dataset.submitting = '';
+                var btns3 = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+                btns3.forEach(function (b) { b.disabled = false; });
+                return;
+              }
+            } else {
+              var allText = document.body.innerText || '';
+              if (allText.match(/Sisa setelah transaksi.*Rp\s*[-]?\d/)) {
+                var mm = allText.match(/Rp\s*-\s*([0-9\.]+)/);
+                if (mm) {
+                  if (window.AP && window.AP.showToast) {
+                    window.AP.showToast('Saldo tidak mencukupi.', 'error');
+                  } else {
+                    alert('Saldo tidak mencukupi.');
+                  }
+                  form.dataset.submitting = '';
+                  var btns3b = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+                  btns3b.forEach(function (b) { b.disabled = false; });
+                  return;
+                }
+              }
+            }
+          }
+        }
+        var methodInput = form.querySelector('input[name="payment_method"]:checked');
+        var methodVal = methodInput ? methodInput.value : '';
+        var msg = isCheckout ? 'Apakah pesanan dilanjutkan?' : 'Apakah transaksi ini dilanjutkan?';
+        var title = isCheckout ? 'Konfirmasi Pesanan' : 'Konfirmasi Transaksi';
+        if (window.AP && typeof window.AP.confirm === 'function') {
+          window.AP.confirm({ message: msg, title: title, okLabel: 'Lanjutkan' }, function (ok) {
+            if (!ok) {
+              form.dataset.submitting = '';
+              var buttons = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+              buttons.forEach(function (b) { b.disabled = false; });
+              return;
+            }
+            var min = parseInt(form.dataset.minLoader, 10);
+            if (isNaN(min) || min < 0) min = 2000;
+            var started = Date.now();
+            var data = new FormData(form);
 
-        var buttons = form.querySelectorAll('button[type="submit"], input[type="submit"]');
-        buttons.forEach(function (b) { b.disabled = true; });
+            var buttons = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+            buttons.forEach(function (b) { b.disabled = true; });
+
+            if (window.AP && AP.showLoader) AP.showLoader();
+
+            fetch(form.action, {
+              method: (form.getAttribute('method') || 'post').toUpperCase(),
+              body: data,
+              credentials: 'same-origin',
+              headers: { 'Accept': 'text/html' },
+            }).then(function (response) {
+              var wait = Math.max(0, min - (Date.now() - started));
+              setTimeout(function () {
+                if (response.redirected && response.url) {
+                  window.location.assign(response.url);
+                } else {
+                  window.location.reload();
+                }
+              }, wait);
+            }).catch(function () {
+              if (window.AP && AP.hideLoader) AP.hideLoader();
+              form.dataset.submitting = '';
+              var buttons2f = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+              buttons2f.forEach(function (b) { b.disabled = false; });
+            });
+          });
+          return;
+        }
+
+        var min2 = parseInt(form.dataset.minLoader, 10);
+        if (isNaN(min2) || min2 < 0) min2 = 2000;
+        var started2 = Date.now();
+        var data2 = new FormData(form);
+
+        var buttons2f = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+        buttons2f.forEach(function (b) { b.disabled = true; });
 
         if (window.AP && AP.showLoader) AP.showLoader();
 
         fetch(form.action, {
           method: (form.getAttribute('method') || 'post').toUpperCase(),
-          body: data,
+          body: data2,
           credentials: 'same-origin',
           headers: { 'Accept': 'text/html' },
         }).then(function (response) {
-          var wait = Math.max(0, min - (Date.now() - started));
+          var wait = Math.max(0, min2 - (Date.now() - started2));
           setTimeout(function () {
             if (response.redirected && response.url) {
               window.location.assign(response.url);
             } else {
+              // Show validation message if present
+              if (window.AP && AP.showToast) {
+                try {
+                  // best effort: just reload
+                } catch (e) {}
+              }
               window.location.reload();
             }
           }, wait);
         }).catch(function () {
           if (window.AP && AP.hideLoader) AP.hideLoader();
           form.dataset.submitting = '';
-          buttons.forEach(function (b) { b.disabled = false; });
+          buttons2f.forEach(function (b) { b.disabled = false; });
           form.submit();
         });
       });
@@ -1940,6 +2115,28 @@
     });
   }
 
+  function initExpiryTimers() {
+    document.querySelectorAll('[data-expiry-timer]').forEach(function (el) {
+      var iso = el.getAttribute('data-expiry-timer');
+      if (!iso) return;
+      var expires = new Date(iso);
+      function update() {
+        var now = Date.now();
+        var diff = expires.getTime() - now;
+        if (diff <= 0) {
+          el.textContent = '(00:00)';
+          return;
+        }
+        var totalSec = Math.floor(diff / 1000);
+        var min = Math.floor(totalSec / 60);
+        var sec = totalSec % 60;
+        el.textContent = '(' + String(min).padStart(2, '0') + ':' + String(sec).padStart(2, '0') + ')';
+      }
+      update();
+      setInterval(update, 1000);
+    });
+  }
+
   function boot() {
     initTables();
     initWizards();
@@ -1959,6 +2156,7 @@
     initAmountPresets();
     initCurrencyInputs();
     initCopy();
+    initExpiryTimers();
     initTooltips();
     initActions();
     initModals();

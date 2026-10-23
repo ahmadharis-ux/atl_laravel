@@ -72,9 +72,12 @@ class CheckoutController extends Controller
         $method = PaymentMethod::from($validated['payment_method']);
         $masterBank = $this->resolveMasterBank($method, $validated['master_bank_id'] ?? null);
         $amount = $product->selling_price;
+        $fee = $method === PaymentMethod::Qris
+            ? $midtrans->qrisFee($amount)
+            : ($masterBank?->admin_fee ?? 0);
 
         try {
-            $order = DB::transaction(function () use ($request, $product, $validated, $amount, $method, $masterBank): Order {
+            $order = DB::transaction(function () use ($request, $product, $validated, $amount, $method, $masterBank, $fee): Order {
                 $account = $request->user()->newQuery()
                     ->whereKey($request->user()->getKey())
                     ->lockForUpdate()
@@ -113,7 +116,7 @@ class CheckoutController extends Controller
                     'target' => $validated['target'],
                     'target_zone' => $validated['zone'] ?? null,
                     'amount' => $amount,
-                    'fee' => $masterBank?->admin_fee ?? 0,
+                    'fee' => $fee,
                     'status' => $status,
                     'provider' => $provider,
                     'provider_ref' => $provider !== null ? $orderNumber : null,
@@ -122,7 +125,7 @@ class CheckoutController extends Controller
                     'payment_code' => $paid ? null : ($masterBank?->account_number ?? PaymentInstruction::code($method)),
                     'master_bank_id' => $masterBank?->getKey(),
                     'paid_at' => $paid ? now() : null,
-                    'expires_at' => ! $paid ? now()->addHours(DepositController::EXPIRY_HOURS) : null,
+                    'expires_at' => ! $paid ? now()->addMinutes(3) : null,
                 ]);
 
                 if ($paid) {

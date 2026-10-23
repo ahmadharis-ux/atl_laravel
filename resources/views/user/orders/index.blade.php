@@ -29,7 +29,12 @@
                         <span class="num fw-bold">Rp {{ number_format($order->amount, 0, ',', '.') }}</span>
                         <span class="pill fs-11 {{ $order->status->tone() }}">{{ $order->status->label() }}</span>
                     </div>
-                    <a href="{{ route('orders.show', $order) }}" class="ap-icon-btn" data-tip="Detail"><span class="ms ms-md">chevron_right</span></a>
+                    <div class="d-flex align-items-center gap-1">
+                        @if ($order->product && $order->product->status)
+                            <a href="{{ route('checkout.show', $order->product) }}" class="btn-soft btn-xs" data-tip="Beli lagi">Beli lagi</a>
+                        @endif
+                        <a href="{{ route('orders.show', $order) }}" class="ap-icon-btn" data-tip="Detail"><span class="ms ms-md">chevron_right</span></a>
+                    </div>
                 </li>
             @empty
                 <li class="d-block border-0 p-0">
