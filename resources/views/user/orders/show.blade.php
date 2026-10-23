@@ -139,7 +139,32 @@
             ? \App\Support\SupportWhatsapp::orderIssueUrl($order)
             : null;
     @endphp
-    @if ($helpUrl)
+    @if ($order->status === \App\Enums\OrderStatus::Failed)
+        @php
+            $waFailedUrl = \App\Support\SupportWhatsapp::url(
+                "Halo Admin/CS Atlantic Pedia, saya ingin melaporkan transaksi yang GAGAL.\n\n".
+                "Link Transaksi: ".route('orders.show', $order)."\n\n".
+                "No. Pesanan: ".$order->order_number."\n".
+                "Keterangan Aduan: "
+            );
+        @endphp
+        @if ($waFailedUrl)
+            <x-ui.card title="Bantuan CS">
+                <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3">
+                    <div class="d-flex align-items-start gap-2">
+                        <span class="ms tx-err">support_agent</span>
+                        <div>
+                            <div class="fw-semibold">Transaksi gagal</div>
+                            <div class="fs-13 tx-mute">Klik tombol di bawah untuk menghubungi CS via WhatsApp. Link transaksi sudah otomatis terlampir, kamu bisa menambahkan keterangan aduan bebas.</div>
+                        </div>
+                    </div>
+                    <a href="{{ $waFailedUrl }}" target="_blank" rel="noopener" class="btn-ap btn-mint flex-shrink-0">
+                        <span class="ms ms-sm align-middle me-1">chat</span>Hubungi CS via WhatsApp
+                    </a>
+                </div>
+            </x-ui.card>
+        @endif
+    @elseif ($helpUrl)
         <div class="alert-ap r-sm {{ $order->status->tone() }} d-flex flex-wrap align-items-center justify-content-between gap-2">
             <div class="d-flex align-items-center gap-2">
                 <span class="ms">help</span>
