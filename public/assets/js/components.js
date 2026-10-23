@@ -1446,6 +1446,41 @@
               return;
             }
           }
+          var methodChk = form.querySelector('input[name="payment_method"]:checked');
+          var methodChkVal = methodChk ? methodChk.value : '';
+          if (methodChkVal === 'saldo') {
+            var totalEl = document.querySelector('.ap-card [data-total], .card-ap [data-total], .fw-bold.tx-tealc');
+            var balEl = document.querySelector('[data-balance], .tx-mute .num');
+            // try to read numbers from DOM
+            var totalTxt = '';
+            var balTxt = '';
+            var allNums = document.querySelectorAll('.num');
+            // better: look for specific
+            var totals = document.querySelectorAll('span.num');
+            // find total
+            for (var i=0; i<totals.length; i++) {
+              var t = totals[i].textContent || '';
+              if (t.indexOf('Rp') !== -1 && t.indexOf('Total') === -1) {
+                // not reliable, skip
+              }
+            }
+            // fallback: check sisa saldo
+            var sisa = document.querySelector('[data-sisa-saldo]');
+            if (sisa) {
+              var st = sisa.textContent.replace(/\D/g, '');
+              if (st !== '' && parseInt(st, 10) < 0) {
+                if (window.AP && window.AP.showToast) {
+                  window.AP.showToast('Saldo tidak mencukupi.', 'error');
+                } else {
+                  alert('Saldo tidak mencukupi.');
+                }
+                form.dataset.submitting = '';
+                var btns3 = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+                btns3.forEach(function (b) { b.disabled = false; });
+                return;
+              }
+            }
+          }
         }
         var methodInput = form.querySelector('input[name="payment_method"]:checked');
         var methodVal = methodInput ? methodInput.value : '';
