@@ -1414,9 +1414,41 @@
         e.preventDefault();
         form.dataset.submitting = '1';
 
+        var isCheckout = form.hasAttribute('data-checkout-form') || (form.action && form.action.indexOf('/checkout/') !== -1);
+        if (isCheckout) {
+          var targetInput = form.querySelector('input[name="target"]');
+          var targetVal = targetInput ? targetInput.value.trim() : '';
+          if (targetVal === '') {
+            if (window.AP && window.AP.showToast) {
+              window.AP.showToast('Isi tujuan terlebih dahulu.', 'error');
+            } else {
+              alert('Isi tujuan terlebih dahulu.');
+            }
+            form.dataset.submitting = '';
+            var btns = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+            btns.forEach(function (b) { b.disabled = false; });
+            if (targetInput) { targetInput.focus(); targetInput.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+            return;
+          }
+          var zoneInput = form.querySelector('input[name="zone"]');
+          if (zoneInput) {
+            var zoneVal = zoneInput.value.trim();
+            if (zoneVal === '') {
+              if (window.AP && window.AP.showToast) {
+                window.AP.showToast('Zone wajib diisi.', 'error');
+              } else {
+                alert('Zone wajib diisi.');
+              }
+              form.dataset.submitting = '';
+              var btns2 = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+              btns2.forEach(function (b) { b.disabled = false; });
+              if (zoneInput) { zoneInput.focus(); zoneInput.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+              return;
+            }
+          }
+        }
         var methodInput = form.querySelector('input[name="payment_method"]:checked');
         var methodVal = methodInput ? methodInput.value : '';
-        var isCheckout = form.action && form.action.indexOf('/checkout/') !== -1;
         var msg = isCheckout ? 'Apakah pesanan dilanjutkan?' : 'Apakah transaksi ini dilanjutkan?';
         var title = isCheckout ? 'Konfirmasi Pesanan' : 'Konfirmasi Transaksi';
         if (window.AP && typeof window.AP.confirm === 'function') {
@@ -2034,6 +2066,28 @@
     });
   }
 
+  function initExpiryTimers() {
+    document.querySelectorAll('[data-expiry-timer]').forEach(function (el) {
+      var iso = el.getAttribute('data-expiry-timer');
+      if (!iso) return;
+      var expires = new Date(iso);
+      function update() {
+        var now = Date.now();
+        var diff = expires.getTime() - now;
+        if (diff <= 0) {
+          el.textContent = '(00:00)';
+          return;
+        }
+        var totalSec = Math.floor(diff / 1000);
+        var min = Math.floor(totalSec / 60);
+        var sec = totalSec % 60;
+        el.textContent = '(' + String(min).padStart(2, '0') + ':' + String(sec).padStart(2, '0') + ')';
+      }
+      update();
+      setInterval(update, 1000);
+    });
+  }
+
   function boot() {
     initTables();
     initWizards();
@@ -2053,6 +2107,7 @@
     initAmountPresets();
     initCurrencyInputs();
     initCopy();
+    initExpiryTimers();
     initTooltips();
     initActions();
     initModals();

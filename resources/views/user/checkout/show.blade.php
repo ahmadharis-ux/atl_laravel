@@ -20,7 +20,7 @@
 
     <div class="row g-3">
         <div class="col-lg-7 order-2 order-lg-1">
-            <form method="POST" action="{{ route('checkout.store', $product) }}" class="d-flex flex-column gap-3" data-min-loader="2000" id="checkoutForm">
+            <form method="POST" action="{{ route('checkout.store', $product) }}" class="d-flex flex-column gap-3" data-min-loader="2000" id="checkoutForm" data-checkout-form>
                 @csrf
                 <x-ui.card title="Data Tujuan">
                     <div class="d-flex flex-column gap-3">

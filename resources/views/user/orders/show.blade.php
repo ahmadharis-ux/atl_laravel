@@ -84,7 +84,7 @@
                         </li>
                     </ul>
                     @if ($order->expires_at)
-                        <p class="fs-12 tx-mute m-0">Transfer sebelum {{ $order->expires_at->locale('id')->translatedFormat('d M Y, H:i') }}.</p>
+                        <p class="fs-12 tx-mute m-0">Transfer sebelum {{ $order->expires_at->locale('id')->translatedFormat('d M Y, H:i') }} <span class="tx-err fw-semibold" data-expiry-timer="{{ $order->expires_at->toIso8601String() }}">(00:00)</span>.</p>
                     @endif
                     <p class="fs-12 tx-mute m-0">Pembayaran akan dikonfirmasi admin setelah dana diterima.</p>
                 </div>
@@ -103,6 +103,9 @@
                     <div class="num fw-bold fs-4 tx-tealc">{{ $order->payment_code }}</div>
                     <p class="fs-12 tx-mute m-0">{{ $method?->label() }}@if ($channelLabel) &middot; {{ $channelLabel }}@endif</p>
                     <p class="fs-12 tx-mute m-0">Bayar tepat <b class="tx-tealt">Rp {{ number_format($order->amount, 0, ',', '.') }}</b>. Status pesanan akan otomatis diperbarui setelah pembayaran diterima.</p>
+                    @if ($order->expires_at)
+                        <p class="fs-12 tx-mute m-0">Selesaikan pembayaran sebelum <span class="tx-err fw-semibold" data-expiry-timer="{{ $order->expires_at->toIso8601String() }}">(00:00)</span></p>
+                    @endif</p>
 
                     @if ($method === \App\Enums\PaymentMethod::Qris)
                         <div class="d-flex flex-wrap gap-2 justify-content-center w-100 mt-1">
@@ -134,15 +137,15 @@
     @php
         $helpUrl = in_array($order->status, [\App\Enums\OrderStatus::Failed, \App\Enums\OrderStatus::Expired], true)
             ? \App\Support\SupportWhatsapp::orderIssueUrl($order)
-            : null;
+            : \App\Support\SupportWhatsapp::generalUrl();
     @endphp
     @if ($helpUrl)
-        <div class="alert-ap r-sm {{ $order->status->tone() }} d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div class="alert-ap r-sm {{ in_array($order->status, [\App\Enums\OrderStatus::Failed, \App\Enums\OrderStatus::Expired], true) ? $order->status->tone() : 'bg-mint-l tx-mintt' }} d-flex flex-wrap align-items-center justify-content-between gap-2">
             <div class="d-flex align-items-center gap-2">
                 <span class="ms">help</span>
-                <span class="fs-13">Ada kendala dengan pesanan ini? Hubungi CS dengan detail pesanan yang sudah terisi otomatis.</span>
+                <span class="fs-13">{{ in_array($order->status, [\App\Enums\OrderStatus::Failed, \App\Enums\OrderStatus::Expired], true) ? 'Ada kendala dengan pesanan ini? Hubungi CS dengan detail pesanan yang sudah terisi otomatis.' : 'Butuh bantuan terkait pesanan ini?' }}</span>
             </div>
-            <x-ui.whatsapp-help :url="$helpUrl" class="btn-sm" />
+            <x-ui.whatsapp-help :url="$helpUrl" class="btn-sm" label="Hubungi CS via WhatsApp" />
         </div>
     @endif
 
