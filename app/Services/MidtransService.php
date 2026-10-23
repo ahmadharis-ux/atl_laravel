@@ -27,6 +27,24 @@ class MidtransService
     }
 
     /**
+     * Biaya admin QRIS (rupiah) yang dibebankan ke pengguna.
+     *
+     * Dihitung gross-up: fee = ceil(amount * r / (1 - r)) dengan r = persentase
+     * MDR. Hasilnya, setelah Midtrans memotong r dari total tagihan, merchant
+     * tetap menerima dana sebesar `amount`.
+     */
+    public function qrisFee(int $amount): int
+    {
+        $rate = (float) config('midtrans.qris_fee_percent', 0) / 100;
+
+        if ($amount <= 0 || $rate <= 0 || $rate >= 1) {
+            return 0;
+        }
+
+        return (int) ceil($amount * $rate / (1 - $rate));
+    }
+
+    /**
      * Buat transaksi QRIS dinamis untuk sebuah deposit lalu simpan detail QR
      * ke metadata deposit.
      *
@@ -37,7 +55,7 @@ class MidtransService
     {
         return $this->charge(
             orderId: $deposit->reference,
-            amount: (int) $deposit->amount,
+            amount: (int) $deposit->totalDue(),
             user: $deposit->user,
             onSuccess: function (array $data) use ($deposit): void {
                 $metadata = $deposit->metadata ?? [];
@@ -61,7 +79,7 @@ class MidtransService
     {
         return $this->charge(
             orderId: $order->order_number,
-            amount: (int) $order->amount,
+            amount: (int) $order->totalDue(),
             user: $order->user,
             onSuccess: function (array $data) use ($order): void {
                 $metadata = $order->metadata ?? [];

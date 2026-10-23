@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Pengaturan tier loyalitas (singleton). Baris pertama dipakai sebagai
@@ -22,10 +23,17 @@ class LoyaltySetting extends Model
 
     public static function current(): self
     {
-        return static::query()->orderBy('id')->first()
-            ?? static::query()->create([
-                'gold_points' => (int) config('loyalty.gold_points'),
-                'platinum_points' => (int) config('loyalty.platinum_points'),
-            ]);
+        return Cache::remember('loyalty_setting.current', now()->addHour(), function (): self {
+            return static::query()->orderBy('id')->first()
+                ?? static::query()->create([
+                    'gold_points' => (int) config('loyalty.gold_points'),
+                    'platinum_points' => (int) config('loyalty.platinum_points'),
+                ]);
+        });
+    }
+
+    public static function flushCache(): void
+    {
+        Cache::forget('loyalty_setting.current');
     }
 }

@@ -2,14 +2,16 @@
 
 namespace Tests\Feature;
 
-// use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ExampleTest extends TestCase
 {
-    public function test_guests_are_redirected_to_login(): void
+    use RefreshDatabase;
+
+    public function test_guests_can_view_landing_page(): void
     {
-        $this->get('/')->assertRedirect('/login');
+        $this->get('/')->assertOk()->assertSee('Atlantic Pedia');
     }
 
     public function test_login_page_returns_a_successful_response(): void

@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'user_id', 'product_id', 'order_number', 'target', 'target_zone', 'amount', 'fee', 'status',
     'payment_method', 'payment_channel', 'payment_code', 'master_bank_id', 'paid_at', 'expires_at', 'metadata', 'notes',
     'provider', 'provider_ref', 'provider_sn', 'provider_status', 'provider_price',
-    'provider_admin', 'provider_payload', 'processed_at', 'refunded_at',
+    'provider_admin', 'provider_payload', 'processed_at', 'refunded_at', 'source',
 ])]
 class Order extends Model
 {

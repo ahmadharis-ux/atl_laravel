@@ -78,13 +78,16 @@ class DepositController extends Controller
         $method = PaymentMethod::from($validated['payment_method']);
         $masterBank = $this->resolveMasterBank($method, $validated['master_bank_id'] ?? null);
         $amount = (int) $validated['amount'];
+        $fee = $method === PaymentMethod::Qris
+            ? $this->midtrans->qrisFee($amount)
+            : ($masterBank?->admin_fee ?? 0);
 
         try {
             $deposit = Deposit::create([
                 'user_id' => $request->user()->getKey(),
                 'reference' => $this->generateReference(),
                 'amount' => $amount,
-                'fee' => $masterBank?->admin_fee ?? 0,
+                'fee' => $fee,
                 'payment_method' => $method,
                 'payment_channel' => $masterBank?->bank_name,
                 'payment_code' => $masterBank?->account_number ?? PaymentInstruction::code($method),

@@ -15,6 +15,9 @@
     }
 
     $unreadNotifications = auth()->user()?->unreadNotifications()->count() ?? 0;
+
+    $tierUser = auth()->user();
+    $tier = $tierUser?->tier();
 @endphp
 
 {{-- Header desktop --}}
@@ -33,6 +36,11 @@
         @endif
     </div>
     <div class="d-flex align-items-center gap-3 flex-shrink-0">
+        @if ($tier)
+            <a href="{{ route('saldo.index') }}" class="pill tier-{{ $tier->value }} fs-11 flex-shrink-0 text-decoration-none" data-tip="{{ number_format((int) $tierUser->points, 0, ',', '.') }} poin reward">
+                <span class="ms ms-sm me-1">{{ $tier->icon() }}</span>{{ $tier->label() }}
+            </a>
+        @endif
         <div class="notif" data-notif data-notif-url="{{ route('notifications.index') }}" data-notif-interval="15000" data-notif-user="{{ auth()->id() }}">
             <button class="sq" type="button" aria-label="Notifikasi" data-notif-toggle>
                 <span class="ms">notifications</span>
@@ -79,6 +87,11 @@
         @endif
     </div>
     <div class="d-flex align-items-center gap-3 flex-shrink-0 ms-auto">
+        @if ($tier)
+            <a href="{{ route('saldo.index') }}" class="pill tier-{{ $tier->value }} fs-11 flex-shrink-0 text-decoration-none" data-tip="{{ number_format((int) $tierUser->points, 0, ',', '.') }} poin reward">
+                <span class="ms ms-sm me-1">{{ $tier->icon() }}</span>{{ $tier->label() }}
+            </a>
+        @endif
         <a href="{{ route('notifications.index') }}" class="sq rounded-circle shadow-sm flex-shrink-0 position-relative" style="width:2.75rem;height:2.75rem" aria-label="Notifikasi">
             <span class="ms">notifications</span>
             @if ($unreadNotifications > 0)

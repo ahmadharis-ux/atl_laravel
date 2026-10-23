@@ -17,12 +17,24 @@ final class Rbac
             'Dashboard' => [
                 'dashboard.view' => 'Melihat dashboard admin',
             ],
+            'Landing Page' => [
+                'landing.view' => 'Melihat konten landing page',
+                'landing.update' => 'Mengubah konten landing page',
+            ],
+            'Tiket & Aduan' => [
+                'tickets.view' => 'Melihat tiket & aduan',
+                'tickets.update' => 'Membalas / memproses tiket',
+            ],
             'Pengguna' => [
                 'users.view' => 'Melihat daftar pengguna',
                 'users.create' => 'Menambah pengguna',
                 'users.update' => 'Mengubah pengguna',
                 'users.delete' => 'Menghapus pengguna',
                 'users.assign-role' => 'Menetapkan peran pengguna',
+            ],
+            'Manajemen Halaman' => [
+                'features.view' => 'Melihat pengaturan halaman pengguna',
+                'features.update' => 'Mengaktifkan / menonaktifkan halaman pengguna',
             ],
             'Role & Permission' => [
                 'roles.view' => 'Melihat daftar peran',
@@ -69,6 +81,12 @@ final class Rbac
             'Pengaturan Loyalitas' => [
                 'loyalty.view' => 'Melihat pengaturan tier loyalitas',
                 'loyalty.update' => 'Mengubah threshold tier loyalitas',
+            ],
+            'Reseller' => [
+                'resellers.view' => 'Melihat laporan reseller',
+            ],
+            'Laporan' => [
+                'reports.view' => 'Melihat laporan & analitik',
             ],
         ];
     }
@@ -117,8 +135,11 @@ final class Rbac
             Roles::SUPERADMIN => self::all(),
             Roles::ADMIN => [
                 'dashboard.view',
+                'landing.view', 'landing.update',
+                'tickets.view', 'tickets.update',
                 'users.view', 'users.create', 'users.update', 'users.delete', 'users.assign-role',
                 'roles.view', 'roles.create', 'roles.update',
+                'features.view', 'features.update',
                 'topups.view', 'topups.update', 'transactions.view', 'transactions.update',
                 'products.view', 'products.update',
                 'master-banks.view', 'master-banks.update',
@@ -128,9 +149,13 @@ final class Rbac
                 'merchandise.view', 'merchandise.update',
                 'redemptions.view', 'redemptions.update',
                 'loyalty.view', 'loyalty.update',
+                'resellers.view',
+                'reports.view',
             ],
             Roles::STAFF => [
                 'dashboard.view',
+                'landing.view', 'landing.update',
+                'tickets.view', 'tickets.update',
                 'users.view', 'users.create', 'users.update', 'users.assign-role',
                 'roles.view',
                 'topups.view', 'topups.update', 'transactions.view', 'transactions.update',
@@ -142,9 +167,12 @@ final class Rbac
                 'merchandise.view', 'merchandise.update',
                 'redemptions.view', 'redemptions.update',
                 'loyalty.view', 'loyalty.update',
+                'resellers.view',
+                'reports.view',
             ],
             Roles::CS => [
                 'dashboard.view',
+                'tickets.view', 'tickets.update',
                 'users.view',
                 'topups.view', 'topups.update', 'transactions.view', 'transactions.update',
                 'products.view',
@@ -155,6 +183,8 @@ final class Rbac
                 'merchandise.view',
                 'redemptions.view',
                 'loyalty.view',
+                'resellers.view',
+                'reports.view',
             ],
             Roles::USER => [],
         ];

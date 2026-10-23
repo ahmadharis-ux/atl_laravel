@@ -92,6 +92,21 @@ class Product extends Model
         return $this->provider !== null && $this->provider !== '';
     }
 
+    /**
+     * Harga khusus reseller: potongan persen dari harga jual publik
+     * (config/reseller.php), tidak pernah di bawah harga modal.
+     */
+    protected function resellerPrice(): Attribute
+    {
+        return Attribute::get(function (): int {
+            $selling = $this->selling_price;
+            $percent = max(0.0, (float) config('reseller.discount_percent', 0));
+            $discounted = (int) floor($selling * (1 - $percent / 100));
+
+            return max((int) $this->cost_price, $discounted, 1);
+        });
+    }
+
     public function scopePaymentType(Builder $query, ProductPaymentType $type): void
     {
         $query->where('payment_type', $type);

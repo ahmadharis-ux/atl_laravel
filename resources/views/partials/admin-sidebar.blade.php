@@ -3,6 +3,18 @@
     $menu = [
         ['label' => 'Dashboard',         'icon' => 'space_dashboard',    'url' => route('admin.dashboard'),   'active' => request()->routeIs('admin.dashboard'), 'show' => true],
         [
+            'label' => 'Landing Page',
+            'icon' => 'web',
+            'active' => request()->routeIs('admin.landing.*'),
+            'show' => $auth?->can('landing.view') ?? false,
+            'children' => [
+                ['label' => 'Pengaturan', 'url' => route('admin.landing.settings'),     'active' => request()->routeIs('admin.landing.settings'),     'show' => $auth?->can('landing.view') ?? false],
+                ['label' => 'Layanan',    'url' => route('admin.landing.services'),     'active' => request()->routeIs('admin.landing.services'),     'show' => $auth?->can('landing.view') ?? false],
+                ['label' => 'Testimoni',  'url' => route('admin.landing.testimonials'), 'active' => request()->routeIs('admin.landing.testimonials'), 'show' => $auth?->can('landing.view') ?? false],
+                ['label' => 'FAQ',        'url' => route('admin.landing.faqs'),         'active' => request()->routeIs('admin.landing.faqs'),         'show' => $auth?->can('landing.view') ?? false],
+            ],
+        ],
+        [
             'label' => 'Customer Topup',
             'icon' => 'point_of_sale',
             'active' => request()->routeIs('admin.topup.*') || request()->routeIs('admin.product.*'),
@@ -13,6 +25,7 @@
             ],
         ],
         ['label' => 'Pengguna',          'icon' => 'group',              'url' => route('admin.users.index'), 'active' => request()->routeIs('admin.users.*'),   'show' => $auth?->can('users.view') ?? false],
+        ['label' => 'Manajemen Halaman', 'icon' => 'toggle_on',          'url' => route('admin.features.index'), 'active' => request()->routeIs('admin.features.*'), 'show' => $auth?->can('features.view') ?? false],
         ['label' => 'Role & Permission', 'icon' => 'admin_panel_settings','url' => route('admin.roles.index'), 'active' => request()->routeIs('admin.roles.*'),   'show' => $auth?->can('roles.view') ?? false],
         [
             'label' => 'Bot Digiflazz',
@@ -44,7 +57,20 @@
                 ['label' => 'Semua Transaksi', 'url' => route('admin.transactions.index'), 'active' => request()->routeIs('admin.transactions.*'), 'show' => $auth?->can('transactions.view') ?? false],
             ],
         ],
-        ['label' => 'Laporan',           'icon' => 'bar_chart',          'url' => '#',                        'active' => false,                                'show' => true],
+        ['label' => 'Tiket',              'icon' => 'support_agent',      'url' => route('admin.tickets.index'), 'active' => request()->routeIs('admin.tickets.*'), 'show' => $auth?->can('tickets.view') ?? false],
+        [
+            'label' => 'Laporan',
+            'icon' => 'bar_chart',
+            'active' => request()->routeIs('admin.reports.*') || request()->routeIs('admin.resellers.*'),
+            'show' => ($auth?->can('reports.view') || $auth?->can('resellers.view')) ?? false,
+            'children' => [
+                ['label' => 'Ringkasan',  'url' => route('admin.reports.overview'),  'active' => request()->routeIs('admin.reports.overview'),  'show' => $auth?->can('reports.view') ?? false],
+                ['label' => 'Produk',     'url' => route('admin.reports.products'),  'active' => request()->routeIs('admin.reports.products'),  'show' => $auth?->can('reports.view') ?? false],
+                ['label' => 'Provider',   'url' => route('admin.reports.providers'), 'active' => request()->routeIs('admin.reports.providers'), 'show' => $auth?->can('reports.view') ?? false],
+                ['label' => 'Pelanggan',  'url' => route('admin.reports.customers'), 'active' => request()->routeIs('admin.reports.customers'), 'show' => $auth?->can('reports.view') ?? false],
+                ['label' => 'Reseller',   'url' => route('admin.resellers.index'),   'active' => request()->routeIs('admin.resellers.*'),      'show' => $auth?->can('resellers.view') ?? false],
+            ],
+        ],
         ['label' => 'Komponen',          'icon' => 'widgets',            'url' => route('admin.components'),  'active' => request()->routeIs('admin.components'), 'show' => true],
         ['label' => 'Master Brand',      'icon' => 'branding_watermark',  'url' => route('admin.master-brands.index'), 'active' => request()->routeIs('admin.master-brands.*'), 'show' => $auth?->can('master-brands.view') ?? false],
         ['label' => 'Master Bank',       'icon' => 'account_balance',     'url' => route('admin.master-banks.index'), 'active' => request()->routeIs('admin.master-banks.*'), 'show' => $auth?->can('master-banks.view') ?? false],
@@ -68,8 +94,8 @@
     <div class="d-flex flex-column gap-4">
         <div class="side-head d-flex align-items-center justify-content-between gap-2 px-3 py-2">
             <div class="d-flex align-items-center gap-2 brand">
-                <img src="{{ asset('assets/images/9.png') }}" alt="Atlantic Pedia" class="brand-logo" style="width:7.5rem;height:3.25rem;border-radius:.75rem;object-fit:cover">
-                <img src="{{ asset('assets/images/8.png') }}" alt="Atlantic Pedia" class="brand-logo-sm" style="width:2.25rem;height:2.25rem;border-radius:.75rem;object-fit:cover">
+                <img src="{{ asset('assets/images/logo_with_right_text.png') }}" alt="Atlantic Pedia" class="brand-logo" style="width:7.5rem;height:3.25rem;border-radius:.75rem;object-fit:cover">
+                <img src="{{ asset('') }}" alt="Atlantic Pedia" class="brand-logo-sm" style="width:2.25rem;height:2.25rem;border-radius:.75rem;object-fit:cover">
             </div>
             {{-- <button class="btn btn-sm text-white border-0 d-none d-lg-flex align-items-center justify-content-center js-sidebar-toggle" type="button" aria-label="Perluas / perkecil sidebar" title="Perluas / perkecil sidebar" style="cursor:pointer;width:2rem;height:2rem;background:rgba(255,255,255,.1);border-radius:.5rem">
                 <span class="ms ms-sm ico-expanded">menu_open</span>

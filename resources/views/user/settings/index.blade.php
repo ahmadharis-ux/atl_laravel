@@ -21,6 +21,8 @@
             ['label' => 'Perangkat Aktif', 'desc' => 'Kelola sesi login', 'icon' => 'devices', 'tone' => 'bg-errc-l tx-err', 'url' => route('settings.sessions')],
             ['label' => 'Notifikasi', 'desc' => 'Push notifikasi perangkat', 'icon' => 'notifications', 'tone' => 'bg-sky-l tx-navy', 'url' => route('settings.notifications')],
             ['label' => 'Merchandise', 'desc' => 'Tukar poin reward', 'icon' => 'redeem', 'tone' => 'bg-gold tx-gold', 'url' => route('merchandise.index')],
+            ['label' => 'Reseller', 'desc' => 'Harga khusus reseller', 'icon' => 'storefront', 'tone' => 'bg-mint-l tx-mintt', 'url' => route('settings.reseller')],
+            ['label' => 'Bantuan & Tiket', 'desc' => 'Aduan, saran, dan pengajuan supplier', 'icon' => 'support_agent', 'tone' => 'bg-tealc-m tx-tealt', 'url' => route('tickets.index')],
         ];
     @endphp
 

@@ -102,6 +102,24 @@
           selected().forEach(c => c.closest('tr').remove());
           if (checkAll) checkAll.checked = false;
           sync();
+        } else if (btn.dataset.dtModal) {
+          var modal = document.getElementById(btn.dataset.dtModal);
+          if (!modal) return;
+          var holder = modal.querySelector('[data-bulk-ids]');
+          if (holder) {
+            holder.innerHTML = '';
+            var fieldName = holder.dataset.bulkField || 'product_ids[]';
+            selected().forEach(function (c) {
+              var input = document.createElement('input');
+              input.type = 'hidden';
+              input.name = fieldName;
+              input.value = c.value;
+              holder.appendChild(input);
+            });
+          }
+          var modalCount = modal.querySelector('[data-bulk-count]');
+          if (modalCount) modalCount.textContent = n;
+          openModal(btn.dataset.dtModal);
         } else {
           alert('Aksi "' + btn.dataset.dtAction + '" untuk ' + n + ' data terpilih.');
         }

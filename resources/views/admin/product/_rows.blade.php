@@ -7,6 +7,7 @@
         }
     @endphp
     <tr>
+        <td class="chk-cell"><input class="form-check-input m-0 row-check" type="checkbox" value="{{ $p->id }}" aria-label="Pilih {{ $p->name }}"></td>
         <td class="tx-mute fs-12">{{ $products->firstItem() + $i }}</td>
         <td class="fw-semibold fs-12 text-nowrap">{{ $p->code }}</td>
         <td><span class="pill bg-tealc-m tx-tealt">{{ $p->brand?->name ?? '-' }}</span></td>
@@ -35,6 +36,6 @@
     </tr>
 @empty
     <tr>
-        <td colspan="12" class="text-center tx-mute py-4">Belum ada produk {{ strtolower($paymentType->label()) }} yang cocok.</td>
+        <td colspan="13" class="text-center tx-mute py-4">Belum ada produk {{ strtolower($paymentType->label()) }} yang cocok.</td>
     </tr>
 @endforelse

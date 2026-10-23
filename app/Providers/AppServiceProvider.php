@@ -2,7 +2,10 @@
 
 namespace App\Providers;
 
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -22,6 +25,15 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Paginator::useBootstrapFive();
+
+        /*
+        |--------------------------------------------------------------
+        | Rate limit API reseller (per API key, fallback IP).
+        |--------------------------------------------------------------
+        */
+        RateLimiter::for('reseller-api', function (Request $request): Limit {
+            return Limit::perMinute(120)->by($request->header('X-API-Key') ?: $request->ip());
+        });
 
         View::composer(['partials.sidebar', 'partials.topbar'], function ($view): void {
             $authUser = auth()->user();

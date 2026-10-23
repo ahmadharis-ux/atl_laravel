@@ -36,7 +36,6 @@ class MerchandiseController extends Controller
             'redemptions' => $redemptions,
             'pointHistory' => $pointHistory,
             'points' => (int) $user->points,
-            'tier' => $user->tier(),
         ]);
     }
 

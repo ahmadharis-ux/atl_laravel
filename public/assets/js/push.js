@@ -185,8 +185,8 @@
                 registration().then(function (reg) {
                     return reg.showNotification(title, {
                         body: body,
-                        icon: '/assets/images/6.png',
-                        badge: '/assets/images/6.png',
+                        icon: '/assets/images/logo.png',
+                        badge: '/assets/images/logo.png',
                         data: { url: url },
                         tag: data.order_number || data.reference || ('atl-' + Date.now()),
                     });

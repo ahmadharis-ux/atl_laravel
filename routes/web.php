@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FirebaseServiceWorkerController;
+use App\Http\Controllers\LandingController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\User\BankAccountController as UserBankAccountController;
 use App\Http\Controllers\User\CheckoutController as UserCheckoutController;
@@ -21,9 +22,11 @@ use App\Http\Controllers\User\OrderController as UserOrderController;
 use App\Http\Controllers\User\PhoneOperatorController as UserPhoneOperatorController;
 use App\Http\Controllers\User\ProductController as UserProductController;
 use App\Http\Controllers\User\PulsaController as UserPulsaController;
+use App\Http\Controllers\User\ResellerController as UserResellerController;
 use App\Http\Controllers\User\SaldoController as UserSaldoController;
 use App\Http\Controllers\User\SearchHistoryController as UserSearchHistoryController;
 use App\Http\Controllers\User\SettingsController as UserSettingsController;
+use App\Http\Controllers\User\TicketController as UserTicketController;
 use App\Http\Controllers\Webhook\DigiflazzWebhookController;
 use App\Http\Controllers\Webhook\MidtransWebhookController;
 use Illuminate\Support\Facades\Route;
@@ -32,6 +35,8 @@ Route::post('/webhook/digiflazz', DigiflazzWebhookController::class)->name('webh
 Route::post('/webhook/midtrans', MidtransWebhookController::class)->name('webhook.midtrans');
 
 Route::get('/firebase-messaging-sw.js', FirebaseServiceWorkerController::class)->name('firebase.sw');
+
+Route::get('/', LandingController::class)->name('landing');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -62,13 +67,13 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::middleware(['auth', 'non-admin', 'verified'])->group(function () {
-    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/saldo', [UserSaldoController::class, 'index'])->name('saldo.index');
     Route::get('/saldo/mutasi', [UserSaldoController::class, 'mutations'])->name('saldo.mutations');
 
-    Route::get('/merchandise', [UserMerchandiseController::class, 'index'])->name('merchandise.index');
-    Route::post('/merchandise/{merchandise}/tukar', [UserMerchandiseController::class, 'redeem'])->name('merchandise.redeem');
+    Route::get('/merchandise', [UserMerchandiseController::class, 'index'])->middleware('feature:merchandise')->name('merchandise.index');
+    Route::post('/merchandise/{merchandise}/tukar', [UserMerchandiseController::class, 'redeem'])->middleware('feature:merchandise')->name('merchandise.redeem');
 
     Route::get('/saldo/topup', [UserDepositController::class, 'create'])->name('deposits.create');
     Route::post('/saldo/topup', [UserDepositController::class, 'store'])->name('deposits.store');
@@ -112,6 +117,12 @@ Route::middleware(['auth', 'non-admin', 'verified'])->group(function () {
     Route::get('/transaksi/{order}/qris', [UserOrderController::class, 'downloadQris'])->name('orders.qris');
     Route::get('/transaksi/{order}/invoice', [UserOrderController::class, 'invoice'])->name('orders.invoice');
 
+    Route::get('/bantuan', [UserTicketController::class, 'index'])->middleware('feature:ticket')->name('tickets.index');
+    Route::get('/bantuan/baru', [UserTicketController::class, 'create'])->middleware('feature:ticket')->name('tickets.create');
+    Route::post('/bantuan', [UserTicketController::class, 'store'])->middleware('feature:ticket')->name('tickets.store');
+    Route::get('/bantuan/{ticket}', [UserTicketController::class, 'show'])->middleware('feature:ticket')->name('tickets.show');
+    Route::post('/bantuan/{ticket}/balas', [UserTicketController::class, 'reply'])->middleware('feature:ticket')->name('tickets.reply');
+
     Route::get('/notifikasi', [NotificationController::class, 'index'])->name('notifications.index');
     Route::get('/notifikasi/daftar', [NotificationController::class, 'list'])->name('notifications.list');
     Route::get('/notifikasi/{notification}/buka', [NotificationController::class, 'open'])->name('notifications.open');
@@ -121,6 +132,12 @@ Route::middleware(['auth', 'non-admin', 'verified'])->group(function () {
     Route::delete('/notifikasi/token', [UserDeviceTokenController::class, 'destroy'])->name('notifications.token.destroy');
 
     Route::get('/pengaturan', [UserSettingsController::class, 'index'])->name('settings.index');
+
+    Route::get('/pengaturan/reseller', [UserResellerController::class, 'show'])->middleware('feature:reseller')->name('settings.reseller');
+    Route::get('/pengaturan/reseller/dokumentasi', [UserResellerController::class, 'docs'])->middleware('feature:reseller')->name('settings.reseller.docs');
+    Route::post('/pengaturan/reseller/aktifkan', [UserResellerController::class, 'activate'])->middleware('feature:reseller')->name('settings.reseller.activate');
+    Route::post('/pengaturan/reseller/buat-ulang', [UserResellerController::class, 'regenerate'])->middleware('feature:reseller')->name('settings.reseller.regenerate');
+    Route::post('/pengaturan/reseller/nonaktifkan', [UserResellerController::class, 'deactivate'])->middleware('feature:reseller')->name('settings.reseller.deactivate');
 
     Route::get('/pengaturan/profil', [UserSettingsController::class, 'profile'])->name('settings.profile');
     Route::put('/pengaturan/profil', [UserSettingsController::class, 'updateProfile'])->name('settings.profile.update');

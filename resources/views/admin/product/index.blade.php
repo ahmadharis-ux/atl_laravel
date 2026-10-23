@@ -29,6 +29,10 @@
         id="dt-{{ $paymentType->value }}"
         title="Produk {{ $paymentType->label() }}"
         :server="true"
+        :bulk="true"
+        :bulk-actions="[
+            ['value' => 'markup', 'label' => 'Update Markup', 'icon' => 'percent', 'tone' => 'btn-soft', 'modal' => 'modalBulkMarkup'],
+        ]"
         :action="$listRoute"
         :search-value="request('q')"
         search-placeholder="Kode / nama / SKU"
@@ -79,5 +83,27 @@
             @include('admin.product._footer')
         </x-slot:footer>
     </x-ui.data-table>
+
+    @can('products.update')
+        <x-ui.modal id="modalBulkMarkup" title="Update Markup Produk">
+            <form action="{{ route('admin.products.bulk-markup') }}" method="POST" id="formBulkMarkup">
+                @csrf
+                <div data-bulk-ids data-bulk-field="product_ids[]"></div>
+                <p class="tx-mute fs-12">Markup akan diterapkan ke <strong><span data-bulk-count>0</span> produk</strong> terpilih.</p>
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <x-ui.select name="markup_type" label="Tipe Markup" :options="$markupTypes" :value="\App\Enums\MarkupType::Percent->value" />
+                    </div>
+                    <div class="col-md-6">
+                        <x-ui.input type="number" name="markup_value" label="Nilai Markup" step="0.01" min="0" hint="Persen (%) atau nominal (Rp) sesuai tipe markup." />
+                    </div>
+                </div>
+            </form>
+            <x-slot:footer>
+                <button type="button" class="btn-soft" data-modal-close>Batal</button>
+                <button type="submit" form="formBulkMarkup" class="btn-navy">Terapkan</button>
+            </x-slot:footer>
+        </x-ui.modal>
+    @endcan
 </div>
 @endsection

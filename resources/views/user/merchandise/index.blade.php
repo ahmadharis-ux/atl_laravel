@@ -35,7 +35,6 @@
                 <div class="num fw-bold fs-4">{{ number_format($points, 0, ',', '.') }} <span class="fs-6 tx-gold">Poin</span></div>
             </div>
         </div>
-        <span class="pill bg-gold tx-gold"><span class="ms ms-sm me-1">{{ $tier->icon() }}</span>{{ $tier->label() }}</span>
     </div>
 
     <div class="row g-3">

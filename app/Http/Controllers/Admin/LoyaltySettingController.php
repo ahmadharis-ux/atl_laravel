@@ -36,6 +36,7 @@ class LoyaltySettingController extends Controller
         }
 
         LoyaltySetting::current()->update($validated);
+        LoyaltySetting::flushCache();
 
         return back()->with('status', 'Pengaturan tier berhasil diperbarui.');
     }

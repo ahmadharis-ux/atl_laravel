@@ -2,6 +2,9 @@
 
 namespace App\Support;
 
+use App\Models\Product;
+use Illuminate\Validation\ValidationException;
+
 /**
  * Label & aturan input tujuan untuk checkout produk.
  *
@@ -58,5 +61,29 @@ final class OrderTarget
     public static function requiresZone(?string $brandSlug): bool
     {
         return $brandSlug !== null && $brandSlug !== '' && GameNickname::requiresZone($brandSlug);
+    }
+
+    /**
+     * Untuk produk pulsa/paket data, operator nomor tujuan wajib sama dengan
+     * brand produk. Mencegah pembeli paket Telkomsel untuk nomor Indosat.
+     *
+     * @throws ValidationException bila operator nomor tidak cocok dengan brand produk.
+     */
+    public static function ensureOperatorMatches(Product $product, string $target): void
+    {
+        $categorySlug = (string) $product->category?->slug;
+
+        if (! in_array($categorySlug, Product::OPERATOR_CATEGORY_SLUGS, true)) {
+            return;
+        }
+
+        $detected = PhoneOperator::detect($target);
+        $productBrandSlug = (string) $product->brand?->slug;
+
+        if ($detected !== null && $productBrandSlug !== '' && $detected['brand_slug'] !== $productBrandSlug) {
+            throw ValidationException::withMessages([
+                'target' => 'Nomor ini terdeteksi operator '.$detected['operator'].'. Silakan pilih produk yang sesuai.',
+            ]);
+        }
     }
 }
