@@ -21,12 +21,18 @@ class PasswordResetController extends Controller
 
     public function email(Request $request): RedirectResponse
     {
-        $request->validate(['email' => ['required', 'email']]);
+        $request->validate([
+            'email' => ['required', 'email', 'exists:users,email'],
+        ], [
+            'email.required' => 'Email wajib diisi.',
+            'email.email' => 'Format email tidak valid.',
+            'email.exists' => 'Email tidak terdaftar di sistem.',
+        ]);
 
         $status = Password::sendResetLink($request->only('email'));
 
         return $status === Password::RESET_LINK_SENT
-            ? back()->with('status', __($status))
+            ? back()->with('status', 'Tautan reset kata sandi telah dikirim ke email kamu.')
             : back()->withInput($request->only('email'))->withErrors(['email' => __($status)]);
     }
 
