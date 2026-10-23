@@ -1431,7 +1431,7 @@
             return;
           }
           var zoneInput = form.querySelector('input[name="zone"]');
-          if (zoneInput) {
+          if (zoneInput && zoneInput.closest('.d-none') === null) {
             var zoneVal = zoneInput.value.trim();
             if (zoneVal === '') {
               if (window.AP && window.AP.showToast) {
@@ -1445,26 +1445,24 @@
               if (zoneInput) { zoneInput.focus(); zoneInput.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
               return;
             }
+          } else if (zoneInput && zoneInput.required) {
+            var zoneVal2 = zoneInput.value.trim();
+            if (zoneVal2 === '') {
+              if (window.AP && window.AP.showToast) {
+                window.AP.showToast('Zone wajib diisi.', 'error');
+              } else {
+                alert('Zone wajib diisi.');
+              }
+              form.dataset.submitting = '';
+              var btns2b = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+              btns2b.forEach(function (b) { b.disabled = false; });
+              if (zoneInput) { zoneInput.focus(); zoneInput.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+              return;
+            }
           }
           var methodChk = form.querySelector('input[name="payment_method"]:checked');
           var methodChkVal = methodChk ? methodChk.value : '';
           if (methodChkVal === 'saldo') {
-            var totalEl = document.querySelector('.ap-card [data-total], .card-ap [data-total], .fw-bold.tx-tealc');
-            var balEl = document.querySelector('[data-balance], .tx-mute .num');
-            // try to read numbers from DOM
-            var totalTxt = '';
-            var balTxt = '';
-            var allNums = document.querySelectorAll('.num');
-            // better: look for specific
-            var totals = document.querySelectorAll('span.num');
-            // find total
-            for (var i=0; i<totals.length; i++) {
-              var t = totals[i].textContent || '';
-              if (t.indexOf('Rp') !== -1 && t.indexOf('Total') === -1) {
-                // not reliable, skip
-              }
-            }
-            // fallback: check sisa saldo
             var sisa = document.querySelector('[data-sisa-saldo]');
             if (sisa) {
               var st = sisa.textContent.replace(/\D/g, '');
@@ -1480,11 +1478,10 @@
                 return;
               }
             } else {
-              // try to find sisa text
-              var allText = form.innerText || '';
+              var allText = document.body.innerText || '';
               if (allText.match(/Sisa setelah transaksi.*Rp\s*[-]?\d/)) {
-                var m = allText.match(/Rp\s*(-\d[\d\.]*)/);
-                if (m) {
+                var mm = allText.match(/Rp\s*-\s*([0-9\.]+)/);
+                if (mm) {
                   if (window.AP && window.AP.showToast) {
                     window.AP.showToast('Saldo tidak mencukupi.', 'error');
                   } else {
