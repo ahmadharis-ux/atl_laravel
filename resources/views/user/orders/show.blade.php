@@ -143,7 +143,7 @@
         @php
             $waFailedUrl = \App\Support\SupportWhatsapp::url(
                 "Halo Admin/CS Atlantic Pedia, saya ingin melaporkan transaksi yang GAGAL.\n\n".
-                "Link Transaksi: ".route('orders.show', $order)."\n\n".
+                "Link Transaksi: ".route('admin.orders.show', $order)."\n\n".
                 "No. Pesanan: ".$order->order_number."\n".
                 "Keterangan Aduan: "
             );
