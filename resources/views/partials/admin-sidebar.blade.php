@@ -43,7 +43,7 @@
             'children' => [
                 ['label' => 'Konfigurasi',      'url' => route('admin.bot.digiflazz.index'),      'active' => request()->routeIs('admin.bot.digiflazz.index'),      'show' => $auth?->can('products.view') ?? false],
                 ['label' => 'Sinkronisasi',     'url' => route('admin.bot.digiflazz.sync.index'), 'active' => request()->routeIs('admin.bot.digiflazz.sync.index'), 'show' => $auth?->can('products.view') ?? false],
-                ['label' => 'Queue Monitor',   'url' => route('admin.queue.index'),              'active' => request()->routeIs('admin.queue.*'),               'show' => $auth?->can('settings.view') ?? false],
+                ['label' => 'Queue Monitor',   'url' => route('admin.queue.index'),              'active' => request()->routeIs('admin.queue.*'),               'show' => $auth?->can('products.view') ?? false],
             ],
         ],
         [

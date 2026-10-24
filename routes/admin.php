@@ -197,12 +197,12 @@ Route::middleware(['auth', 'admin'])->group(function () {
     });
 
     Route::prefix('queue')->name('queue.')->group(function () {
-        Route::get('/', [QueueMonitorController::class, 'index'])->middleware('permission:settings.view')->name('index');
-        Route::get('/failed/{uuid}', [QueueMonitorController::class, 'showFailed'])->middleware('permission:settings.view')->name('failed.show');
-        Route::post('/retry/{uuid}', [QueueMonitorController::class, 'retry'])->middleware('permission:settings.update')->name('retry');
-        Route::post('/forget/{uuid}', [QueueMonitorController::class, 'forget'])->middleware('permission:settings.update')->name('forget');
-        Route::post('/flush', [QueueMonitorController::class, 'flush'])->middleware('permission:settings.update')->name('flush');
-        Route::post('/retry-all', [QueueMonitorController::class, 'retryAll'])->middleware('permission:settings.update')->name('retry-all');
+        Route::get('/', [App\Http\Controllers\Admin\Queue\QueueMonitorController::class, 'index'])->middleware('permission:products.view')->name('index');
+        Route::get('/failed/{uuid}', [App\Http\Controllers\Admin\Queue\QueueMonitorController::class, 'showFailed'])->middleware('permission:products.view')->name('failed.show');
+        Route::post('/retry/{uuid}', [App\Http\Controllers\Admin\Queue\QueueMonitorController::class, 'retry'])->middleware('permission:products.update')->name('retry');
+        Route::post('/forget/{uuid}', [App\Http\Controllers\Admin\Queue\QueueMonitorController::class, 'forget'])->middleware('permission:products.update')->name('forget');
+        Route::post('/flush', [App\Http\Controllers\Admin\Queue\QueueMonitorController::class, 'flush'])->middleware('permission:products.update')->name('flush');
+        Route::post('/retry-all', [App\Http\Controllers\Admin\Queue\QueueMonitorController::class, 'retryAll'])->middleware('permission:products.update')->name('retry-all');
     });
     Route::prefix('bot/digiflazz')->name('bot.digiflazz.')->group(function () {
         Route::get('/', [DigiflazzController::class, 'index'])->middleware('permission:products.view')->name('index');
