@@ -35,13 +35,13 @@
 </head>
 <body class="py-4">
     <div class="container">
-        <div class="d-flex justify-content-between align-items-center mb-3 no-print">
-            <a href="{{ $backUrl }}" class="btn-soft">
+        <div class="d-flex justify-content-between align-items-center mb-3 no-print flex-wrap gap-2">
+            <a href="{{ $backUrl }}" class="btn-ap btn-glass">
                 <span class="ms ms-sm align-middle me-1">arrow_back</span>Kembali
             </a>
-            <button type="button" class="btn-navy" onclick="window.print()">
-                <span class="ms ms-sm align-middle me-1">print</span>Cetak / Simpan PDF
-            </button>
+            <a href="{{ $pdfUrl }}" class="btn-ap btn-navy">
+                <span class="ms ms-sm align-middle me-1">download</span>Download PDF
+            </a>
         </div>
 
         <div class="invoice-doc r-card shadow-sm">

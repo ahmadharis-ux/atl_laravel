@@ -9,10 +9,12 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Support\OrderFulfillment;
 use App\Support\OrderPaymentSettler;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class TransactionController extends Controller
 {
@@ -75,7 +77,17 @@ class TransactionController extends Controller
         return view('orders.invoice', [
             'order' => $order->load(['user', 'product.brand', 'product.category']),
             'backUrl' => route('admin.transactions.show', $order),
+            'pdfUrl' => route('admin.transactions.invoice.pdf', $order),
         ]);
+    }
+
+    public function invoicePdf(Order $order): Response
+    {
+        $order->load(['user', 'product.brand', 'product.category']);
+
+        return Pdf::loadView('orders.invoice-pdf', ['order' => $order])
+            ->setPaper('a4')
+            ->download('invoice-'.$order->order_number.'.pdf');
     }
 
     public function refund(Order $order): RedirectResponse

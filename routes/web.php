@@ -119,6 +119,7 @@ Route::middleware(['auth', 'non-admin', 'verified'])->group(function () {
         ->middleware('throttle:10,1')->name('orders.sync');
     Route::get('/transaksi/{order}/qris', [UserOrderController::class, 'downloadQris'])->name('orders.qris');
     Route::get('/transaksi/{order}/invoice', [UserOrderController::class, 'invoice'])->name('orders.invoice');
+    Route::get('/transaksi/{order}/invoice/pdf', [UserOrderController::class, 'invoicePdf'])->name('orders.invoice.pdf');
 
     Route::get('/bantuan', [UserTicketController::class, 'index'])->name('tickets.index');
     Route::get('/bantuan/baru', [UserTicketController::class, 'create'])->name('tickets.create');

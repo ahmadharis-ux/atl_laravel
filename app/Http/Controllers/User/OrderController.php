@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Services\MidtransService;
 use App\Support\OrderPaymentSettler;
 use App\Support\TransactionLogger;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -56,7 +57,22 @@ class OrderController extends Controller
         return view('orders.invoice', [
             'order' => $order->load(['user', 'product.brand', 'product.category']),
             'backUrl' => route('orders.show', $order),
+            'pdfUrl' => route('orders.invoice.pdf', $order),
         ]);
+    }
+
+    /**
+     * Unduh invoice sebagai berkas PDF.
+     */
+    public function invoicePdf(Request $request, Order $order): Response
+    {
+        abort_unless($order->user_id === $request->user()->getKey(), 403);
+
+        $order->load(['user', 'product.brand', 'product.category']);
+
+        return Pdf::loadView('orders.invoice-pdf', ['order' => $order])
+            ->setPaper('a4')
+            ->download('invoice-'.$order->order_number.'.pdf');
     }
 
     /**

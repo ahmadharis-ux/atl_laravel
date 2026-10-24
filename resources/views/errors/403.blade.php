@@ -17,11 +17,8 @@
         <div class="row justify-content-center">
             <div class="col-12 col-sm-9 col-md-7 col-lg-5">
                 <div class="d-flex align-items-center justify-content-center gap-2 mb-3">
-                    <div class="ibox ibox-48 bg-deep tx-mint"><span class="ms">shield_person</span></div>
-                    <div class="d-flex flex-column text-start">
-                        <span class="fw-bold lh-1 tx-navy">Atlantic</span>
-                        <span class="fs-11 fw-bold tx-teal text-uppercase mt-1" style="letter-spacing:.1em">Pedia Tab</span>
-                    </div>
+                    <img src="{{ asset('assets/images/logo_with_right_text.png') }}" alt="Atlantic Pedia Tab" style="width: 50%">
+                  
                 </div>
 
                 <div class="card-ap r-card p-4 p-sm-5">

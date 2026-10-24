@@ -58,6 +58,8 @@ class RoleController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        Rbac::ensurePermissions();
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:50', 'alpha_dash', 'unique:roles,name'],
             'permissions' => ['array'],
@@ -89,6 +91,8 @@ class RoleController extends Controller
 
     public function update(Request $request, Role $role): RedirectResponse
     {
+        Rbac::ensurePermissions();
+
         $isSystem = in_array($role->name, Roles::all(), true);
         $locked = $role->name === Roles::SUPERADMIN;
 

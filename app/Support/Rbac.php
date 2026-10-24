@@ -3,6 +3,8 @@
 namespace App\Support;
 
 use App\Models\User;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 
 final class Rbac
 {
@@ -88,6 +90,12 @@ final class Rbac
             'Laporan' => [
                 'reports.view' => 'Melihat laporan & analitik',
             ],
+            'Sistem' => [
+                'search.view' => 'Menggunakan pencarian admin',
+                'components.view' => 'Melihat halaman komponen UI',
+                'queue.view' => 'Melihat antrian & job gagal',
+                'queue.update' => 'Retry / menghapus job pada antrian',
+            ],
         ];
     }
 
@@ -104,6 +112,20 @@ final class Rbac
         }
 
         return $names;
+    }
+
+    /**
+     * Pastikan seluruh permission yang didefinisikan di kode tersedia di
+     * database. Dipakai sebelum sinkronisasi role supaya penambahan modul baru
+     * tidak menyebabkan PermissionDoesNotExist saat menyimpan role.
+     */
+    public static function ensurePermissions(): void
+    {
+        foreach (self::all() as $permission) {
+            Permission::findOrCreate($permission, 'web');
+        }
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 
     /**
@@ -151,6 +173,7 @@ final class Rbac
                 'loyalty.view', 'loyalty.update',
                 'resellers.view',
                 'reports.view',
+                'search.view',
             ],
             Roles::STAFF => [
                 'dashboard.view',
@@ -169,6 +192,7 @@ final class Rbac
                 'loyalty.view', 'loyalty.update',
                 'resellers.view',
                 'reports.view',
+                'search.view',
             ],
             Roles::CS => [
                 'dashboard.view',
@@ -185,6 +209,7 @@ final class Rbac
                 'loyalty.view',
                 'resellers.view',
                 'reports.view',
+                'search.view',
             ],
             Roles::USER => [],
         ];

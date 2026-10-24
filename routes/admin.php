@@ -33,12 +33,12 @@ use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'admin'])->group(function () {
-    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
-    Route::view('/components', 'admin.components')->name('components');
+    Route::get('/', [DashboardController::class, 'index'])->middleware('permission:dashboard.view')->name('dashboard');
+    Route::view('/components', 'admin.components')->middleware('permission:components.view')->name('components');
 
     Route::get('/lookup/{type}', LookupController::class)->middleware('permission:products.view')->name('lookup');
 
-    Route::get('/search', SearchController::class)->name('search');
+    Route::get('/search', SearchController::class)->middleware('permission:search.view')->name('search');
 
     Route::get('/users', [UserController::class, 'index'])->middleware('permission:users.view')->name('users.index');
     Route::get('/users/create', [UserController::class, 'create'])->middleware('permission:users.create')->name('users.create');
@@ -63,49 +63,10 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/transactions', [TransactionController::class, 'index'])->middleware('permission:transactions.view')->name('transactions.index');
     Route::get('/transactions/{order}', [TransactionController::class, 'show'])->middleware('permission:transactions.view')->name('transactions.show');
     Route::get('/transactions/{order}/invoice', [TransactionController::class, 'invoice'])->middleware('permission:transactions.view')->name('transactions.invoice');
+    Route::get('/transactions/{order}/invoice/pdf', [TransactionController::class, 'invoicePdf'])->middleware('permission:transactions.view')->name('transactions.invoice.pdf');
     Route::post('/transactions/{order}/settle', [TransactionController::class, 'settle'])->middleware('permission:transactions.update')->name('transactions.settle');
     Route::post('/transactions/{order}/expire', [TransactionController::class, 'expire'])->middleware('permission:transactions.update')->name('transactions.expire');
     Route::post('/transactions/{order}/refund', [TransactionController::class, 'refund'])->middleware('permission:transactions.update')->name('transactions.refund');
-
-    Route::get('/resellers', [ResellerController::class, 'index'])->middleware('permission:resellers.view')->name('resellers.index');
-
-    Route::prefix('tickets')->name('tickets.')->group(function () {
-        Route::get('/', [TicketController::class, 'index'])->middleware('permission:tickets.view')->name('index');
-        Route::get('/{ticket}', [TicketController::class, 'show'])->middleware('permission:tickets.view')->name('show');
-        Route::post('/{ticket}/balas', [TicketController::class, 'reply'])->middleware('permission:tickets.update')->name('reply');
-        Route::put('/{ticket}/status', [TicketController::class, 'updateStatus'])->middleware('permission:tickets.update')->name('status');
-    });
-
-    Route::prefix('reports')->name('reports.')->middleware('permission:reports.view')->group(function () {
-        Route::redirect('/', '/admin/reports/overview');
-        Route::get('/overview', OverviewController::class)->name('overview');
-        Route::get('/products', ProductReportController::class)->name('products');
-        Route::get('/providers', ProviderReportController::class)->name('providers');
-        Route::get('/customers', CustomerReportController::class)->name('customers');
-        Route::get('/{section}/export', ExportController::class)
-            ->whereIn('section', ['overview', 'products', 'providers', 'customers'])
-            ->name('export');
-    });
-
-    Route::prefix('landing')->name('landing.')->group(function () {
-        Route::get('/', [LandingSettingController::class, 'index'])->middleware('permission:landing.view')->name('settings');
-        Route::put('/', [LandingSettingController::class, 'update'])->middleware('permission:landing.update')->name('settings.update');
-
-        Route::get('/layanan', [LandingServiceController::class, 'index'])->middleware('permission:landing.view')->name('services');
-        Route::post('/layanan', [LandingServiceController::class, 'store'])->middleware('permission:landing.update')->name('services.store');
-        Route::put('/layanan/{service}', [LandingServiceController::class, 'update'])->middleware('permission:landing.update')->name('services.update');
-        Route::delete('/layanan/{service}', [LandingServiceController::class, 'destroy'])->middleware('permission:landing.update')->name('services.destroy');
-
-        Route::get('/testimoni', [LandingTestimonialController::class, 'index'])->middleware('permission:landing.view')->name('testimonials');
-        Route::post('/testimoni', [LandingTestimonialController::class, 'store'])->middleware('permission:landing.update')->name('testimonials.store');
-        Route::put('/testimoni/{testimonial}', [LandingTestimonialController::class, 'update'])->middleware('permission:landing.update')->name('testimonials.update');
-        Route::delete('/testimoni/{testimonial}', [LandingTestimonialController::class, 'destroy'])->middleware('permission:landing.update')->name('testimonials.destroy');
-
-        Route::get('/faq', [LandingFaqController::class, 'index'])->middleware('permission:landing.view')->name('faqs');
-        Route::post('/faq', [LandingFaqController::class, 'store'])->middleware('permission:landing.update')->name('faqs.store');
-        Route::put('/faq/{faq}', [LandingFaqController::class, 'update'])->middleware('permission:landing.update')->name('faqs.update');
-        Route::delete('/faq/{faq}', [LandingFaqController::class, 'destroy'])->middleware('permission:landing.update')->name('faqs.destroy');
-    });
 
     Route::get('/resellers', [ResellerController::class, 'index'])->middleware('permission:resellers.view')->name('resellers.index');
 
@@ -197,12 +158,12 @@ Route::middleware(['auth', 'admin'])->group(function () {
     });
 
     Route::prefix('queue')->name('queue.')->group(function () {
-        Route::get('/', [App\Http\Controllers\Admin\Queue\QueueMonitorController::class, 'index'])->middleware('permission:products.view')->name('index');
-        Route::get('/failed/{uuid}', [App\Http\Controllers\Admin\Queue\QueueMonitorController::class, 'showFailed'])->middleware('permission:products.view')->name('failed.show');
-        Route::post('/retry/{uuid}', [App\Http\Controllers\Admin\Queue\QueueMonitorController::class, 'retry'])->middleware('permission:products.update')->name('retry');
-        Route::post('/forget/{uuid}', [App\Http\Controllers\Admin\Queue\QueueMonitorController::class, 'forget'])->middleware('permission:products.update')->name('forget');
-        Route::post('/flush', [App\Http\Controllers\Admin\Queue\QueueMonitorController::class, 'flush'])->middleware('permission:products.update')->name('flush');
-        Route::post('/retry-all', [App\Http\Controllers\Admin\Queue\QueueMonitorController::class, 'retryAll'])->middleware('permission:products.update')->name('retry-all');
+        Route::get('/', [QueueMonitorController::class, 'index'])->middleware('permission:queue.view')->name('index');
+        Route::get('/failed/{uuid}', [QueueMonitorController::class, 'showFailed'])->middleware('permission:queue.view')->name('failed.show');
+        Route::post('/retry/{uuid}', [QueueMonitorController::class, 'retry'])->middleware('permission:queue.update')->name('retry');
+        Route::post('/forget/{uuid}', [QueueMonitorController::class, 'forget'])->middleware('permission:queue.update')->name('forget');
+        Route::post('/flush', [QueueMonitorController::class, 'flush'])->middleware('permission:queue.update')->name('flush');
+        Route::post('/retry-all', [QueueMonitorController::class, 'retryAll'])->middleware('permission:queue.update')->name('retry-all');
     });
     Route::prefix('bot/digiflazz')->name('bot.digiflazz.')->group(function () {
         Route::get('/', [DigiflazzController::class, 'index'])->middleware('permission:products.view')->name('index');

@@ -1,7 +1,7 @@
 @php
     $auth = auth()->user();
     $menu = [
-        ['label' => 'Dashboard',         'icon' => 'space_dashboard',    'url' => route('admin.dashboard'),   'active' => request()->routeIs('admin.dashboard'), 'show' => true],
+        ['label' => 'Dashboard',         'icon' => 'space_dashboard',    'url' => route('admin.dashboard'),   'active' => request()->routeIs('admin.dashboard'), 'show' => $auth?->can('dashboard.view') ?? false],
         ['label' => 'Customer Topup',          'icon' => 'point_of_sale',              'url' => route('admin.topup.index'), 'active' => request()->routeIs('admin.topup.*'),   'show' => $auth?->can('topups.view') ?? false],
         ['label' => 'Transaksi',              'icon' => 'receipt_long',      'url' => route('admin.transactions.index'), 'active' => request()->routeIs('admin.transactions.*'), 'show' => $auth?->can('transactions.view') ?? false],
         [
@@ -43,7 +43,7 @@
             'children' => [
                 ['label' => 'Konfigurasi',      'url' => route('admin.bot.digiflazz.index'),      'active' => request()->routeIs('admin.bot.digiflazz.index'),      'show' => $auth?->can('products.view') ?? false],
                 ['label' => 'Sinkronisasi',     'url' => route('admin.bot.digiflazz.sync.index'), 'active' => request()->routeIs('admin.bot.digiflazz.sync.index'), 'show' => $auth?->can('products.view') ?? false],
-                ['label' => 'Queue Monitor',   'url' => route('admin.queue.index'),              'active' => request()->routeIs('admin.queue.*'),               'show' => $auth?->can('products.view') ?? false],
+                ['label' => 'Queue Monitor',   'url' => route('admin.queue.index'),              'active' => request()->routeIs('admin.queue.*'),               'show' => $auth?->can('queue.view') ?? false],
             ],
         ],
         [
@@ -83,7 +83,7 @@
        
             ],
         ],
-        ['label' => 'Komponen',          'icon' => 'widgets',            'url' => route('admin.components'),  'active' => request()->routeIs('admin.components'), 'show' => true],
+        ['label' => 'Komponen',          'icon' => 'widgets',            'url' => route('admin.components'),  'active' => request()->routeIs('admin.components'), 'show' => $auth?->can('components.view') ?? false],
 
     ];
 @endphp
