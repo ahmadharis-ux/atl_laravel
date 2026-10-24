@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\MerchandiseRedemptionStatus;
+use App\Http\Controllers\Admin\Concerns\HasPerPage;
 use App\Http\Controllers\Controller;
 use App\Models\MerchandiseRedemption;
 use App\Support\MerchandiseRedeemer;
@@ -12,6 +13,8 @@ use Illuminate\Http\Request;
 
 class MerchandiseRedemptionController extends Controller
 {
+    use HasPerPage;
+
     public function index(Request $request): View
     {
         $redemptions = MerchandiseRedemption::query()
@@ -25,7 +28,7 @@ class MerchandiseRedemptionController extends Controller
             })
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->query('status')))
             ->orderByDesc('id')
-            ->paginate(15)
+            ->paginate($this->perPage($request))
             ->withQueryString();
 
         return view('admin.redemption.index', [

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\HasPerPage;
 use App\Http\Controllers\Controller;
 use App\Support\Rbac;
 use App\Support\Roles;
@@ -14,6 +15,8 @@ use Spatie\Permission\Models\Role;
 
 class RoleController extends Controller
 {
+    use HasPerPage;
+
     public function index(Request $request): View|JsonResponse
     {
         $roles = Role::query()
@@ -23,7 +26,7 @@ class RoleController extends Controller
                 $query->where('name', 'like', $term);
             })
             ->orderByDesc('id')
-            ->paginate(15)
+            ->paginate($this->perPage($request))
             ->withQueryString();
 
         $data = [

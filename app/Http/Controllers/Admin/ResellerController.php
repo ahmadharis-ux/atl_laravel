@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\HasPerPage;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\User;
@@ -11,6 +12,8 @@ use Illuminate\Http\Request;
 
 class ResellerController extends Controller
 {
+    use HasPerPage;
+
     /**
      * Laporan pengguna yang memilih menjadi reseller + statistiknya.
      */
@@ -29,7 +32,7 @@ class ResellerController extends Controller
             ->withCount(['orders', 'orders as api_orders_count' => fn ($query) => $query->where('source', 'api')])
             ->withSum(['orders as api_amount_sum' => fn ($query) => $query->where('source', 'api')], 'amount')
             ->orderByDesc('reseller_since')
-            ->paginate(15)
+            ->paginate($this->perPage($request))
             ->withQueryString();
 
         $data = [

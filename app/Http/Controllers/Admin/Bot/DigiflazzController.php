@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Bot;
 
+use App\Http\Controllers\Admin\Concerns\HasPerPage;
 use App\Http\Controllers\Controller;
 use App\Jobs\BotDigiflazzScrapeJob;
 use App\Models\BotDigiflazzConfig;
@@ -18,9 +19,11 @@ use Illuminate\Support\Str;
 
 class DigiflazzController extends Controller
 {
+    use HasPerPage;
+
     public function index(Request $request): View
     {
-        $configs = BotDigiflazzConfig::latest()->paginate(10)->withQueryString();
+        $configs = BotDigiflazzConfig::latest()->paginate($this->perPage($request))->withQueryString();
 
         return view('admin.bot.digiflazz.index', [
             'configs' => $configs,
@@ -167,7 +170,7 @@ class DigiflazzController extends Controller
             ->where('type', 'scrape_and_update')
             ->jobRecords()
             ->latest('started_at')
-            ->paginate(20)
+            ->paginate($this->perPage($request))
             ->withQueryString();
 
         $activeConfig = BotDigiflazzConfig::where('is_active', true)->first();

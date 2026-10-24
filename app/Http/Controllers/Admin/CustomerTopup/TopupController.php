@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin\CustomerTopup;
 
 use App\Enums\DepositStatus;
 use App\Enums\PaymentMethod;
+use App\Http\Controllers\Admin\Concerns\HasPerPage;
 use App\Http\Controllers\Controller;
 use App\Models\Deposit;
 use App\Support\DepositSettler;
@@ -16,6 +17,8 @@ use Illuminate\Support\Facades\DB;
 
 class TopupController extends Controller
 {
+    use HasPerPage;
+
     /**
      * Daftar permintaan top up saldo dari seluruh pengguna.
      */
@@ -36,7 +39,7 @@ class TopupController extends Controller
                 });
             })
             ->latest('id')
-            ->paginate(15)
+            ->paginate($this->perPage($request))
             ->withQueryString();
 
         $data = [

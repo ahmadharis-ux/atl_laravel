@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin\Product;
 
 use App\Enums\MarkupType;
 use App\Enums\ProductPaymentType;
+use App\Http\Controllers\Admin\Concerns\HasPerPage;
 use App\Http\Controllers\Controller;
 use App\Models\Brand;
 use App\Models\Category;
@@ -16,6 +17,8 @@ use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
 {
+    use HasPerPage;
+
     public function prabayar(Request $request): View|JsonResponse
     {
         return $this->listing($request, ProductPaymentType::Prabayar);
@@ -103,7 +106,7 @@ class ProductController extends Controller
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->boolean('status')))
             ->orderBy('sort_order')
             ->orderBy('name')
-            ->paginate(15)
+            ->paginate($this->perPage($request))
             ->withQueryString();
 
         $data = [

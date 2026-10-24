@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
+use App\Http\Controllers\Admin\Concerns\HasPerPage;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Support\OrderFulfillment;
@@ -15,6 +16,8 @@ use Illuminate\Http\Request;
 
 class TransactionController extends Controller
 {
+    use HasPerPage;
+
     public function index(Request $request): View|JsonResponse
     {
         $orders = Order::query()
@@ -30,7 +33,7 @@ class TransactionController extends Controller
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->query('status')))
             ->when($request->filled('payment_method'), fn ($query) => $query->where('payment_method', $request->query('payment_method')))
             ->latest('id')
-            ->paginate(15)
+            ->paginate($this->perPage($request))
             ->withQueryString();
 
         $data = [

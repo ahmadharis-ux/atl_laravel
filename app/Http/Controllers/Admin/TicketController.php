@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\TicketCategory;
 use App\Enums\TicketStatus;
+use App\Http\Controllers\Admin\Concerns\HasPerPage;
 use App\Http\Controllers\Controller;
 use App\Models\Ticket;
 use App\Models\TicketReply;
@@ -16,6 +17,8 @@ use Illuminate\Validation\Rule;
 
 class TicketController extends Controller
 {
+    use HasPerPage;
+
     public function index(Request $request): View|JsonResponse
     {
         $status = TicketStatus::tryFrom((string) $request->query('status'));
@@ -33,7 +36,7 @@ class TicketController extends Controller
                     ->orWhereHas('user', fn ($u) => $u->where('name', 'like', '%'.$search.'%')->orWhere('email', 'like', '%'.$search.'%'));
             }))
             ->latest('id')
-            ->paginate(15)
+            ->paginate($this->perPage($request))->withQueryString()
             ->withQueryString();
 
         $data = [

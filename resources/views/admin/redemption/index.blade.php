@@ -47,7 +47,13 @@
         @include('admin.redemption._rows')
         <x-slot:footer>
             <span class="fs-12 tx-mute">Menampilkan {{ $redemptions->firstItem() ?? 0 }}–{{ $redemptions->lastItem() ?? 0 }} dari {{ $redemptions->total() }} penukaran</span>
-            {{ $redemptions->links() }}
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-3">
+                <div class="d-flex align-items-center gap-3 flex-wrap">
+                    <span class="fs-12 tx-mute">Menampilkan {{ $redemptions->firstItem() ?? 0 }}–{{ $redemptions->lastItem() ?? 0 }} dari {{ $redemptions->total() }} penukaran</span>
+                    @include('admin.partials.table-per-page')
+                </div>
+                {{ $redemptions->links() }}
+            </div>
         </x-slot:footer>
     </x-ui.data-table>
 </div>

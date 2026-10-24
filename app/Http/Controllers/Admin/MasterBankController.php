@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\HasPerPage;
 use App\Http\Controllers\Controller;
 use App\Models\MasterBank;
 use Illuminate\Contracts\View\View;
@@ -12,6 +13,8 @@ use Illuminate\Validation\Rule;
 
 class MasterBankController extends Controller
 {
+    use HasPerPage;
+
     public function index(Request $request): View|JsonResponse
     {
         $banks = MasterBank::query()
@@ -26,7 +29,7 @@ class MasterBankController extends Controller
             ->when($request->filled('type'), fn ($query) => $query->where('type', $request->query('type')))
             ->orderBy('sort_order')
             ->orderBy('bank_name')
-            ->paginate(15)
+            ->paginate($this->perPage($request))
             ->withQueryString();
 
         $data = [

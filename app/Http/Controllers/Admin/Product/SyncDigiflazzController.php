@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Product;
 
+use App\Http\Controllers\Admin\Concerns\HasPerPage;
 use App\Http\Controllers\Controller;
 use App\Jobs\SyncDigiflazzProductsJob;
 use App\Models\DigiflazzSyncLog;
@@ -11,12 +12,14 @@ use Illuminate\Http\Request;
 
 class SyncDigiflazzController extends Controller
 {
+    use HasPerPage;
+
     public function index(Request $request): View
     {
         $jobs = DigiflazzSyncLog::query()
             ->where('type', 'sync')
             ->latest('started_at')
-            ->paginate(20)
+            ->paginate($this->perPage($request))
             ->withQueryString();
 
         return view('admin.product.sync.index', [

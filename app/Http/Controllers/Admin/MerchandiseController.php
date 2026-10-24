@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\HasPerPage;
 use App\Http\Controllers\Controller;
 use App\Models\Merchandise;
 use App\Support\MerchandiseImageStorage;
@@ -12,6 +13,8 @@ use Illuminate\Http\Request;
 
 class MerchandiseController extends Controller
 {
+    use HasPerPage;
+
     public function index(Request $request): View|JsonResponse
     {
         $items = Merchandise::query()
@@ -24,7 +27,7 @@ class MerchandiseController extends Controller
             })
             ->when($request->filled('status'), fn ($query) => $query->where('is_active', $request->query('status') === 'active'))
             ->orderByDesc('id')
-            ->paginate(15)
+            ->paginate($this->perPage($request))
             ->withQueryString();
 
         $data = [
