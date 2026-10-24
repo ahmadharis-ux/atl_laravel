@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\MerchandiseController;
 use App\Http\Controllers\Admin\MerchandiseRedemptionController;
 use App\Http\Controllers\Admin\Product\ProductController as ProductModuleController;
 use App\Http\Controllers\Admin\Product\SyncDigiflazzController;
+use App\Http\Controllers\Admin\Queue\QueueMonitorController;
 use App\Http\Controllers\Admin\Report\CustomerReportController;
 use App\Http\Controllers\Admin\Report\ExportController;
 use App\Http\Controllers\Admin\Report\OverviewController;
@@ -195,6 +196,14 @@ Route::middleware(['auth', 'admin'])->group(function () {
         Route::put('/', [FeatureSettingController::class, 'update'])->middleware('permission:features.update')->name('update');
     });
 
+    Route::prefix('queue')->name('queue.')->group(function () {
+        Route::get('/', [QueueMonitorController::class, 'index'])->middleware('permission:settings.view')->name('index');
+        Route::get('/failed/{uuid}', [QueueMonitorController::class, 'showFailed'])->middleware('permission:settings.view')->name('failed.show');
+        Route::post('/retry/{uuid}', [QueueMonitorController::class, 'retry'])->middleware('permission:settings.update')->name('retry');
+        Route::post('/forget/{uuid}', [QueueMonitorController::class, 'forget'])->middleware('permission:settings.update')->name('forget');
+        Route::post('/flush', [QueueMonitorController::class, 'flush'])->middleware('permission:settings.update')->name('flush');
+        Route::post('/retry-all', [QueueMonitorController::class, 'retryAll'])->middleware('permission:settings.update')->name('retry-all');
+    });
     Route::prefix('bot/digiflazz')->name('bot.digiflazz.')->group(function () {
         Route::get('/', [DigiflazzController::class, 'index'])->middleware('permission:products.view')->name('index');
         Route::get('/create', [DigiflazzController::class, 'create'])->middleware('permission:products.update')->name('create');
