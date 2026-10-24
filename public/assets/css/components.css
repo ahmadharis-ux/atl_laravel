@@ -189,10 +189,10 @@ body.ap-modal-open{overflow:hidden}
 .ap-banner-pop{align-items:center}
 .ap-banner-pop-backdrop{background:transparent;backdrop-filter:none}
 .ap-banner-pop-body{position:relative;width:100%;max-width:32rem;animation:apPop .18s ease}
-.ap-banner-pop-img{display:block;width:100%;height:auto;border-radius:1rem;box-shadow:0 24px 60px rgba(6,40,58,.35)}
+.ap-banner-pop-img{display:block;width:100%;height:auto;border-radius:1rem;}
 .ap-banner-pop-close{position:absolute;top:-.75rem;right:-.75rem;z-index:2;display:flex;align-items:center;justify-content:center;width:2.25rem;height:2.25rem;border:0;border-radius:999px;background:#fff;color:var(--deep);box-shadow:0 8px 20px rgba(0,0,0,.28);cursor:pointer}
 .ap-banner-pop-close:hover{background:var(--mint-l);color:var(--teal)}
-.ap-banner-pop-card{background:#fff;border-radius:1rem;padding:1.5rem;box-shadow:0 24px 60px rgba(6,40,58,.35)}
+.ap-banner-pop-card{background:#fff;border-radius:1rem;padding:1.5rem;}
 
 /* Banner dashboard — gambar menutupi penuh kartu promo, hanya tombol CTA */
 .promo-img{padding:0}

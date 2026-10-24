@@ -38,10 +38,10 @@
     @endif
 
     @if ($pending)
-        <div class="alert-ap r-sm bg-glass d-flex align-items-center gap-2">
+        {{-- <div class="alert-ap r-sm bg-glass d-flex align-items-center gap-2">
             <span class="ms tx-teal">autorenew</span>
             <span class="fs-13">Halaman ini menyegarkan otomatis setelah pembayaran diterima.</span>
-        </div>
+        </div> --}}
 
         <x-ui.card title="Selesaikan Pembayaran">
             @if ($masterBank)

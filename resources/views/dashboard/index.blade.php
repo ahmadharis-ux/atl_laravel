@@ -25,7 +25,9 @@
                         <span class="wallet-label">Saldo</span>
                         <div class="wallet-row">
                             <span class="wallet-rp">Rp</span>
-                            <span class="num wallet-value" id="saldo">{{ number_format($balance, 0, ',', '.') }}</span>
+                            <span class="num wallet-value" id="saldo"
+                                data-short="{{ format_short($balance) }}"
+                                title="Rp {{ number_format($balance, 0, ',', '.') }}">{{ format_short($balance) }}</span>
                             <button id="eye" class="btn-eye" type="button" aria-label="Tampilkan atau sembunyikan saldo">
                                 <span class="ms ms-sm">visibility</span>
                             </button>
@@ -43,8 +45,7 @@
                     <div class="wallet-body">
                         <span class="wallet-label">Poin Reward</span>
                         <div class="wallet-row">
-                            <span class="num wallet-value">{{ $user->reward_points ?? 0 }}</span>
-                            <span class="wallet-sub">Poin</span>
+                            <span class="num wallet-value">{{ format_short($points ?? 0) }}</span>
                         </div>
                     </div>
                     <a href="{{ route('merchandise.index') }}" class="wallet-arrow stretched-link" aria-label="Lihat merchandise">
@@ -65,6 +66,7 @@
                         <a href="{{ $banner->link }}" class="btn-white promo-img-cta" @if (\Illuminate\Support\Str::startsWith($banner->link, ['http://', 'https://'])) target="_blank" rel="noopener" @endif>{{ $banner->cta_label ?: 'Selengkapnya' }}</a>
                     @endif
                 </section>
+                
             @else
                 <section class="promo r-card">
                     <div class="glow"></div><span class="ms bgico" aria-hidden="true">bolt</span>

@@ -15,7 +15,7 @@
         <div class="side-head d-flex align-items-center gap-2 px-3 py-2">
             <div class="d-flex align-items-center gap-2 brand">
                 <img src="{{ asset('assets/images/logo_with_right_text.png') }}" alt="Atlantic Pedia" class="brand-logo d-none d-lg-block" style="width:7.5rem;height:3.25rem;border-radius:.75rem;object-fit:cover">
-                <img src="{{ asset('') }}" alt="Atlantic Pedia" class="brand-logo-sm d-none d-lg-block" style="width:2.25rem;height:2.25rem;border-radius:.75rem;object-fit:cover;display:none">
+                <img src="{{ asset('assets/images/logo.png') }}" alt="Atlantic Pedia" class="brand-logo-sm d-none d-lg-block" style="width:2.25rem;height:2.25rem;border-radius:.75rem;object-fit:cover;display:none">
             </div>
         </div>
         <nav class="d-flex flex-column gap-1">

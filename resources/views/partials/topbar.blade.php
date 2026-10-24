@@ -37,7 +37,7 @@
     </div>
     <div class="d-flex align-items-center gap-3 flex-shrink-0">
         @if ($tier)
-            <a href="{{ route('saldo.index') }}" class="pill tier-{{ $tier->value }} fs-11 flex-shrink-0 text-decoration-none" data-tip="{{ number_format((int) $tierUser->points, 0, ',', '.') }} poin reward">
+            <a href="{{ route('merchandise.index') }}" class="pill tier-{{ $tier->value }} fs-11 flex-shrink-0 text-decoration-none" data-tip="{{ number_format((int) $tierUser->points, 0, ',', '.') }} poin reward">
                 <span class="ms ms-sm me-1">{{ $tier->icon() }}</span>{{ $tier->label() }}
             </a>
         @endif

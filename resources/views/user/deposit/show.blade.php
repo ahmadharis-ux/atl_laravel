@@ -20,7 +20,7 @@
      @if ($pending) data-poll-url="{{ route('deposits.show', $deposit) }}" data-poll-status="{{ $deposit->status->value }}" data-poll-interval="4000" @endif>
 
     <div class="d-flex align-items-center gap-2">
-        <a href="{{ route('saldo.index') }}" class="ap-icon-btn" data-tip="Kembali"><span class="ms ms-md">arrow_back</span></a>
+        <a href="{{ route('deposits.index') }}" class="ap-icon-btn" data-tip="Kembali"><span class="ms ms-md">arrow_back</span></a>
         <div>
             <h1 class="fw-bold fs-5 m-0">Top Up Saldo</h1>
             <p class="tx-mute fs-12 m-0">{{ $deposit->reference }}</p>
@@ -36,10 +36,10 @@
     @endif
 
     @if ($pending)
-        <div class="alert-ap r-sm bg-glass d-flex align-items-center gap-2">
+        {{-- <div class="alert-ap r-sm bg-glass d-flex align-items-center gap-2">
             <span class="ms tx-teal">autorenew</span>
             <span class="fs-13">Halaman ini menyegarkan otomatis setelah pembayaran diterima.</span>
-        </div>
+        </div> --}}
 
         <x-ui.card title="Instruksi Pembayaran">
             @if ($isQris && $qrUrl)
@@ -209,4 +209,7 @@
         </ul>
     </x-ui.card>
 </div>
+<a href="" class="btn-ap btn-mint justify-content-center w-100 mt-3">
+    Upload Bukti Pembayaran
+</a>
 @endsection

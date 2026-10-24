@@ -3,15 +3,23 @@
 @section('title', 'Riwayat Top Up - Atlantic Pedia Tab')
 
 @section('content')
+<style>
+   .min-w-0 { min-width: 0; }
+</style>
 <div class="d-flex flex-column gap-3">
-
     <div class="d-flex align-items-center gap-2">
         <a href="{{ route('saldo.index') }}" class="ap-icon-btn" data-tip="Kembali"><span class="ms">arrow_back</span></a>
-        <div>
-            <h1 class="fw-bold fs-4 m-0">Riwayat Top Up</h1>
-            <p class="tx-mute fs-12 m-0">Semua permintaan top up saldo kamu.</p>
+        <div class="d-flex align-items-center justify-content-between gap-2 flex-grow-1 min-w-0">
+            <div class="min-w-0">
+                <h1 class="fw-bold fs-4 m-0">Riwayat Top Up</h1>
+                <p class="tx-mute fs-12 m-0">Semua permintaan top up saldo kamu.</p>
+            </div>
+            <div class="flex-shrink-0">
+                <a href="{{ route('deposits.create') }}" class="btn-ap btn-mint text-nowrap">
+                    <span class="ms">add</span>Top Up
+                </a>
+            </div>
         </div>
-        <a href="{{ route('deposits.create') }}" class="btn-ap btn-mint ms-auto"><span class="ms">add</span>Top Up</a>
     </div>
 
     <div class="card-ap r-card p-3">
@@ -24,7 +32,14 @@
                 <li data-row-href="{{ route('deposits.show', $deposit) }}">
                     <span class="ibox ibox-44 {{ $deposit->status->tone() }}"><span class="ms" style="font-size:20px">{{ $deposit->status->icon() }}</span></span>
                     <div class="t">
-                        <div class="fw-bold text-truncate">{{ $method?->label() }}@if ($channelLabel) &middot; {{ $channelLabel }}@endif</div>
+                        <div class="fw-bold text-truncate">
+                            @if ($isQris)
+                                {{ $method?->label() }}
+                            @else
+                                TF
+                            @endif
+                            @if ($channelLabel) &middot; {{ $channelLabel }}@endif
+                        </div>
                         <div class="fs-12 tx-mute text-truncate">{{ $deposit->reference }}</div>
                         <div class="fs-11 tx-mute">{{ $deposit->created_at->locale('id')->translatedFormat('d M Y H:i') }}</div>
                     </div>
@@ -33,7 +48,7 @@
                             <span class="num fw-bold">Rp {{ number_format($deposit->amount, 0, ',', '.') }}</span>
                             <span class="pill {{ $deposit->status->tone() }}">{{ $deposit->status->label() }}</span>
                         </div>
-                        @unless ($isQris)
+                        {{-- @unless ($isQris)
                             <x-ui.card title="Konfirmasi Pembayaran" class="w-100 mb-2">
                                 <div class="d-flex align-items-start gap-2">
                                     <span class="ms tx-gold">hourglass_top</span>
@@ -43,10 +58,10 @@
                                     </div>
                                 </div>
                             </x-ui.card>
-                        @endunless
-                        @if ($resumable)
+                        @endunless --}}
+                        {{-- @if ($resumable)
                             <x-ui.icon-button href="{{ route('deposits.show', $deposit) }}" icon="payments" tip="Lanjutkan bayar" />
-                        @endif
+                        @endif --}}
                     </div>
                 </li>
             @empty

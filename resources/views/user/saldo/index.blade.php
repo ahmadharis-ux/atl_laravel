@@ -76,7 +76,7 @@
     </div> --}}
 
     <div class="row">
-        <div class="col-lg-6">
+        <div class="col-lg-6 mb-3">
             <div class="card-ap r-card p-3">
                 <div class="d-flex align-items-center justify-content-between pb-2">
                     <h3 class="fw-bold fs-5 m-0">Transaksi Terakhir</h3>
@@ -103,7 +103,7 @@
                 </ul>
             </div>
         </div>
-        <div class="col-lg-6">
+        <div class="col-lg-6 mb-3">
             <div class="card-ap r-card p-3">
                 <div class="d-flex align-items-center justify-content-between pb-2">
                     <h3 class="fw-bold fs-5 m-0">Mutasi Terakhir</h3>
