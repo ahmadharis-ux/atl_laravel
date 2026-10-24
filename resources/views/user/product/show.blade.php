@@ -73,9 +73,9 @@
                     @endif
                 </div>
                 @if ($canValidateNickname)
-                    <form method="GET" action="{{ route('checkout.show', $product) }}" class="d-flex flex-column gap-3 pt-3 mt-1 border-top">
+                    <form method="GET" action="{{ route('checkout.show', $product) }}" class="d-flex flex-column gap-3 pt-3 mt-1 border-top" data-nickname-form>
                         @include('user.product._nickname', ['brand' => $product->brand->slug, 'requiresZone' => $requiresZone, 'target' => '', 'zone' => ''])
-                        <button type="submit" class="btn-ap btn-mint justify-content-center"><span class="ms align-middle me-1">shopping_cart</span>Beli Sekarang</button>
+                        <button type="submit" class="btn-ap btn-mint justify-content-center" disabled data-nickname-buy><span class="ms align-middle me-1">shopping_cart</span>Beli Sekarang</button>
                     </form>
                 @else
                     <a href="{{ route('checkout.show', $product) }}" class="btn-ap btn-mint justify-content-center"><span class="ms align-middle me-1">shopping_cart</span>Beli Sekarang</a>

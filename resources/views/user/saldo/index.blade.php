@@ -63,7 +63,7 @@
         </div>
     @endif
 
-    <div class="row g-3">
+    {{-- <div class="row g-3">
         <div class="col-sm-6">
             <div class="mini-poin r-sm {{ $tier->cssClass() }} p-3 h-100">
                 <div class="d-flex align-items-center justify-content-between">
@@ -73,32 +73,63 @@
                 <div class="num fw-800 fs-4 mt-2">{{ number_format($points, 0, ',', '.') }} <span class="tx-gold fs-6">Poin</span></div>
             </div>
         </div>
-    </div>
+    </div> --}}
 
-    <div class="card-ap r-card p-3">
-        <div class="d-flex align-items-center justify-content-between pb-2">
-            <h3 class="fw-bold fs-5 m-0">Transaksi Terakhir</h3>
-            <a href="{{ route('orders.index') }}" class="fw-semibold tx-teal">Selengkapnya</a>
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card-ap r-card p-3">
+                <div class="d-flex align-items-center justify-content-between pb-2">
+                    <h3 class="fw-bold fs-5 m-0">Transaksi Terakhir</h3>
+                    <a href="{{ route('orders.index') }}" class="fw-semibold tx-teal">Selengkapnya</a>
+                </div>
+                <ul class="trx list-unstyled m-0">
+                    @forelse ($transactions as $t)
+                        <li data-row-href="{{ $t['url'] }}">
+                            <span class="ibox ibox-44 bg-mint-l tx-mintt"><span class="ms" style="font-size:20px">{{ $t['icon'] }}</span></span>
+                            <div class="t">
+                                <div class="fw-bold text-truncate">{{ $t['title'] }}</div>
+                                <div class="fs-12 tx-mute text-truncate">{{ $t['detail'] }}</div>
+                            </div>
+                            <div class="d-flex flex-column align-items-end gap-1 flex-shrink-0">
+                                <span class="num fw-bold">Rp {{ number_format($t['amount'], 0, ',', '.') }}</span>
+                                <span class="pill fs-11 {{ $t['status'] === 'Sukses' ? 'bg-mint-l tx-mintt' : 'bg-gold tx-gold' }}">{{ $t['status'] }}</span>
+                            </div>
+                        </li>
+                    @empty
+                        <li class="d-block border-0 p-0">
+                            <x-ui.empty-state icon="receipt_long" title="Belum ada transaksi" description="Riwayat transaksi kamu akan tampil di sini." />
+                        </li>
+                    @endforelse
+                </ul>
+            </div>
         </div>
-        <ul class="trx list-unstyled m-0">
-            @forelse ($transactions as $t)
-                <li data-row-href="{{ $t['url'] }}">
-                    <span class="ibox ibox-44 bg-mint-l tx-mintt"><span class="ms" style="font-size:20px">{{ $t['icon'] }}</span></span>
-                    <div class="t">
-                        <div class="fw-bold text-truncate">{{ $t['title'] }}</div>
-                        <div class="fs-12 tx-mute text-truncate">{{ $t['detail'] }}</div>
-                    </div>
-                    <div class="d-flex flex-column align-items-end gap-1 flex-shrink-0">
-                        <span class="num fw-bold">Rp {{ number_format($t['amount'], 0, ',', '.') }}</span>
-                        <span class="pill fs-11 {{ $t['status'] === 'Sukses' ? 'bg-mint-l tx-mintt' : 'bg-gold tx-gold' }}">{{ $t['status'] }}</span>
-                    </div>
-                </li>
-            @empty
-                <li class="d-block border-0 p-0">
-                    <x-ui.empty-state icon="receipt_long" title="Belum ada transaksi" description="Riwayat transaksi kamu akan tampil di sini." />
-                </li>
-            @endforelse
-        </ul>
+        <div class="col-lg-6">
+            <div class="card-ap r-card p-3">
+                <div class="d-flex align-items-center justify-content-between pb-2">
+                    <h3 class="fw-bold fs-5 m-0">Mutasi Terakhir</h3>
+                    <a href="{{ route('saldo.mutations') }}" class="fw-semibold tx-teal">Selengkapnya</a>
+                </div>
+                <ul class="trx list-unstyled m-0">
+                    @forelse ($saldos as $s)
+                        <li data-row-href="{{ $s['url'] }}">
+                            <span class="ibox ibox-44 bg-mint-l tx-mintt"><span class="ms" style="font-size:20px">{{ $s['icon'] }}</span></span>
+                            <div class="t">
+                                <div class="fw-bold text-truncate">{{ $s['title'] }}</div>
+                                <div class="fs-12 tx-mute text-truncate">{{ $s['detail'] }}</div>
+                            </div>
+                            <div class="d-flex flex-column align-items-end gap-1 flex-shrink-0">
+                                <span class="num fw-bold">Rp {{ number_format($s['amount'], 0, ',', '.') }}</span>
+                                <span class="pill fs-11 {{ $s['status'] === 'Sukses' ? 'bg-mint-l tx-mintt' : 'bg-gold tx-gold' }}">{{ $s['status'] }}</span>
+                            </div>
+                        </li>
+                    @empty
+                        <li class="d-block border-0 p-0">
+                            <x-ui.empty-state icon="receipt_long" title="Belum ada mutasi" description="Riwayat mutasi kamu akan tampil di sini." />
+                        </li>
+                    @endforelse
+                </ul>
+            </div>
+        </div>
     </div>
 
 </div>

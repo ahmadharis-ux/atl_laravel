@@ -178,7 +178,7 @@
         <div class="col-lg-7">
             <x-ui.card title="Produk">
                 <div class="fw-bold">{{ $product?->name ?? 'Produk tidak tersedia' }}</div>
-                <div class="d-flex flex-wrap align-items-center gap-2 mt-1">
+                <div class="d-flex flex-wrap align-items-center gap-2 mt-1 mb-2">
                     @if ($product)
                         <span class="pill bg-tealc-m tx-tealt">{{ $product->code }}</span>
                     @endif
@@ -189,7 +189,64 @@
                         <span class="pill bg-glass tx-mute">{{ $product->category->name }}</span>
                     @endif
                 </div>
-                @if ($product && $product->status)
+
+                <li class="d-flex align-items-center justify-content-between pt-2 border-top mb-2">
+                    <span class="fw-bold fs-10">Data Tujuan</span>
+                </li>
+                @include('user.product._field', ['label' => $targetLabel, 'value' => $order->target])
+                @if ($order->target_zone)
+                    @include('user.product._field', ['label' => 'Zone ID', 'value' => $order->target_zone])
+                @endif
+                
+            </x-ui.card>
+        </div>
+        <div class="col-lg-5">
+            <x-ui.card title="Pembayaran">
+                <ul class="list-unstyled m-0 d-flex flex-column gap-2 fs-13">
+                    <li class="d-flex align-items-center justify-content-between">
+                        <span class="tx-mute">Metode</span>
+                        <span class="fw-semibold">{{ $method?->label() }}@if ($channelLabel) &middot; {{ $channelLabel }}@endif</span>
+                    </li>
+                    @if ($order->payment_code)
+                        <li class="d-flex align-items-center justify-content-between">
+                            <span class="tx-mute">Kode Pembayaran</span>
+                            <span class="num fw-semibold">{{ $order->payment_code }}</span>
+                        </li>
+                    @endif
+                    <li class="d-flex align-items-center justify-content-between">
+                        <span class="tx-mute">Waktu pesan</span>
+                        <span class="fw-semibold">{{ $order->created_at->format('d M Y, H:i') }}</span>
+                    </li>
+                    @if ($order->paid_at)
+                        <li class="d-flex align-items-center justify-content-between">
+                            <span class="tx-mute">Dibayar</span>
+                            <span class="fw-semibold">{{ $order->paid_at->format('d M Y, H:i') }}</span>
+                        </li>
+                    @endif
+                    @if ($order->provider_sn)
+                        <li class="d-flex align-items-center justify-content-between">
+                            <span class="tx-mute">Serial Number</span>
+                            <span class="num fw-semibold">{{ $order->provider_sn }}</span>
+                        </li>
+                    @endif
+                    @if ($fee > 0)
+                        <li class="d-flex align-items-center justify-content-between">
+                            <span class="tx-mute">Biaya admin</span>
+                            <span class="num fw-semibold">Rp {{ number_format($fee, 0, ',', '.') }}</span>
+                        </li>
+                    @endif
+                    <li class="d-flex align-items-center justify-content-between pt-2 border-top">
+                        <span class="fw-bold">Total</span>
+                        <span class="num fw-bold tx-tealt">Rp {{ number_format($totalDue, 0, ',', '.') }}</span>
+                    </li>
+                </ul>
+            </x-ui.card>
+        </div>
+    </div>
+
+    
+</div>
+@if ($product && $product->status)
                     @php
                         $reorderQuery = array_filter([
                             'target' => $order->target,
@@ -201,58 +258,4 @@
                         <span class="ms ms-sm align-middle me-1" aria-hidden="true">refresh</span>Beli Lagi
                     </a>
                 @endif
-            </x-ui.card>
-        </div>
-
-        <div class="col-lg-5">
-            <x-ui.card title="Data Tujuan">
-                @include('user.product._field', ['label' => $targetLabel, 'value' => $order->target])
-                @if ($order->target_zone)
-                    @include('user.product._field', ['label' => 'Zone ID', 'value' => $order->target_zone])
-                @endif
-            </x-ui.card>
-        </div>
-    </div>
-
-    <x-ui.card title="Pembayaran">
-        <ul class="list-unstyled m-0 d-flex flex-column gap-2 fs-13">
-            <li class="d-flex align-items-center justify-content-between">
-                <span class="tx-mute">Metode</span>
-                <span class="fw-semibold">{{ $method?->label() }}@if ($channelLabel) &middot; {{ $channelLabel }}@endif</span>
-            </li>
-            @if ($order->payment_code)
-                <li class="d-flex align-items-center justify-content-between">
-                    <span class="tx-mute">Kode Pembayaran</span>
-                    <span class="num fw-semibold">{{ $order->payment_code }}</span>
-                </li>
-            @endif
-            <li class="d-flex align-items-center justify-content-between">
-                <span class="tx-mute">Waktu pesan</span>
-                <span class="fw-semibold">{{ $order->created_at->format('d M Y, H:i') }}</span>
-            </li>
-            @if ($order->paid_at)
-                <li class="d-flex align-items-center justify-content-between">
-                    <span class="tx-mute">Dibayar</span>
-                    <span class="fw-semibold">{{ $order->paid_at->format('d M Y, H:i') }}</span>
-                </li>
-            @endif
-            @if ($order->provider_sn)
-                <li class="d-flex align-items-center justify-content-between">
-                    <span class="tx-mute">Serial Number</span>
-                    <span class="num fw-semibold">{{ $order->provider_sn }}</span>
-                </li>
-            @endif
-            @if ($fee > 0)
-                <li class="d-flex align-items-center justify-content-between">
-                    <span class="tx-mute">Biaya admin</span>
-                    <span class="num fw-semibold">Rp {{ number_format($fee, 0, ',', '.') }}</span>
-                </li>
-            @endif
-            <li class="d-flex align-items-center justify-content-between pt-2 border-top">
-                <span class="fw-bold">Total</span>
-                <span class="num fw-bold tx-tealt">Rp {{ number_format($totalDue, 0, ',', '.') }}</span>
-            </li>
-        </ul>
-    </x-ui.card>
-</div>
 @endsection

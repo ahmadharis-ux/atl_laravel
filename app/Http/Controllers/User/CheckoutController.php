@@ -67,7 +67,23 @@ class CheckoutController extends Controller
             'master_bank_id' => ['nullable', 'integer'],
         ]);
 
-        OrderTarget::ensureOperatorMatches($product, (string) $validated['target']);
+        $user = $request->user();
+        $pendingSame = Order::query()
+            ->where('user_id', $user->getKey())
+            ->where('product_id', $product->getKey())
+            ->where('target', $validated['target'])
+            ->where('target_zone', $validated['zone'] ?? null)
+            ->where('payment_method', PaymentMethod::Qris)
+            ->where('status', OrderStatus::Pending)
+            ->whereNotNull('expires_at')
+            ->where('expires_at', '>', now())
+            ->exists();
+
+        if ($pendingSame) {
+            throw ValidationException::withMessages([
+                'payment_method' => 'Kamu masih memiliki pesanan QRIS yang belum dibayar untuk produk & tujuan yang sama. Selesaikan pembayaran atau tunggu hingga kedaluwarsa terlebih dahulu.',
+            ]);
+        }
 
         $method = PaymentMethod::from($validated['payment_method']);
         $masterBank = $this->resolveMasterBank($method, $validated['master_bank_id'] ?? null);
@@ -125,7 +141,7 @@ class CheckoutController extends Controller
                     'payment_code' => $paid ? null : ($masterBank?->account_number ?? PaymentInstruction::code($method)),
                     'master_bank_id' => $masterBank?->getKey(),
                     'paid_at' => $paid ? now() : null,
-                    'expires_at' => ! $paid ? now()->addMinutes(3) : null,
+                    'expires_at' => ! $paid ? now()->addHours(3) : null,
                 ]);
 
                 if ($paid) {

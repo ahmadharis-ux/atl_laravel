@@ -20,27 +20,43 @@
 
     <div class="row g-3">
         <div class="col-lg-7 order-2 order-lg-1">
-            <form method="POST" action="{{ route('checkout.store', $product) }}" class="d-flex flex-column gap-3" data-min-loader="2000" id="checkoutForm" data-checkout-form>
+            <form method="POST" action="{{ route('checkout.store', $product) }}" class="d-flex flex-column gap-3" data-min-loader="2000" id="checkoutForm" data-checkout-form data-requires-zone="{{ $requiresZone ? '1' : '0' }}">
                 @csrf
                 <x-ui.card title="Data Tujuan">
                     <div class="d-flex flex-column gap-3">
-                        <x-ui.input
-                            name="target"
-                            :label="$targetLabel"
-                            :placeholder="$targetPlaceholder"
-                            :value="old('target', $target)"
-                            autocomplete="off"
-                            autofocus
-                        />
-                        @if ($requiresZone)
+                        @if (in_array($product->brand?->slug, ['mobile-legends', 'free-fire', 'pubg-mobile', 'aov', 'genshin-impact', 'honkai-star-rail'], true))
+                            @include('user.product._nickname', [
+                                'brand' => $product->brand->slug,
+                                'requiresZone' => $requiresZone,
+                                'target' => old('target', $target),
+                                'zone' => old('zone', $zone),
+                            ])
+                            <script>
+                                document.addEventListener('DOMContentLoaded', function(){
+                                    document.querySelectorAll('input[name="target"], input[name="zone"]').forEach(function(i){ i.readOnly = true; i.setAttribute('readonly','readonly'); });
+                                });
+                            </script>
+                            @error('target')<div class="err show">{{ $message }}</div>@enderror
+                            @error('zone')<div class="err show">{{ $message }}</div>@enderror
+                        @else
                             <x-ui.input
-                                name="zone"
-                                label="Zone ID"
-                                placeholder="Masukkan Zone ID"
-                                inputmode="numeric"
-                                :value="old('zone', $zone)"
+                                name="target"
+                                :label="$targetLabel"
+                                :placeholder="$targetPlaceholder"
+                                :value="old('target', $target)"
                                 autocomplete="off"
+                                autofocus
                             />
+                            @if ($requiresZone)
+                                <x-ui.input
+                                    name="zone"
+                                    label="Zone ID"
+                                    placeholder="Masukkan Zone ID"
+                                    inputmode="numeric"
+                                    :value="old('zone', $zone)"
+                                    autocomplete="off"
+                                />
+                            @endif
                         @endif
 
                         @error('product')<div class="err show">{{ $message }}</div>@enderror
@@ -89,9 +105,9 @@
                     <div>
                         <div class="fw-bold">{{ $product->name }}</div>
                         <div class="d-flex align-items-center gap-2 mt-1">
-                            <span class="pill bg-tealc-m tx-tealt">{{ $product->code }}</span>
+                            <span class="pill bg-tealc-m tx-white">{{ $product->code }}</span>
                             @if ($product->brand)
-                                <span class="pill bg-glass tx-mute">{{ $product->brand->name }}</span>
+                                <span class="pill bg-glass tx-white">{{ $product->brand->name }}</span>
                             @endif
                         </div>
                     </div>

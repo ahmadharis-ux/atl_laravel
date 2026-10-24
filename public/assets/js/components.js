@@ -780,14 +780,14 @@
       var cb = confirmCb;
       closeModal(confirmEl);
       confirmCb = null;
-      if (cb) cb(true);
+      if (typeof cb === 'function') cb(true);
     });
     confirmEl.addEventListener('click', function (e) {
       if (e.target.closest('[data-modal-close]')) {
         var cb = confirmCb;
         closeModal(confirmEl);
         confirmCb = null;
-        if (cb) cb(false);
+        if (typeof cb === 'function') cb(false);
       }
     });
     return confirmEl;
@@ -800,14 +800,7 @@
     var ok = el.querySelector('.ap-confirm-ok');
     ok.textContent = o.okLabel || 'Ya, Lanjutkan';
     ok.style.background = o.danger ? 'var(--err)' : '';
-    confirmCb = function () { if (typeof cb === 'function') { cb(true); } };
-    var cancelBtn = el.querySelector('[data-modal-close]');
-    var oldCancel = cancelBtn._apCancel;
-    if (oldCancel) cancelBtn.removeEventListener('click', oldCancel);
-    cancelBtn._apCancel = function () {
-      if (typeof cb === 'function') { cb(false); }
-    };
-    cancelBtn.addEventListener('click', cancelBtn._apCancel);
+    confirmCb = typeof cb === 'function' ? cb : function(){};
     showModal(el);
   }
 
@@ -1080,16 +1073,30 @@
       var targetInput = root.querySelector('[data-nickname-target]');
       var zoneInput = root.querySelector('[data-nickname-zone]');
       var result = root.querySelector('[data-nickname-result]');
+      var buyBtn = document.querySelector('[data-nickname-buy]');
       if (!endpoint || !brand || !targetInput || !result) return;
 
       var timer = null;
       var seq = 0;
+      var valid = false;
+
+      function setBuyEnabled(enabled) {
+        if (!buyBtn) return;
+        buyBtn.disabled = !enabled;
+        if (enabled) {
+          buyBtn.classList.remove('opacity-50');
+        } else {
+          buyBtn.classList.add('opacity-50');
+        }
+      }
 
       function setResult(html) {
         result.innerHTML = html;
       }
 
       function message(text, tone) {
+        valid = false;
+        setBuyEnabled(false);
         setResult('<span class="' + (tone || 'tx-skyd') + '" style="opacity:.85">' + esc(text) + '</span>');
       }
 
@@ -1099,7 +1106,15 @@
         var id = ++seq;
 
         if (target === '') {
+          valid = false;
+          setBuyEnabled(false);
           message('Masukkan ID untuk melihat nama akun.');
+          return;
+        }
+        if (zoneInput && zone === '') {
+          valid = false;
+          setBuyEnabled(false);
+          message('Masukkan Zone ID untuk melanjutkan.', 'tx-err');
           return;
         }
 
@@ -1117,13 +1132,21 @@
           .then(function (data) {
             if (id !== seq) return;
             if (data && data.status && data.nickname) {
+              valid = true;
+              setBuyEnabled(true);
               setResult('<span class="tx-mintt fw-bold"><span class="ms ms-sm align-middle me-1">verified</span>' + esc(data.nickname) + '</span>');
             } else {
+              valid = false;
+              setBuyEnabled(false);
               message((data && data.message) || 'Nama akun tidak ditemukan.', 'tx-err');
             }
           })
           .catch(function () {
-            if (id === seq) message('Gagal memeriksa, silakan coba lagi.', 'tx-err');
+            if (id === seq) {
+              valid = false;
+              setBuyEnabled(false);
+              message('Gagal memeriksa, silakan coba lagi.', 'tx-err');
+            }
           });
       }
 
@@ -1138,6 +1161,24 @@
         zoneInput.addEventListener('input', schedule);
         zoneInput.addEventListener('blur', run);
       }
+      var form = root.closest('form[data-nickname-form]');
+      if (form) {
+        form.addEventListener('submit', function (e) {
+          if (!valid) {
+            e.preventDefault();
+            if (window.AP && window.AP.showToast) {
+              window.AP.showToast('ID/Zone belum terverifikasi atau belum lengkap.', 'error');
+            } else {
+              alert('ID/Zone belum terverifikasi atau belum lengkap.');
+            }
+            if (!targetInput.value.trim()) targetInput.focus();
+            else if (zoneInput && !zoneInput.value.trim()) zoneInput.focus();
+            run();
+            return;
+          }
+        });
+      }
+      setBuyEnabled(false);
     });
   }
 
@@ -1417,32 +1458,37 @@
         var isCheckout = form.hasAttribute('data-checkout-form') || (form.action && form.action.indexOf('/checkout/') !== -1);
         if (isCheckout) {
           var targetInput = form.querySelector('input[name="target"]');
-          var targetVal = targetInput ? targetInput.value.trim() : '';
-          if (targetVal === '') {
-            if (window.AP && window.AP.showToast) {
-              window.AP.showToast('Isi tujuan terlebih dahulu.', 'error');
-            } else {
-              alert('Isi tujuan terlebih dahulu.');
-            }
-            form.dataset.submitting = '';
-            var btns = form.querySelectorAll('button[type="submit"], input[type="submit"]');
-            btns.forEach(function (b) { b.disabled = false; });
-            if (targetInput) { targetInput.focus(); targetInput.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
-            return;
-          }
           var zoneInput = form.querySelector('input[name="zone"]');
-          if (zoneInput && zoneInput.closest('.d-none') === null) {
-            var zoneVal = zoneInput.value.trim();
+          var requiresZone = form.dataset.requiresZone === '1';
+          if (targetInput) {
+            var targetVal = (targetInput.value || '').trim();
+            if (targetVal === '') {
+              if (window.AP && window.AP.showToast) {
+                window.AP.showToast('ID Tujuan wajib diisi.', 'error');
+              } else {
+                alert('ID Tujuan wajib diisi.');
+              }
+              form.dataset.submitting = '';
+              var btns = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+              btns.forEach(function (b) { b.disabled = false; });
+              targetInput.focus();
+              targetInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              return;
+            }
+          }
+          if (requiresZone && zoneInput) {
+            var zoneVal = (zoneInput.value || '').trim();
             if (zoneVal === '') {
               if (window.AP && window.AP.showToast) {
-                window.AP.showToast('Zone wajib diisi.', 'error');
+                window.AP.showToast('Zone ID wajib diisi.', 'error');
               } else {
-                alert('Zone wajib diisi.');
+                alert('Zone ID wajib diisi.');
               }
               form.dataset.submitting = '';
               var btns2 = form.querySelectorAll('button[type="submit"], input[type="submit"]');
               btns2.forEach(function (b) { b.disabled = false; });
-              if (zoneInput) { zoneInput.focus(); zoneInput.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+              zoneInput.focus();
+              zoneInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
               return;
             }
           } else if (zoneInput && zoneInput.required) {
@@ -1465,7 +1511,19 @@
           if (methodChkVal === 'saldo') {
             var sisa = document.querySelector('[data-sisa-saldo]');
             if (sisa) {
-              var st = sisa.textContent.replace(/\D/g, '');
+              var stRaw = sisa.textContent || '';
+              if (stRaw.indexOf('-') !== -1 || stRaw.match(/Rp\s*-/)) {
+                if (window.AP && window.AP.showToast) {
+                  window.AP.showToast('Saldo tidak mencukupi.', 'error');
+                } else {
+                  alert('Saldo tidak mencukupi.');
+                }
+                form.dataset.submitting = '';
+                var btns3 = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+                btns3.forEach(function (b) { b.disabled = false; });
+                return;
+              }
+              var st = stRaw.replace(/\D/g, '');
               if (st !== '' && parseInt(st, 10) < 0) {
                 if (window.AP && window.AP.showToast) {
                   window.AP.showToast('Saldo tidak mencukupi.', 'error');
@@ -1479,19 +1537,16 @@
               }
             } else {
               var allText = document.body.innerText || '';
-              if (allText.match(/Sisa setelah transaksi.*Rp\s*[-]?\d/)) {
-                var mm = allText.match(/Rp\s*-\s*([0-9\.]+)/);
-                if (mm) {
-                  if (window.AP && window.AP.showToast) {
-                    window.AP.showToast('Saldo tidak mencukupi.', 'error');
-                  } else {
-                    alert('Saldo tidak mencukupi.');
-                  }
-                  form.dataset.submitting = '';
-                  var btns3b = form.querySelectorAll('button[type="submit"], input[type="submit"]');
-                  btns3b.forEach(function (b) { b.disabled = false; });
-                  return;
+              if (/Sisa setelah transaksi/.test(allText) && /Rp\s*-\s*[0-9.,]+/.test(allText)) {
+                if (window.AP && window.AP.showToast) {
+                  window.AP.showToast('Saldo tidak mencukupi.', 'error');
+                } else {
+                  alert('Saldo tidak mencukupi.');
                 }
+                form.dataset.submitting = '';
+                var btns3b = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+                btns3b.forEach(function (b) { b.disabled = false; });
+                return;
               }
             }
           }
@@ -1508,22 +1563,103 @@
               buttons.forEach(function (b) { b.disabled = false; });
               return;
             }
+            // Re-check saldo saat benar-benar mau lanjut
+            var methodChk2 = form.querySelector('input[name="payment_method"]:checked');
+            var methodChkVal2 = methodChk2 ? methodChk2.value : '';
+            if (methodChkVal2 === 'saldo') {
+              var sisa2 = document.querySelector('[data-sisa-saldo]');
+              if (sisa2) {
+                var stRaw2 = sisa2.textContent || '';
+                if (stRaw2.indexOf('-') !== -1) {
+                  if (window.AP && window.AP.showToast) {
+                    window.AP.showToast('Saldo tidak mencukupi. Silakan pilih metode QRIS untuk melanjutkan.', 'error');
+                  } else {
+                    alert('Saldo tidak mencukupi. Silakan pilih metode QRIS untuk melanjutkan.');
+                  }
+                  form.dataset.submitting = '';
+                  var buttonsBad = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+                  buttonsBad.forEach(function (b) { b.disabled = false; });
+                  return;
+                }
+              }
+            }
             var min = parseInt(form.dataset.minLoader, 10);
             if (isNaN(min) || min < 0) min = 2000;
             var started = Date.now();
             var data = new FormData(form);
 
-            var buttons = form.querySelectorAll('button[type="submit"], input[type="submit"]');
-            buttons.forEach(function (b) { b.disabled = true; });
+              var buttons = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+              buttons.forEach(function (b) { b.disabled = true; });
 
-            if (window.AP && AP.showLoader) AP.showLoader();
+              if (window.AP && AP.showLoader) AP.showLoader();
 
             fetch(form.action, {
               method: (form.getAttribute('method') || 'post').toUpperCase(),
               body: data,
               credentials: 'same-origin',
-              headers: { 'Accept': 'text/html' },
+              headers: { 'Accept': 'application/json, text/html;q=0.9', 'X-Requested-With': 'XMLHttpRequest' },
             }).then(function (response) {
+              if (!response.ok && response.status >= 400 && response.status < 500) {
+                return response.text().then(function (html) {
+                  if (window.AP && AP.hideLoader) AP.hideLoader();
+                  form.dataset.submitting = '';
+                  var buttonsErr = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+                  buttonsErr.forEach(function (b) { b.disabled = false; });
+                  var msg = 'Ada transaksi QRIS yang belum dibayar untuk produk & tujuan yang sama. Selesaikan atau tunggu kedaluwarsa.';
+                  try {
+                    // try json
+                    try {
+                      var j = JSON.parse(html);
+                      if (j && j.message) msg = j.message;
+                      else if (j && j.errors) {
+                        var keys = Object.keys(j.errors);
+                        if (keys.length) msg = Array.isArray(j.errors[keys[0]]) ? j.errors[keys[0]][0] : j.errors[keys[0]];
+                      }
+                    } catch(e) {
+                      var doc = new DOMParser().parseFromString(html, 'text/html');
+                      var err = doc.querySelector('.err.show, .alert-ap, .text-danger, .tx-err, .invalid-feedback, .alert-danger');
+                      if (err && err.textContent.trim()) {
+                        msg = err.textContent.trim();
+                      }
+                    }
+                  } catch (e) {}
+                  if (typeof confirmAction === 'function') {
+                    confirmAction({ title: 'Tidak bisa melanjutkan', message: msg, okLabel: 'Mengerti' }, function(){});
+                  } else if (window.AP && window.AP.showToast) {
+                    window.AP.showToast(msg, 'error');
+                  } else {
+                    alert(msg);
+                  }
+                  throw new Error('validation');
+                });
+              }
+              if (response.redirected && response.url) {
+                return fetch(response.url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                  .then(function(r){ return r.text(); })
+                  .then(function(html){
+                    try {
+                      var doc = new DOMParser().parseFromString(html, 'text/html');
+                      var err = doc.querySelector('.err.show, .alert-ap, .text-danger, .tx-err, .invalid-feedback, .alert-danger');
+                      if (err && err.textContent.trim()) {
+                        if (window.AP && AP.hideLoader) AP.hideLoader();
+                        form.dataset.submitting = '';
+                        var buttonsErr = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+                        buttonsErr.forEach(function (b) { b.disabled = false; });
+                        var msg2 = err.textContent.trim();
+                        if (typeof confirmAction === 'function') {
+                          confirmAction({ title: 'Tidak bisa melanjutkan', message: msg2, okLabel: 'Mengerti' }, function(){});
+                        } else if (window.AP && window.AP.showToast) {
+                          window.AP.showToast(msg2, 'error');
+                        } else {
+                          alert(msg2);
+                        }
+                        throw new Error('validation');
+                      }
+                    } catch(e){}
+                    var wait = Math.max(0, min - (Date.now() - started));
+                    setTimeout(function () { window.location.assign(response.url); }, wait);
+                  });
+              }
               var wait = Math.max(0, min - (Date.now() - started));
               setTimeout(function () {
                 if (response.redirected && response.url) {
@@ -1532,7 +1668,8 @@
                   window.location.reload();
                 }
               }, wait);
-            }).catch(function () {
+            }).catch(function (err) {
+              if (err && err.message === 'validation') return;
               if (window.AP && AP.hideLoader) AP.hideLoader();
               form.dataset.submitting = '';
               var buttons2f = form.querySelectorAll('button[type="submit"], input[type="submit"]');
