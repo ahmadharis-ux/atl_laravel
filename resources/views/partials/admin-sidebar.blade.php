@@ -31,10 +31,22 @@
        
         ['label' => 'Pengguna',          'icon' => 'group',              'url' => route('admin.users.index'), 'active' => request()->routeIs('admin.users.*'),   'show' => $auth?->can('users.view') ?? false],
          ['label' => 'Role & Permission', 'icon' => 'admin_panel_settings','url' => route('admin.roles.index'), 'active' => request()->routeIs('admin.roles.*'),   'show' => $auth?->can('roles.view') ?? false],
-      
-        
         ['label' => 'Tiket',              'icon' => 'support_agent',      'url' => route('admin.tickets.index'), 'active' => request()->routeIs('admin.tickets.*'), 'show' => $auth?->can('tickets.view') ?? false],
-        
+         [
+            'label' => 'Masters',
+            'icon' => 'settings',
+            'active' => request()->routeIs('admin.master-brands.*') || request()->routeIs('admin.master-banks.*') || request()->routeIs('admin.dashboard-banners.*') || request()->routeIs('admin.login-banners.*') || request()->routeIs('admin.features.*'),
+            'show' => ($auth?->can('master-brands.view') || $auth?->can('master-banks.view') || $auth?->can('dashboard-banners.view') || $auth?->can('login-banners.view') || $auth?->can('features.view')) ?? false,
+            'children' => [
+                ['label' => 'Master Brand',      'icon' => 'branding_watermark',  'url' => route('admin.master-brands.index'), 'active' => request()->routeIs('admin.master-brands.*'), 'show' => $auth?->can('master-brands.view') ?? false],
+                ['label' => 'Master Bank',       'icon' => 'account_balance',     'url' => route('admin.master-banks.index'), 'active' => request()->routeIs('admin.master-banks.*'), 'show' => $auth?->can('master-banks.view') ?? false],
+                ['label' => 'Banner Dashboard',  'icon' => 'view_carousel',       'url' => route('admin.dashboard-banners.index'), 'active' => request()->routeIs('admin.dashboard-banners.*'), 'show' => $auth?->can('dashboard-banners.view') ?? false],
+                ['label' => 'Banner Login',      'icon' => 'campaign',            'url' => route('admin.login-banners.index'), 'active' => request()->routeIs('admin.login-banners.*'), 'show' => $auth?->can('login-banners.view') ?? false],
+                ['label' => 'Manajemen Halaman', 'icon' => 'toggle_on',          'url' => route('admin.features.index'), 'active' => request()->routeIs('admin.features.*'), 'show' => $auth?->can('features.view') ?? false],
+            ],
+            'class' => 'menu-group--scroll',
+        ],
+        ['label' => 'Komponen',          'icon' => 'widgets',            'url' => route('admin.components'),  'active' => request()->routeIs('admin.components'), 'show' => $auth?->can('components.view') ?? false],
         [
             'label' => 'Bot Digiflazz',
             'icon' => 'smart_toy',
@@ -69,22 +81,7 @@
                 ['label' => 'FAQ',        'url' => route('admin.landing.faqs'),         'active' => request()->routeIs('admin.landing.faqs'),         'show' => $auth?->can('landing.view') ?? false],
             ],
         ],
-        [
-            'label' => 'Masters',
-            'icon' => 'settings',
-            'active' => request()->routeIs('admin.master-brands.*') || request()->routeIs('admin.master-banks.*') || request()->routeIs('admin.dashboard-banners.*') || request()->routeIs('admin.login-banners.*') || request()->routeIs('admin.features.*'),
-            'show' => ($auth?->can('master-brands.view') || $auth?->can('master-banks.view') || $auth?->can('dashboard-banners.view') || $auth?->can('login-banners.view') || $auth?->can('features.view')) ?? false,
-            'children' => [
-                ['label' => 'Master Brand',      'icon' => 'branding_watermark',  'url' => route('admin.master-brands.index'), 'active' => request()->routeIs('admin.master-brands.*'), 'show' => $auth?->can('master-brands.view') ?? false],
-                ['label' => 'Master Bank',       'icon' => 'account_balance',     'url' => route('admin.master-banks.index'), 'active' => request()->routeIs('admin.master-banks.*'), 'show' => $auth?->can('master-banks.view') ?? false],
-                ['label' => 'Banner Dashboard',  'icon' => 'view_carousel',       'url' => route('admin.dashboard-banners.index'), 'active' => request()->routeIs('admin.dashboard-banners.*'), 'show' => $auth?->can('dashboard-banners.view') ?? false],
-                ['label' => 'Banner Login',      'icon' => 'campaign',            'url' => route('admin.login-banners.index'), 'active' => request()->routeIs('admin.login-banners.*'), 'show' => $auth?->can('login-banners.view') ?? false],
-                ['label' => 'Manajemen Halaman', 'icon' => 'toggle_on',          'url' => route('admin.features.index'), 'active' => request()->routeIs('admin.features.*'), 'show' => $auth?->can('features.view') ?? false],
        
-            ],
-        ],
-        ['label' => 'Komponen',          'icon' => 'widgets',            'url' => route('admin.components'),  'active' => request()->routeIs('admin.components'), 'show' => $auth?->can('components.view') ?? false],
-
     ];
 @endphp
 
@@ -105,7 +102,7 @@
                 @if ($item['show'])
                     @if (! empty($item['children']))
                         @php($open = collect($item['children'])->contains(fn ($c) => $c['active']))
-                        <div class="side-group {{ $open ? 'open' : '' }}">
+                        <div class="side-group {{ $open ? 'open' : '' }} {{ $item['class'] ?? '' }}">
                             <button type="button" class="side-link side-parent {{ $item['active'] ? 'active' : '' }}" data-side-toggle title="{{ $item['label'] }}" aria-expanded="{{ $open ? 'true' : 'false' }}">
                                 <span class="ms">{{ $item['icon'] }}</span>
                                 <span class="side-label">{{ $item['label'] }}</span>

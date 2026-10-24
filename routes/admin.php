@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\CustomerTopup\ProductController;
 use App\Http\Controllers\Admin\CustomerTopup\TopupController;
 use App\Http\Controllers\Admin\DashboardBannerController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\FeatureSettingController;
 use App\Http\Controllers\Admin\Landing\FaqController as LandingFaqController;
 use App\Http\Controllers\Admin\Landing\ServiceController as LandingServiceController;
 use App\Http\Controllers\Admin\Landing\SettingController as LandingSettingController;

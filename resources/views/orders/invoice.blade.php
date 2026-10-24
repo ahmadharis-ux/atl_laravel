@@ -40,7 +40,7 @@
                 <span class="ms ms-sm align-middle me-1">arrow_back</span>Kembali
             </a>
             <a href="{{ $pdfUrl }}" class="btn-ap btn-navy">
-                <span class="ms ms-sm align-middle me-1">download</span>Download PDF
+               Download PDF
             </a>
         </div>
 

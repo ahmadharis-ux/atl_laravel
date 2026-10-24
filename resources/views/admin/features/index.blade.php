@@ -37,6 +37,7 @@
                             ['key' => 'reseller', 'column' => 'reseller_enabled', 'label' => 'Reseller', 'icon' => 'storefront', 'desc' => 'Halaman harga & keanggotaan reseller pengguna.', 'url' => auth()->user()->can('resellers.view') ? route('admin.resellers.index') : null],
                             ['key' => 'ticket', 'column' => 'ticket_enabled', 'label' => 'Ticket', 'icon' => 'support_agent', 'desc' => 'Halaman bantuan & tiket pengguna.', 'url' => auth()->user()->can('tickets.view') ? route('admin.tickets.index') : null],
                             ['key' => 'merchandise', 'column' => 'merchandise_enabled', 'label' => 'Merchandise', 'icon' => 'redeem', 'desc' => 'Katalog penukaran poin merchandise pengguna.', 'url' => auth()->user()->can('merchandise.view') ? route('admin.merchandise.index') : null],
+                            ['key' => 'dashboard_promo', 'column' => 'dashboard_promo_enabled', 'label' => 'Promo Fallback Dashboard', 'icon' => 'campaign', 'desc' => 'Tampilkan banner promo fallback di beranda jika belum ada banner dashboard.', 'url' => route('admin.dashboard-banners.index')],
                         ];
                     @endphp
 

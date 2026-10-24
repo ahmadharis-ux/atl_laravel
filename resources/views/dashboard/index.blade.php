@@ -90,7 +90,7 @@
                 </section>
             @endif
         @endforeach
-    @else
+    @elseif (\App\Models\FeatureSetting::enabled('dashboard_promo'))
         <section class="promo r-card">
             <div class="glow"></div><span class="ms bgico" aria-hidden="true">bolt</span>
             <div class="promo-in d-flex flex-column justify-content-between gap-3">

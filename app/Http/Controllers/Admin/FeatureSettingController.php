@@ -23,6 +23,7 @@ class FeatureSettingController extends Controller
             'reseller_enabled' => ['boolean'],
             'ticket_enabled' => ['boolean'],
             'merchandise_enabled' => ['boolean'],
+            'dashboard_promo_enabled' => ['boolean'],
         ]);
 
         $setting = FeatureSetting::current();
@@ -31,6 +32,7 @@ class FeatureSettingController extends Controller
             'reseller_enabled' => $request->boolean('reseller_enabled'),
             'ticket_enabled' => $request->boolean('ticket_enabled'),
             'merchandise_enabled' => $request->boolean('merchandise_enabled'),
+            'dashboard_promo_enabled' => $request->boolean('dashboard_promo_enabled'),
         ]);
 
         return back()->with('status', 'Pengaturan halaman berhasil diperbarui.');

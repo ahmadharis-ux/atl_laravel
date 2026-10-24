@@ -17,6 +17,7 @@ class FeatureSetting extends Model
         'reseller_enabled',
         'ticket_enabled',
         'merchandise_enabled',
+        'dashboard_promo_enabled',
     ];
 
     /**
@@ -26,6 +27,7 @@ class FeatureSetting extends Model
         'reseller_enabled' => true,
         'ticket_enabled' => true,
         'merchandise_enabled' => true,
+        'dashboard_promo_enabled' => true,
     ];
 
     public static function current(): self
@@ -43,6 +45,7 @@ class FeatureSetting extends Model
             'reseller_enabled' => true,
             'ticket_enabled' => true,
             'merchandise_enabled' => true,
+            'dashboard_promo_enabled' => true,
         ];
     }
 
@@ -69,6 +72,7 @@ class FeatureSetting extends Model
             'reseller_enabled' => 'boolean',
             'ticket_enabled' => 'boolean',
             'merchandise_enabled' => 'boolean',
+            'dashboard_promo_enabled' => 'boolean',
         ];
     }
 }
