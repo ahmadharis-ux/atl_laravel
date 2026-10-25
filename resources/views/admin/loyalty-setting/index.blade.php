@@ -68,8 +68,8 @@
                 <ul class="list-unstyled m-0 d-flex flex-column gap-3">
                     @foreach ($tiers as $tier)
                         <li class="d-flex align-items-center gap-3">
-                            <span class="pill tier-{{ $tier->value }} flex-shrink-0">
-                                <span class="ms ms-sm me-1" style="font-size:14px">{{ $tier->icon() }}</span>{{ $tier->label() }}
+                            <span class="pill tier-{{ $tier->value }} tier-badge flex-shrink-0">
+                                <img src="{{ asset('assets/images/'.$tier->value.'.png') }}" class="tier-badge-image" alt="{{ $tier->label() }}">
                             </span>
                             <span class="tx-mute fs-12">
                                 @if ($tier === \App\Enums\UserTier::Silver)

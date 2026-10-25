@@ -40,6 +40,20 @@ class AdminLoyaltySettingTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_loyalty_settings_page_uses_the_image_badge_for_each_tier(): void
+    {
+        $admin = $this->admin();
+
+        $response = $this->actingAs($admin)
+            ->get(route('admin.loyalty-settings.index'));
+
+        foreach (['silver', 'gold', 'platinum'] as $tier) {
+            $response
+                ->assertSee(asset('assets/images/'.$tier.'.png'), false)
+                ->assertSee('alt="'.ucfirst($tier).'"', false);
+        }
+    }
+
     public function test_admin_without_update_permission_cannot_change_thresholds(): void
     {
         $admin = $this->admin(['dashboard.view', 'loyalty.view']);

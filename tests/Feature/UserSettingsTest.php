@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\BankAccount;
+use App\Models\LoyaltySetting;
 use App\Models\MasterBank;
 use App\Models\User;
 use App\Notifications\VerifyEmailNotification;
@@ -36,6 +37,25 @@ class UserSettingsTest extends TestCase
             ->assertSee('Ubah Kata Sandi')
             ->assertSee('Autentikasi Dua Faktor')
             ->assertSee('Perangkat Aktif');
+    }
+
+    public function test_the_topbar_uses_the_image_for_each_loyalty_tier(): void
+    {
+        $thresholds = LoyaltySetting::current();
+        $tiers = [
+            ['points' => 0, 'badge' => 'silver'],
+            ['points' => $thresholds->gold_points, 'badge' => 'gold'],
+            ['points' => $thresholds->platinum_points, 'badge' => 'platinum'],
+        ];
+
+        foreach ($tiers as $tier) {
+            $user = User::factory()->create(['points' => $tier['points']]);
+
+            $this->actingAs($user)
+                ->get(route('settings.index'))
+                ->assertSee(asset('assets/images/'.$tier['badge'].'.png'), false)
+                ->assertSee('alt="'.ucfirst($tier['badge']).'"', false);
+        }
     }
 
     public function test_the_first_invalid_profile_field_is_marked_for_keyboard_focus(): void

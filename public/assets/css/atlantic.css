@@ -1407,6 +1407,18 @@ a {
     color: var(--tealt)
 }
 
+.pill.tier-badge {
+    padding: .1rem;
+    background: transparent
+}
+
+.tier-badge-image {
+    display: block;
+    width: auto;
+    height: 1.5rem;
+    object-fit: contain
+}
+
 .mini-poin.tier-silver {
     background: rgba(91, 102, 114, .18);
     border: 1px solid rgba(107, 114, 128, .35)
