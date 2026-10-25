@@ -48,6 +48,7 @@
         window.ATL_PUSH = {
             configured: {{ $firebaseConfig !== [] && filled(config('firebase.client.vapid_key')) ? 'true' : 'false' }},
             loggedIn: {{ auth()->check() ? 'true' : 'false' }},
+            userId: @json(auth()->id()),
             config: @json($firebaseConfig),
             vapidKey: @json(config('firebase.client.vapid_key')),
             tokenUrl: @json(route('notifications.token.store')),

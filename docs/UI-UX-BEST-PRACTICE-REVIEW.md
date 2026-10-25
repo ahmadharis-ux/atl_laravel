@@ -359,13 +359,26 @@ Masih terbuka: sinkronisasi expiry QRIS dengan provider, pemetaan event notifika
 - [x] Checkout menawarkan Saldo dan QRIS saja.
 - [x] Opsi Saldo menjelaskan pemotongan saat order dibuat; QRIS menjelaskan batas pembayaran tiga jam.
 - [x] Status cukup/kurang tampil saat metode Saldo dipilih; CTA Isi Saldo tampil hanya saat jumlah saldo kurang.
-- [ ] Harga, fee, total, saldo saat ini, dan sisa saldo konsisten.
+- [x] Harga produk + fee QRIS sama dengan total QRIS; saat memilih Saldo, fee disembunyikan dan total kembali ke harga produk, sementara saldo dan sisa saldo ditampilkan.
 - [x] Saldo kurang memiliki CTA Isi Saldo; penolakan backend tetap menjadi sumber kebenaran.
 - [x] Jika saldo tidak cukup saat submit, error tampil dekat metode pembayaran, menjelaskan bahwa order tidak dibuat, dan memberi CTA Isi Saldo.
 - [x] Konfirmasi menyertakan detail produk, tujuan/Zone ID, total, metode, dan dampak pembayaran.
 - [x] Status QRIS pending menampilkan instruksi pembayaran, batas waktu pesanan Atlantic, dan CTA "Cek Status Pembayaran".
 - [ ] Batas waktu pesanan yang ditampilkan sudah diverifikasi selaras dengan expiry transaksi provider.
 - [ ] Pending, paid, failed, expired, stok habis, dan saldo berubah punya pesan/CTA yang benar.
+
+### Poin reward
+
+Kondisi saat ini: poin diberikan untuk top up dan transaksi produk sukses dengan nilai tetap 1 poin. Rekomendasi perubahan kebijakan: top up tidak memberi poin; poin hanya diberikan setelah transaksi produk benar-benar berhasil diproses.
+
+- [ ] Ringkasan transaksi menjelaskan estimasi poin yang akan didapat, dan detail/riwayat transaksi mencatat poin aktual setelah transaksi sukses.
+- [ ] Rumus poin memakai margin transaksi: harga jual snapshot dikurangi modal supplier snapshot dan biaya/diskon yang benar-benar ditanggung perusahaan. Nilai Rupiah disimpan dan dihitung presisi sebagai integer rupiah; hindari floating-point.
+- [ ] Poin dihitung dari bagian margin yang dikembalikan (usulan awal 30%), dikalikan tier dan dibagi nilai Rupiah per poin (usulan awal Rp10 per poin); pembulatan ke bawah hanya dilakukan pada hasil poin.
+- [ ] Margin nol/negatif menghasilkan 0 poin. Transaksi gagal/refund serta transaksi yang menggunakan poin atau promo yang ditanggung perusahaan tidak menghasilkan poin atau membalik poin sesuai aturan yang diinformasikan.
+- [ ] Biaya QRIS hanya mengurangi margin bila benar-benar ditanggung perusahaan; fee yang dibayar pelanggan tidak dikurangkan dua kali.
+- [ ] Saldo poin, poin tertunda/kedaluwarsa, nilai minimum penukaran, dan kebutuhan poin merchandise dijelaskan sebelum user menukar.
+- [ ] Tingkatan tidak turun karena poin ditukar (rekomendasi: tier berdasarkan total poin yang pernah diperoleh); dasar tier masih perlu keputusan bisnis.
+- [ ] Sebelum kebijakan poin baru aktif, tampilkan aturan earn/redeem dan masa berlaku dengan jelas; migrasi saldo/riwayat poin lama harus direkonsiliasi dan dikomunikasikan.
 
 ### Top up manual
 
@@ -380,8 +393,8 @@ Masih terbuka: sinkronisasi expiry QRIS dengan provider, pemetaan event notifika
 - [ ] Event transaksi penting memiliki notification center entry dan CTA bila diperlukan.
 - [x] Pengiriman bukti memberi notifikasi admin; permintaan perbaikan/penolakan dan persetujuan memberi notifikasi pengguna.
 - [x] Ikon default notifikasi `warning` sudah dibedakan dari ikon sukses, gagal, dan umum.
-- [ ] Toast dan pusat notifikasi tidak menduplikasi pesan yang sama secara membingungkan.
-- [ ] Status dan urgency terbaca tanpa warna saja; pesan menyebut tindakan yang diperlukan.
+- [x] Notifikasi tetap tersimpan di pusat sebagai riwayat, sementara ID yang sama mencegah toast ganda dari polling dan FCM; saat halaman aktif hanya toast yang tampil, saat di latar belakang hanya notifikasi sistem yang tampil.
+- [x] Status/hasil disampaikan lewat judul dan isi notifikasi; ikon dan warna hanya menjadi penanda tambahan.
 
 ## 9. Skenario uji UX yang direkomendasikan
 
@@ -421,6 +434,8 @@ Dokumen ini merupakan review UX terarah, bukan audit seluruh aplikasi. Beberapa 
 
 - Apakah semua form selain checkout memiliki pola wajib/opsional dan error per-field yang sama.
 - Apakah expiry tiga jam yang disimpan aplikasi sama dengan expiry aktual dari Midtrans untuk semua transaksi QRIS.
+- Kebijakan poin yang berlaku: persentase margin kembali, nilai Rupiah per poin, multiplier tier, masa tunggu/kedaluwarsa, dan apakah tier memakai total poin seumur hidup atau saldo berjalan.
+- Perlakuan terhadap poin dan riwayat lama saat kebijakan poin berubah, termasuk saldo awal dan top up yang sebelumnya pernah menghasilkan poin.
 - Apakah order QRIS yang belum dibayar dapat dibatalkan/dibuat ulang dan bagaimana aturan stoknya.
 - Dampak deaktivasi reseller terhadap saldo, riwayat, order berjalan, dan order API baru.
 - Event transaksi apa saja yang mengirim `TransactionResult`, untuk status apa, dan kepada siapa.

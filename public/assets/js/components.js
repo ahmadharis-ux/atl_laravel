@@ -1559,11 +1559,37 @@
     }, 3500);
   }
 
+  function claimNotificationToast(notificationId) {
+    if (!notificationId) return true;
+
+    var userId = window.ATL_PUSH && window.ATL_PUSH.userId ? window.ATL_PUSH.userId : 'guest';
+    var storageKey = 'ap_notif_announced:' + userId;
+
+    try {
+      var announced = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      if (!Array.isArray(announced)) announced = [];
+      notificationId = String(notificationId);
+      if (announced.indexOf(notificationId) !== -1) return false;
+      announced.push(notificationId);
+      localStorage.setItem(storageKey, JSON.stringify(announced.slice(-50)));
+    } catch (e) {}
+
+    return true;
+  }
+
+  function showNotificationToastOnce(notificationId, message, type) {
+    if (!message || !claimNotificationToast(notificationId)) return false;
+    showToast(message, type);
+    return true;
+  }
+
   window.AP = {
     openModal: openModal,
     closeModal: function (id) { closeModal(typeof id === 'string' ? document.getElementById(id) : id); },
     confirm: confirmAction,
     showToast: showToast,
+    claimNotificationToast: claimNotificationToast,
+    showNotificationToastOnce: showNotificationToastOnce,
     initSelects: function (scope) {
       initSearchSelects(scope);
       initMultiSelects(scope);
@@ -2368,10 +2394,10 @@
         var hasBaseline = lastSeen !== null;
 
         if (announce && incoming !== null && incoming !== lastSeen && data.latest_unread) {
-          if (window.AP && window.AP.showToast) {
+          if (window.AP && window.AP.showNotificationToastOnce) {
             var message = data.latest_body || data.latest_title;
             if (message) {
-              window.AP.showToast(message, data.latest_level || 'info');
+              window.AP.showNotificationToastOnce(incoming, message, data.latest_level || 'info');
             }
           }
           if (!pop.hidden) renderList(data);

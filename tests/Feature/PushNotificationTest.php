@@ -9,6 +9,7 @@ use App\Support\FcmSender;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Kreait\Firebase\Contract\Messaging;
 use Kreait\Firebase\Exception\Messaging\NotFound;
+use Kreait\Firebase\Messaging\CloudMessage;
 use Kreait\Firebase\Messaging\MessageTarget;
 use Kreait\Firebase\Messaging\MulticastSendReport;
 use Kreait\Firebase\Messaging\SendReport;
@@ -47,7 +48,8 @@ class PushNotificationTest extends TestCase
             ->get(route('settings.notifications'))
             ->assertOk()
             ->assertSee('Aktifkan Notifikasi', false)
-            ->assertSee('data-push-toggle', false);
+            ->assertSee('data-push-toggle', false)
+            ->assertSee('userId: '.$user->getKey().',', false);
     }
 
     public function test_transaction_result_is_pushed_and_stale_tokens_are_pruned(): void
@@ -70,7 +72,15 @@ class PushNotificationTest extends TestCase
         ]);
 
         $messaging = Mockery::mock(Messaging::class);
-        $messaging->shouldReceive('sendMulticast')->once()->andReturn($report);
+        $messageData = [];
+        $messaging->shouldReceive('sendMulticast')
+            ->once()
+            ->withArgs(function (CloudMessage $message, array $tokens) use (&$messageData): bool {
+                $messageData = $message->jsonSerialize()['data'];
+
+                return $tokens !== [];
+            })
+            ->andReturn($report);
 
         $this->app->instance(FcmSender::class, new FcmSender($messaging));
 
@@ -80,6 +90,8 @@ class PushNotificationTest extends TestCase
             level: 'success',
         ));
 
+        $notification = $user->notifications()->firstOrFail();
+        $this->assertSame($notification->id, $messageData['notification_id']);
         $this->assertDatabaseHas('notifications', ['notifiable_id' => $user->getKey()]);
         $this->assertDatabaseHas('device_tokens', ['token' => 'valid-token']);
         $this->assertDatabaseMissing('device_tokens', ['token' => 'stale-token']);
