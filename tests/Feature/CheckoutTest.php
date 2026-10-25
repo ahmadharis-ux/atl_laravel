@@ -46,6 +46,7 @@ class CheckoutTest extends TestCase
             ->assertSee('Diamond Mobile Legends')
             ->assertSee('ID Game')
             ->assertSee('ID Game *')
+            ->assertSee('Masukkan ID akun persis seperti yang tampil pada profil game.')
             ->assertSee('Rp 10.000')
             ->assertSee('Saldo')
             ->assertSee('QRIS')
@@ -56,6 +57,45 @@ class CheckoutTest extends TestCase
             ->assertSee('Scan QRIS dan selesaikan pembayaran dalam 3 jam.')
             ->assertSee('required', false)
             ->assertSee('data-min-loader="2000"', false);
+    }
+
+    public function test_checkout_shows_a_phone_number_example_for_pulsa_products(): void
+    {
+        $user = User::factory()->create();
+        $category = Category::factory()->create(['slug' => 'pulsa']);
+        $product = $this->product(['category_id' => $category->id]);
+
+        $this->actingAs($user)
+            ->get(route('checkout.show', $product))
+            ->assertOk()
+            ->assertSee('Contoh nomor HP: 081234567890.')
+            ->assertSee('Pastikan nomor aktif dan sesuai produk yang dipilih.');
+    }
+
+    public function test_checkout_shows_meter_guidance_for_pln_products(): void
+    {
+        $user = User::factory()->create();
+        $category = Category::factory()->create(['slug' => 'pln']);
+        $product = $this->product(['category_id' => $category->id]);
+
+        $this->actingAs($user)
+            ->get(route('checkout.show', $product))
+            ->assertOk()
+            ->assertSee('Masukkan nomor meter atau ID pelanggan yang tercantum pada meter atau tagihan.');
+    }
+
+    public function test_checkout_shows_profile_guidance_for_mobile_legends_id_and_zone(): void
+    {
+        $user = User::factory()->create();
+        $brand = Brand::factory()->create(['slug' => 'mobile-legends']);
+        $product = $this->product(['brand_id' => $brand->id]);
+
+        $this->actingAs($user)
+            ->get(route('checkout.show', $product))
+            ->assertOk()
+            ->assertSee('Masukkan ID akun persis seperti yang tampil pada profil game.')
+            ->assertSee('Isi juga Zone ID yang tercantum pada profil.')
+            ->assertSee('name="zone"', false);
     }
 
     public function test_checkout_hides_qris_fee_and_shows_product_total_when_saldo_is_selected(): void

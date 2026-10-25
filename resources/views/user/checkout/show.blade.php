@@ -46,7 +46,7 @@
                                 :label="$targetLabel.' *'"
                                 :placeholder="$targetPlaceholder"
                                 :value="old('target', $target)"
-                                hint="Wajib diisi. Pastikan data tujuan sudah benar sebelum melanjutkan."
+                                :hint="$targetHint"
                                 required
                                 aria-required="true"
                                 autocomplete="off"
@@ -57,7 +57,7 @@
                                     name="zone"
                                     label="Zone ID *"
                                     placeholder="Masukkan Zone ID"
-                                    hint="Wajib diisi untuk produk ini."
+                                    hint="Masukkan Zone ID persis seperti yang tampil pada profil game."
                                     required
                                     aria-required="true"
                                     inputmode="numeric"

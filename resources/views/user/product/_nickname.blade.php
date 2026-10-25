@@ -19,7 +19,13 @@
                    @if ($errors->has('zone')) aria-invalid="true" aria-describedby="zone-error" @endif>
         </div>
     @endif
-    <p class="ui-hint mb-0">Isi ID akun dengan benar. Zone ID wajib untuk produk yang menampilkannya.</p>
+    <p class="ui-hint mb-0">
+        Masukkan ID akun persis seperti yang tampil pada profil game.
+        @if ($requiresZone)
+            Isi juga Zone ID yang tercantum pada profil.
+        @endif
+        Pastikan nama akun yang terdeteksi sudah sesuai sebelum melanjutkan.
+    </p>
     <div class="fs-12" data-nickname-result>
         <span class="tx-skyd" style="opacity:.85">Masukkan ID untuk melihat nama akun.</span>
     </div>

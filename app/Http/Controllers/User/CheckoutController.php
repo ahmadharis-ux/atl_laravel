@@ -43,6 +43,7 @@ class CheckoutController extends Controller
             'product' => $product->load(['brand', 'category']),
             'targetLabel' => OrderTarget::label($product->category?->slug),
             'targetPlaceholder' => OrderTarget::placeholder($product->category?->slug),
+            'targetHint' => OrderTarget::hint($product->category?->slug),
             'requiresZone' => OrderTarget::requiresZone($product->brand?->slug),
             'target' => (string) $request->query('target', ''),
             'zone' => (string) $request->query('zone', ''),

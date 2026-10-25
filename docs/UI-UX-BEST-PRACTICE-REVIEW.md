@@ -344,7 +344,7 @@ Masih terbuka: konfirmasi checkout kontekstual, sinkronisasi expiry QRIS dengan 
 
 - [x] Label checkout menyatakan field target/zone wajib tanpa mengandalkan placeholder.
 - [x] Helper text checkout menjelaskan kewajiban field sebelum submit.
-- [ ] Helper/contoh input menyebut format spesifik yang sesuai produk dan tidak memberi contoh menyesatkan.
+- [x] Helper/contoh input menyebut format spesifik yang sesuai produk dan tidak memberi contoh menyesatkan.
 - [x] Pesan error server-side muncul di field yang sesuai, input lain tetap terisi.
 - [ ] Validasi client-side bersifat bantuan; backend tetap menolak data invalid.
 - [x] Fokus keyboard berpindah ke field invalid pertama dan error terhubung melalui atribut aksesibilitas.
