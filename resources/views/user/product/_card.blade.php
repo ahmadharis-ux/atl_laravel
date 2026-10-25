@@ -27,7 +27,7 @@
                         >
             @endif
             @if ($region)
-                <span class="pill bg-glass tx-mute pcard-badge">{{ $region }}</span>
+                <span class="pill bg-teal tx-white pcard-badge">{{ $region }}</span>
             @endif
             @if ($isOutOfStock)
                 <span class="pill bg-errc-l tx-err pcard-badge">Habis</span>

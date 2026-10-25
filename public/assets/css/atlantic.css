@@ -121,6 +121,10 @@ a {
     background: var(--mintt)
 }
 
+.bg-teal {
+    background: var(--teal)
+}
+
 .bg-tealc {
     background: var(--tealc)
 }
