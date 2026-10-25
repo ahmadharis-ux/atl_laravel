@@ -314,13 +314,13 @@ Perbaikan mudah berikut sudah diterapkan:
 - [x] Persentase manfaat reseller pada kartu menggunakan nilai konfigurasi, bukan angka `5%` yang di-hardcode.
 - [x] Feature test checkout mencakup status saldo cukup dan CTA Isi Saldo saat saldo kurang; feature test reseller memeriksa aturan aktivasi.
 
-Masih terbuka: konfirmasi checkout kontekstual, sinkronisasi expiry QRIS dengan provider, pemetaan event notifikasi, dan kontrak API produk lengkap.
+Masih terbuka: sinkronisasi expiry QRIS dengan provider, pemetaan event notifikasi, dan kontrak API produk lengkap.
 
 | Prioritas | Perbaikan | Dampak jika tidak dilakukan | Kriteria siap |
 |---|---|---|---|
-| P1 | Ringkasan konfirmasi checkout yang kontekstual | User tidak memastikan target, biaya, atau metode sebelum order dibuat | Dialog menunjukkan produk, tujuan, total, Saldo/QRIS, dan akibat metode |
+| P1 | Ringkasan konfirmasi checkout yang kontekstual | User tidak memastikan target, biaya, atau metode sebelum order dibuat | ✅ Dialog merangkum produk, tujuan/Zone ID, total, metode, dan konsekuensi pembayaran |
 | P1 | Penamaan Saldo vs Deposit/top up konsisten | User mengira deposit adalah metode checkout atau saldo tidak langsung dipotong | ✅ Checkout membedakan pembayaran Saldo dari tindakan Isi Saldo; audit istilah seluruh aplikasi masih terbuka |
-| P1 | Wajib/helper text untuk target dan zone | Salah input tujuan dapat menyebabkan transaksi gagal atau salah sasaran | ✅ Field wajib dan helper text sudah ditambahkan; contoh format sesuai produk masih perlu ditingkatkan |
+| P1 | Wajib/helper text untuk target dan zone | Salah input tujuan dapat menyebabkan transaksi gagal atau salah sasaran | ✅ Field wajib, helper text, dan petunjuk kategori sudah ditambahkan |
 | P1 | Penjelasan rule aktivasi dan API key | User tidak memahami kredensial dan dampak regenerate/deaktivasi | ✅ Ringkasan aturan aktivasi sudah ditampilkan sebelum tombol aktivasi |
 | P1 | Status saldo dan CTA Isi Saldo | User tidak tahu apakah saldo cukup atau cara mengatasinya | ✅ Status cukup/kurang dan tautan Isi Saldo ditampilkan saat Saldo dipilih |
 | P2 | Dokumen kontrak response produk | Integrator harus menebak tipe/nullability/arti nilai | Field table, contoh list/detail/error, pagination dan filter sesuai output |
@@ -364,7 +364,7 @@ Masih terbuka: konfirmasi checkout kontekstual, sinkronisasi expiry QRIS dengan 
 - [x] Status cukup/kurang tampil saat metode Saldo dipilih; CTA Isi Saldo tampil hanya saat jumlah saldo kurang.
 - [ ] Harga, fee, total, saldo saat ini, dan sisa saldo konsisten.
 - [x] Saldo kurang memiliki CTA Isi Saldo; penolakan backend tetap menjadi sumber kebenaran.
-- [ ] Konfirmasi menyertakan detail produk, tujuan, total, dan metode.
+- [x] Konfirmasi menyertakan detail produk, tujuan/Zone ID, total, metode, dan dampak pembayaran.
 - [ ] QRIS menampilkan instruksi serta expiry yang sama dengan status server/provider.
 - [ ] Pending, paid, failed, expired, stok habis, dan saldo berubah punya pesan/CTA yang benar.
 

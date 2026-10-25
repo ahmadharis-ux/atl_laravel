@@ -48,6 +48,8 @@ class CheckoutTest extends TestCase
             ->assertSee('ID Game *')
             ->assertSee('Masukkan ID akun persis seperti yang tampil pada profil game.')
             ->assertSee('Rp 10.000')
+            ->assertSee('data-checkout-product="Diamond Mobile Legends"', false)
+            ->assertSee('data-checkout-target-label="ID Game"', false)
             ->assertSee('Saldo')
             ->assertSee('QRIS')
             ->assertSee('data-checkout-saldo-status', false)

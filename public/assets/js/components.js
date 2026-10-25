@@ -826,7 +826,10 @@
       '<div class="ap-modal-dialog ap-modal-sm" role="alertdialog" aria-modal="true">' +
         '<div class="ap-modal-head"><h3 class="ap-confirm-title">Konfirmasi</h3>' +
           '<button type="button" class="ap-icon-btn" data-modal-close data-tip="Tutup"><span class="ms ms-md">close</span></button></div>' +
-        '<div class="ap-modal-body"><p class="ap-confirm-msg m-0">Anda yakin?</p></div>' +
+        '<div class="ap-modal-body">' +
+          '<p class="ap-confirm-msg m-0">Anda yakin?</p>' +
+          '<div class="ap-checkout-confirm" hidden></div>' +
+        '</div>' +
         '<div class="ap-modal-foot">' +
           '<button type="button" class="btn-soft" data-modal-close>Batal</button>' +
           '<button type="button" class="btn-navy ap-confirm-ok">Ya, Lanjutkan</button>' +
@@ -853,12 +856,92 @@
     var el = ensureConfirm();
     var o = typeof opts === 'string' ? { message: opts } : (opts || {});
     el.querySelector('.ap-confirm-title').textContent = o.title || 'Konfirmasi';
-    el.querySelector('.ap-confirm-msg').textContent = o.message || 'Anda yakin?';
+    var message = el.querySelector('.ap-confirm-msg');
+    var checkoutSummary = el.querySelector('.ap-checkout-confirm');
+    var dialog = el.querySelector('.ap-modal-dialog');
+    message.textContent = o.message || 'Anda yakin?';
+    message.hidden = !!o.checkoutSummary;
+    checkoutSummary.hidden = !o.checkoutSummary;
+    checkoutSummary.replaceChildren();
+    dialog.classList.toggle('ap-checkout-confirm-dialog', !!o.checkoutSummary);
+    if (o.checkoutSummary) renderCheckoutConfirmation(checkoutSummary, o.checkoutSummary);
     var ok = el.querySelector('.ap-confirm-ok');
     ok.textContent = o.okLabel || 'Ya, Lanjutkan';
     ok.style.background = o.danger ? 'var(--err)' : '';
     confirmCb = typeof cb === 'function' ? cb : function(){};
     showModal(el);
+  }
+
+  function renderCheckoutConfirmation(container, summary) {
+    var product = document.createElement('div');
+    product.className = 'ap-checkout-confirm-product';
+
+    var productIcon = document.createElement('span');
+    productIcon.className = 'ms ap-checkout-confirm-product-icon';
+    productIcon.textContent = 'shopping_bag';
+    productIcon.setAttribute('aria-hidden', 'true');
+    product.appendChild(productIcon);
+
+    var productDetails = document.createElement('div');
+    productDetails.className = 'ap-checkout-confirm-product-details';
+    var productLabel = document.createElement('span');
+    productLabel.className = 'ap-checkout-confirm-eyebrow';
+    productLabel.textContent = 'Produk';
+    var productName = document.createElement('strong');
+    productName.className = 'ap-checkout-confirm-product-name';
+    productName.textContent = summary.product;
+    productDetails.append(productLabel, productName);
+    product.appendChild(productDetails);
+    container.appendChild(product);
+
+    var rows = document.createElement('dl');
+    rows.className = 'ap-checkout-confirm-rows';
+    [
+      { label: summary.targetLabel || 'Tujuan', value: summary.target },
+      { label: 'Zone ID', value: summary.zone },
+    ].forEach(function (item) {
+      if (!item.value) return;
+      var row = document.createElement('div');
+      row.className = 'ap-checkout-confirm-row';
+      var label = document.createElement('dt');
+      label.textContent = item.label;
+      var value = document.createElement('dd');
+      value.textContent = item.value;
+      row.append(label, value);
+      rows.appendChild(row);
+    });
+
+    var totalRow = document.createElement('div');
+    totalRow.className = 'ap-checkout-confirm-row ap-checkout-confirm-total';
+    var totalLabel = document.createElement('dt');
+    totalLabel.textContent = 'Total pembayaran';
+    var totalValue = document.createElement('dd');
+    totalValue.textContent = summary.total;
+    totalRow.append(totalLabel, totalValue);
+    rows.appendChild(totalRow);
+    container.appendChild(rows);
+
+    var payment = document.createElement('div');
+    payment.className = 'ap-checkout-confirm-payment';
+    var paymentLabel = document.createElement('span');
+    paymentLabel.className = 'ap-checkout-confirm-eyebrow';
+    paymentLabel.textContent = 'Metode pembayaran';
+    var paymentMethod = document.createElement('span');
+    paymentMethod.className = 'ap-checkout-confirm-method';
+    paymentMethod.textContent = summary.method;
+    payment.append(paymentLabel, paymentMethod);
+    container.appendChild(payment);
+
+    var impact = document.createElement('p');
+    impact.className = 'ap-checkout-confirm-impact';
+    var impactIcon = document.createElement('span');
+    impactIcon.className = 'ms';
+    impactIcon.textContent = 'info';
+    impactIcon.setAttribute('aria-hidden', 'true');
+    var impactText = document.createElement('span');
+    impactText.textContent = summary.impact;
+    impact.append(impactIcon, impactText);
+    container.appendChild(impact);
   }
 
   function initModals() {
@@ -1682,8 +1765,26 @@
         var methodVal = methodInput ? methodInput.value : '';
         var msg = isCheckout ? 'Apakah pesanan dilanjutkan?' : 'Apakah transaksi ini dilanjutkan?';
         var title = isCheckout ? 'Konfirmasi Pesanan' : 'Konfirmasi Transaksi';
+        var checkoutSummary = null;
+        if (isCheckout) {
+          var targetValue = targetInput ? (targetInput.value || '').trim() : '';
+          var zoneValue = zoneInput ? (zoneInput.value || '').trim() : '';
+          var totalElement = document.querySelector('[data-checkout-total]');
+
+          checkoutSummary = {
+            product: form.dataset.checkoutProduct || '',
+            targetLabel: form.dataset.checkoutTargetLabel || 'Tujuan',
+            target: targetValue,
+            zone: zoneValue,
+            total: totalElement ? totalElement.textContent.trim() : '',
+            method: methodVal === 'saldo' ? 'Saldo' : 'QRIS',
+            impact: methodVal === 'saldo'
+              ? 'Saldo akun langsung dipotong saat pesanan dibuat.'
+              : 'Instruksi QRIS tersedia setelah pesanan dibuat. Selesaikan pembayaran sebelum tagihan kedaluwarsa.',
+          };
+        }
         if (window.AP && typeof window.AP.confirm === 'function') {
-          window.AP.confirm({ message: msg, title: title, okLabel: 'Lanjutkan' }, function (ok) {
+          window.AP.confirm({ message: msg, title: title, okLabel: 'Lanjutkan', checkoutSummary: checkoutSummary }, function (ok) {
             if (!ok) {
               form.dataset.submitting = '';
               var buttons = form.querySelectorAll('button[type="submit"], input[type="submit"]');
