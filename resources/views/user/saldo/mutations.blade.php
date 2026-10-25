@@ -18,7 +18,7 @@
             <div class="fs-12 tx-mute">Saldo Saat Ini</div>
             <div class="num fw-bold fs-3">Rp {{ number_format($balance, 0, ',', '.') }}</div>
         </div>
-        <a href="{{ route('deposits.create') }}" class="btn-ap btn-mint"><span class="ms">add</span>Top Up</a>
+        <a href="{{ route('deposits.create') }}" class="btn-ap btn-mint"><span class="ms">add</span>Isi Saldo</a>
     </section>
 
     <div class="card-ap r-card p-3">
@@ -47,7 +47,7 @@
                 </li>
             @empty
                 <li class="d-block border-0 p-0">
-                    <x-ui.empty-state icon="history" title="Belum ada mutasi" description="Riwayat top up dan pembelian kamu akan tampil di sini." />
+                    <x-ui.empty-state icon="history" title="Belum ada mutasi" description="Riwayat isi saldo dan pembelian kamu akan tampil di sini." />
                 </li>
             @endforelse
         </ul>

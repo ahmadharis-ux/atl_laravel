@@ -35,6 +35,8 @@ class DepositTest extends TestCase
         $this->actingAs($user)
             ->get(route('deposits.show', $deposit))
             ->assertOk()
+            ->assertSee('Isi Saldo')
+            ->assertSee('ID Transaksi')
             ->assertSee('BCA')
             ->assertSee('1234567890')
             ->assertSee('PT Atlantic Pedia');
@@ -238,7 +240,8 @@ class DepositTest extends TestCase
         $this->actingAs($user)
             ->get(route('deposits.index'))
             ->assertOk()
-            ->assertSee('Riwayat Top Up')
+            ->assertSee('Riwayat Isi Saldo')
+            ->assertSee('Semua permintaan untuk menambahkan saldo akun.')
             ->assertSee('QRIS')
             ->assertSee('Transfer Bank')
             ->assertSee('E-Wallet')
@@ -266,6 +269,7 @@ class DepositTest extends TestCase
         $this->actingAs($user)
             ->get(route('saldo.index'))
             ->assertOk()
+            ->assertSee('Isi Saldo')
             ->assertSee('menunggu pembayaran')
             ->assertSee($pending->reference)
             ->assertDontSee($stale->reference);
@@ -278,6 +282,9 @@ class DepositTest extends TestCase
         $this->actingAs($user)
             ->get(route('deposits.create'))
             ->assertOk()
+            ->assertSee('Ini bukan metode pembayaran produk; saat checkout, pilih Saldo atau QRIS.')
+            ->assertSee('Nominal Isi Saldo')
+            ->assertSee('Isi Saldo')
             ->assertSee('QRIS')
             ->assertSee('Transfer Bank')
             ->assertSee('E-Wallet')
@@ -458,7 +465,8 @@ class DepositTest extends TestCase
 
         $this->actingAs($user)
             ->post(route('deposits.pay', $deposit))
-            ->assertRedirect(route('deposits.show', $deposit));
+            ->assertRedirect(route('deposits.show', $deposit))
+            ->assertSessionHas('status', 'Isi saldo '.$deposit->reference.' berhasil. Saldo kamu sudah bertambah.');
 
         $deposit->refresh();
         $this->assertSame(DepositStatus::Paid, $deposit->status);

@@ -5,7 +5,7 @@
         ['label' => 'Riwayat',    'icon' => 'receipt_long',           'url' => route('orders.index'), 'active' => request()->routeIs('orders.*')],
         ['label' => 'Kontak',     'icon' => 'contact_phone',          'url' => route('contacts.index'), 'active' => request()->routeIs('contacts.*')],
         ['label' => 'Bantuan',    'icon' => 'support_agent',          'url' => route('tickets.index'), 'active' => request()->routeIs('tickets.*')],
-        ['label' => 'Deposit',    'icon' => 'account_balance_wallet', 'url' => route('saldo.index'), 'active' => request()->routeIs('saldo.*')],
+        ['label' => 'Saldo',      'icon' => 'account_balance_wallet', 'url' => route('saldo.index'), 'active' => request()->routeIs('saldo.*')],
         ['label' => 'Pengaturan', 'icon' => 'settings',               'url' => route('settings.index'), 'active' => request()->routeIs('settings.*')],
     ];
 @endphp

@@ -27,7 +27,7 @@
         </div>
         <span class="fs-12 tx-skyd balance-meta">Terakhir diperbarui 2 menit yang lalu</span>
         <div class="d-flex gap-3">
-            <a href="{{ route('deposits.create') }}" class="btn-ap btn-mint flex-fill"><span class="ms">add</span>Top Up Saldo</a>
+            <a href="{{ route('deposits.create') }}" class="btn-ap btn-mint flex-fill"><span class="ms">add</span>Isi Saldo</a>
             <a href="{{ route('saldo.mutations') }}" class="btn-ap btn-glass flex-fill"><span class="ms">receipt_long</span>Mutasi</a>
         </div>
     </section>
@@ -37,7 +37,7 @@
             <div class="d-flex align-items-center gap-2 pb-2">
                 <span class="ibox ibox-40 bg-gold tx-gold"><span class="ms">schedule</span></span>
                 <div>
-                    <div class="fw-semibold fs-13">{{ $pendingDeposits->count() }} top up menunggu pembayaran</div>
+                    <div class="fw-semibold fs-13">{{ $pendingDeposits->count() }} permintaan isi saldo menunggu pembayaran</div>
                     <div class="tx-mute fs-12">Selesaikan sebelum kedaluwarsa.</div>
                 </div>
                 <a href="{{ route('deposits.index') }}" class="ms-auto fw-semibold tx-teal fs-12">Lihat semua</a>

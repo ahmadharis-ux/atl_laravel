@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Top Up '.$deposit->reference.' - Atlantic Pedia Tab')
+@section('title', 'Isi Saldo '.$deposit->reference.' - Atlantic Pedia Tab')
 
 @section('content')
 @php
@@ -33,10 +33,10 @@
     <div class="d-flex align-items-center gap-2">
         <a href="{{ route('deposits.index') }}" class="ap-icon-btn" data-tip="Kembali"><span class="ms ms-md">arrow_back</span></a>
         <div>
-            <h1 class="fw-bold fs-5 m-0">Top Up Saldo</h1>
+            <h1 class="fw-bold fs-5 m-0">Isi Saldo</h1>
             <div class="d-flex align-items-center gap-2">
                 <p class="tx-mute fs-12 m-0">{{ $deposit->reference }}</p>
-                 <button type="button" class="ap-icon-btn" data-copy="{{ $deposit->reference }}" data-copy-label="ID Deposit" data-tip="Salin ID Deposit"><span class="ms ms-sm">content_copy</span></button>
+                 <button type="button" class="ap-icon-btn" data-copy="{{ $deposit->reference }}" data-copy-label="ID Transaksi" data-tip="Salin ID Transaksi"><span class="ms ms-sm">content_copy</span></button>
             </div>
         </div>
         <span class="pill ms-auto {{ $deposit->status->tone() }}">{{ $deposit->status->label() }}</span>
@@ -99,7 +99,7 @@
                             <span class="fw-semibold">{{ $masterBank->account_holder }}</span>
                         </li>
                         <li class="d-flex align-items-center justify-content-between">
-                            <span class="tx-mute">Nominal top up</span>
+                            <span class="tx-mute">Nominal isi saldo</span>
                             <span class="num fw-semibold">Rp {{ number_format($deposit->amount, 0, ',', '.') }}</span>
                         </li>
                         @if ($fee > 0)
@@ -220,20 +220,20 @@
             <div class="d-flex flex-column align-items-center gap-2 text-center">
                 <span class="ibox ibox-48 bg-mint-l tx-mintt"><span class="ms">check_circle</span></span>
                 <div class="num fw-bold fs-4 tx-tealt">+ Rp {{ number_format($deposit->creditedFrom($deposit->received_amount ?? $deposit->totalDue()), 0, ',', '.') }}</div>
-                <p class="fs-13 tx-mute m-0">Top up berhasil. Saldo kamu sudah bertambah.</p>
+                <p class="fs-13 tx-mute m-0">Isi saldo berhasil. Saldo akun kamu sudah bertambah.</p>
                 <a href="{{ route('saldo.index') }}" class="btn-ap btn-mint justify-content-center">Lihat Saldo</a>
             </div>
         </x-ui.card>
     @else
-        <x-ui.card title="Top Up Tidak Selesai">
+        <x-ui.card title="Isi Saldo Tidak Selesai">
             <div class="d-flex flex-column align-items-center gap-2 text-center">
                 <span class="ibox ibox-48 bg-glass tx-mute"><span class="ms">{{ $deposit->status->icon() }}</span></span>
                 <p class="fs-13 tx-mute m-0">{{ $deposit->status->label() }}. Saldo tidak ditambahkan.</p>
                 @if ($deposit->status === \App\Enums\DepositStatus::Failed && $latestProof?->review_reason)
                     <div class="alert-ap r-sm bg-errc-l tx-err fs-12">{{ $latestProof->review_reason }}</div>
                 @endif
-                <p class="fs-12 tx-mute m-0">Silakan buat permintaan top up baru bila ingin mencoba kembali.</p>
-                <a href="{{ route('deposits.create') }}" class="btn-ap btn-mint justify-content-center">Buat Top Up Baru</a>
+                <p class="fs-12 tx-mute m-0">Silakan buat permintaan isi saldo baru bila ingin mencoba kembali.</p>
+                <a href="{{ route('deposits.create') }}" class="btn-ap btn-mint justify-content-center">Coba Isi Saldo Lagi</a>
                 @php
                     $helpUrl = \App\Support\SupportWhatsapp::depositIssueUrl($deposit);
                 @endphp
@@ -244,7 +244,7 @@
         </x-ui.card>
     @endif
 
-    <x-ui.card title="Rincian Top Up">
+    <x-ui.card title="Rincian Isi Saldo">
         <ul class="list-unstyled m-0 d-flex flex-column gap-2 fs-13">
             <li class="d-flex align-items-center justify-content-between">
                 <span class="tx-mute">Referensi</span>

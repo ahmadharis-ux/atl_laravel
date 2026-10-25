@@ -200,7 +200,7 @@ Saldo dapat diisi melalui alur deposit/top up, tetapi deposit bukan metode pemba
 
 ### Kesenjangan yang teramati
 
-- Label metode di UI menggunakan `Saldo`, sedangkan sebagian copy di luar checkout menyebut `Deposit`/top up. Perlu konsistensi bahasa: deposit adalah cara mengisi saldo, sedangkan Saldo adalah metode pembayaran produk.
+- Label metode di UI menggunakan `Saldo`; halaman tambah saldo, navigasi, riwayat, konfirmasi, dan notifikasi pengguna menggunakan `Isi Saldo` untuk tindakannya. Istilah `Deposit` tetap istilah internal/teknis dan tidak digunakan sebagai nama metode pembayaran produk. Audit ini mencakup alur pengguna saldo/checkout; istilah di materi marketing dan halaman admin tidak diubah.
 - Konfirmasi checkout saat ini generik (`Apakah pesanan dilanjutkan?`) dan tidak merangkum produk, tujuan, total, serta metode pembayaran yang dipilih.
 - Masa berlaku tiga jam dan apa yang terjadi setelahnya tidak terlihat di ringkasan pilihan QRIS sebelum order dibuat.
 - Nominal yang tampil di checkout adalah harga produk dan fee QRIS; audit ini tidak memverifikasi seluruh variasi fee/top up atau semua kondisi provider.
@@ -316,7 +316,7 @@ Masih terbuka: sinkronisasi expiry QRIS dengan provider, pemetaan event notifika
 | Prioritas | Perbaikan | Dampak jika tidak dilakukan | Kriteria siap |
 |---|---|---|---|
 | P1 | Ringkasan konfirmasi checkout yang kontekstual | User tidak memastikan target, biaya, atau metode sebelum order dibuat | ✅ Dialog merangkum produk, tujuan/Zone ID, total, metode, dan konsekuensi pembayaran |
-| P1 | Penamaan Saldo vs Deposit/top up konsisten | User mengira deposit adalah metode checkout atau saldo tidak langsung dipotong | ✅ Checkout membedakan pembayaran Saldo dari tindakan Isi Saldo; audit istilah seluruh aplikasi masih terbuka |
+| P1 | Penamaan Saldo vs Deposit/top up konsisten | User mengira deposit adalah metode checkout atau saldo tidak langsung dipotong | ✅ Checkout, navigasi, pengisian saldo, riwayat, notifikasi pengguna, dan pesan status membedakan `Saldo` (metode bayar) dari `Isi Saldo` (menambah saldo); audit marketing/admin di luar cakupan |
 | P1 | Wajib/helper text untuk target dan zone | Salah input tujuan dapat menyebabkan transaksi gagal atau salah sasaran | ✅ Field wajib, helper text, dan petunjuk kategori sudah ditambahkan |
 | P1 | Penjelasan rule aktivasi dan API key | User tidak memahami kredensial dan dampak regenerate/deaktivasi | ✅ Ringkasan aturan aktivasi sudah ditampilkan sebelum tombol aktivasi |
 | P1 | Status saldo dan CTA Isi Saldo | User tidak tahu apakah saldo cukup atau cara mengatasinya | ✅ Status cukup/kurang dan tautan Isi Saldo ditampilkan saat Saldo dipilih |
@@ -332,6 +332,8 @@ Masih terbuka: sinkronisasi expiry QRIS dengan provider, pemetaan event notifika
 3. **Status pembayaran** — verifikasi lifecycle QRIS dengan provider dahulu, lalu pastikan expiry, polling/cek status, expired state, dan CTA selaras.
 4. **Dokumentasi API** — bandingkan contoh dan tabel kontrak dengan endpoint serta test aktual.
 5. **Notifikasi dan onboarding** — petakan event dan penerima, hindari notifikasi duplikat, lalu tambah CTA/checklist yang memang bisa ditentukan dari state sistem.
+
+Perbaikan copy terminologi pada alur Saldo/checkout sudah diterapkan. Istilah marketing dan halaman admin tidak termasuk dalam audit terbatas ini.
 
 ---
 

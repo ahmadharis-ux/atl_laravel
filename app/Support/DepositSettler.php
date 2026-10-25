@@ -82,8 +82,8 @@ final class DepositSettler
                 $owner->changePoints(1, PointTransactionType::TopupReward, 'Bonus top up '.$locked->reference, $locked);
 
                 $owner->notify(new TransactionResult(
-                    title: 'Top up berhasil',
-                    body: 'Top up '.$locked->reference.' (Rp '.number_format($credited, 0, ',', '.').') berhasil. Saldo telah ditambahkan ke akunmu.',
+                    title: 'Isi saldo berhasil',
+                    body: 'Pengisian saldo '.$locked->reference.' (Rp '.number_format($credited, 0, ',', '.').') berhasil. Saldo telah ditambahkan ke akunmu.',
                     level: 'success',
                     icon: 'account_balance_wallet',
                     url: route('deposits.show', $locked),

@@ -108,7 +108,7 @@
                         @error('balance')
                             <div class="card-ap r-sm p-3 bg-errc-l" id="balance-error" role="alert">
                                 <div class="fw-semibold fs-12">Saldo belum mencukupi</div>
-                                <p class="fs-11 mb-2 mt-1">{{ $message }} Pesanan belum dibuat dan saldo tidak terpotong. Isi saldo atau pilih QRIS untuk melanjutkan.</p>
+                                <p class="fs-11 mb-2 mt-1">{{ $message }} Pesanan belum dibuat dan saldo tidak terpotong. Isi saldo akun atau pilih QRIS untuk membayar pesanan ini.</p>
                                 <a href="{{ route('deposits.create') }}" class="btn-soft justify-content-center">
                                     <span class="ms ms-sm" aria-hidden="true">add</span> Isi Saldo
                                 </a>
@@ -191,7 +191,7 @@
                     </div>
                 </div>
 
-                <span class="fs-12 tx-mute">Pembayaran Saldo langsung memotong saldo akun saat pesanan dibuat. Pembayaran QRIS menunggu pembayaran dan tidak memotong saldo akun.</span>
+                <span class="fs-12 tx-mute">Pilih Saldo untuk memotong saldo akun saat pesanan dibuat, atau QRIS untuk membayar pesanan ini. Isi saldo adalah proses terpisah untuk menambah saldo akun.</span>
             </div>
         </div>
     </div>

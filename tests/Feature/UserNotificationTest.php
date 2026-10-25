@@ -25,7 +25,8 @@ class UserNotificationTest extends TestCase
         DepositSettler::settle($deposit);
 
         $notification = $user->notifications()->sole();
-        $this->assertSame('Top up berhasil', $notification->data['title']);
+        $this->assertSame('Isi saldo berhasil', $notification->data['title']);
+        $this->assertStringContainsString('Pengisian saldo '.$deposit->reference, $notification->data['body']);
         $this->assertSame('success', $notification->data['level']);
         $this->assertNull($notification->read_at);
     }

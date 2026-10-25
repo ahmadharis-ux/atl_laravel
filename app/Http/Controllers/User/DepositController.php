@@ -136,7 +136,7 @@ class DepositController extends Controller
 
         return redirect()
             ->route('deposits.show', $deposit)
-            ->with('status', 'Instruksi top up dibuat. Selesaikan pembayaran sebelum kedaluwarsa.');
+            ->with('status', 'Instruksi isi saldo dibuat. Selesaikan pembayaran sebelum kedaluwarsa.');
     }
 
     /**
@@ -228,7 +228,7 @@ class DepositController extends Controller
 
                 if (! in_array($locked->status, [DepositStatus::Pending, DepositStatus::NeedsRevision], true)) {
                     throw ValidationException::withMessages([
-                        'proof' => 'Bukti transfer hanya dapat diunggah saat top up menunggu pembayaran atau perbaikan.',
+                        'proof' => 'Bukti transfer hanya dapat diunggah saat permintaan isi saldo menunggu pembayaran atau perbaikan.',
                     ]);
                 }
 
@@ -257,7 +257,7 @@ class DepositController extends Controller
 
             return redirect()
                 ->route('deposits.show', $deposit)
-                ->with('status', 'Batas waktu pembayaran berakhir. Buat top up baru untuk melanjutkan.');
+                ->with('status', 'Batas waktu pembayaran berakhir. Buat permintaan isi saldo baru untuk melanjutkan.');
         }
 
         $deposit->refresh();
@@ -353,7 +353,7 @@ class DepositController extends Controller
 
             return redirect()
                 ->route('deposits.show', $deposit)
-                ->with('status', 'Kode pembayaran sudah kedaluwarsa. Silakan buat top up baru.');
+                ->with('status', 'Kode pembayaran sudah kedaluwarsa. Silakan buat permintaan isi saldo baru.');
         }
 
         try {
@@ -370,7 +370,7 @@ class DepositController extends Controller
 
         return redirect()
             ->route('deposits.show', $deposit)
-            ->with('status', 'Top up '.$deposit->reference.' berhasil. Saldo kamu sudah bertambah.');
+            ->with('status', 'Isi saldo '.$deposit->reference.' berhasil. Saldo kamu sudah bertambah.');
     }
 
     /**
@@ -400,8 +400,8 @@ class DepositController extends Controller
         $message = match ($status) {
             null => 'Status tidak dapat diambil dari Midtrans.',
             'settlement', 'capture' => 'Pembayaran '.$deposit->reference.' terverifikasi. Saldo kamu sudah bertambah.',
-            'expire' => 'Kode QRIS top up '.$deposit->reference.' sudah kedaluwarsa.',
-            'deny', 'cancel', 'failure' => 'Pembayaran top up '.$deposit->reference.' ditolak atau dibatalkan.',
+            'expire' => 'Kode QRIS untuk isi saldo '.$deposit->reference.' sudah kedaluwarsa.',
+            'deny', 'cancel', 'failure' => 'Pembayaran untuk isi saldo '.$deposit->reference.' ditolak atau dibatalkan.',
             default => 'Status pembayaran '.$deposit->reference.': '.$status.'.',
         };
 

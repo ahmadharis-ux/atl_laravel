@@ -49,6 +49,7 @@ class PushNotificationTest extends TestCase
             ->assertOk()
             ->assertSee('Aktifkan Notifikasi', false)
             ->assertSee('data-push-toggle', false)
+            ->assertSee('isi saldo', false)
             ->assertSee('userId: '.$user->getKey().',', false);
     }
 

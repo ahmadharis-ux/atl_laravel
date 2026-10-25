@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Riwayat Top Up - Atlantic Pedia Tab')
+@section('title', 'Riwayat Isi Saldo - Atlantic Pedia Tab')
 
 @section('content')
 <style>
@@ -11,12 +11,12 @@
         <a href="{{ route('saldo.index') }}" class="ap-icon-btn" data-tip="Kembali"><span class="ms">arrow_back</span></a>
         <div class="d-flex align-items-center justify-content-between gap-2 flex-grow-1 min-w-0">
             <div class="min-w-0">
-                <h1 class="fw-bold fs-4 m-0">Riwayat Top Up</h1>
-                <p class="tx-mute fs-12 m-0">Semua permintaan top up saldo kamu.</p>
+                <h1 class="fw-bold fs-4 m-0">Riwayat Isi Saldo</h1>
+                <p class="tx-mute fs-12 m-0">Semua permintaan untuk menambahkan saldo akun.</p>
             </div>
             <div class="flex-shrink-0">
                 <a href="{{ route('deposits.create') }}" class="btn-ap btn-mint text-nowrap">
-                    <span class="ms">add</span>Top Up
+                    <span class="ms">add</span>Isi Saldo
                 </a>
             </div>
         </div>
@@ -61,8 +61,8 @@
                 </li>
             @empty
                 <li class="d-block border-0 p-0">
-                    <x-ui.empty-state icon="receipt_long" title="Belum ada top up" description="Riwayat top up saldo kamu akan tampil di sini.">
-                        <a href="{{ route('deposits.create') }}" class="btn-ap btn-mint">Top Up Sekarang</a>
+                    <x-ui.empty-state icon="receipt_long" title="Belum ada riwayat isi saldo" description="Riwayat pengisian saldo dan metode pembayarannya akan tampil di sini.">
+                        <a href="{{ route('deposits.create') }}" class="btn-ap btn-mint">Isi Saldo</a>
                     </x-ui.empty-state>
                 </li>
             @endforelse
