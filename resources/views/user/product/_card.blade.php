@@ -5,7 +5,7 @@
         'tagihan' => ['icon' => 'invoice-pcard.jpg', 'label' => 'receipt_long',  'bg' => 'bg-gold',    'tx' => 'tx-gold'],
         'voucher' => ['icon' => 'voucher-pcard.jpg', 'label' => 'star',          'bg' => 'bg-sky-l',   'tx' => 'tx-navy'],
         'hiburan' => ['icon' => 'premium-pcard.jpg', 'label' => 'premium',         'bg' => 'bg-errc-l',  'tx' => 'tx-err'],
-        default   => ['icon' => 'logo-pcard.jpg', 'label' => 'atlantic-pedia',    'bg' => 'bg-sky-l',   'tx' => 'tx-navy'],
+        default   => ['icon' => 'logo.png', 'label' => 'atlantic-pedia',    'bg' => 'bg-sky-l',   'tx' => 'tx-navy'],
     };
     $isOutOfStock = ! $p->unlimited_stock && $p->stock < 1;
     $isCheckout = $checkout ?? false;
