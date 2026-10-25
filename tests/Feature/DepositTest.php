@@ -138,6 +138,54 @@ class DepositTest extends TestCase
             ->assertSee('Cek Status');
     }
 
+    public function test_pending_qris_deposit_explains_balance_credit_and_status_check(): void
+    {
+        $user = User::factory()->create();
+        $deposit = Deposit::factory()->create([
+            'user_id' => $user->getKey(),
+            'payment_method' => PaymentMethod::Qris,
+            'status' => DepositStatus::Pending,
+            'metadata' => ['midtrans' => ['qr_url' => 'https://api.sandbox.midtrans.com/v2/qris/qr.png']],
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('deposits.show', $deposit))
+            ->assertSee('Menunggu pembayaran. Saldo akun bertambah setelah pembayaran terkonfirmasi.')
+            ->assertSee('tekan Cek Status');
+    }
+
+    public function test_expired_deposit_explains_balance_was_not_credited_and_offers_retry(): void
+    {
+        $user = User::factory()->create();
+        $deposit = Deposit::factory()->create([
+            'user_id' => $user->getKey(),
+            'payment_method' => PaymentMethod::Qris,
+            'status' => DepositStatus::Expired,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('deposits.show', $deposit))
+            ->assertSee('Batas waktu pembayaran sudah lewat.')
+            ->assertSee('Saldo tidak ditambahkan')
+            ->assertSee('Bila kamu sudah membayar')
+            ->assertSee('Coba Isi Saldo Lagi');
+    }
+
+    public function test_failed_deposit_explains_that_the_balance_was_not_credited(): void
+    {
+        $user = User::factory()->create();
+        $deposit = Deposit::factory()->create([
+            'user_id' => $user->getKey(),
+            'status' => DepositStatus::Failed,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('deposits.show', $deposit))
+            ->assertSee('Permintaan isi saldo gagal.')
+            ->assertSee('Saldo tidak ditambahkan.')
+            ->assertSee('Coba Isi Saldo Lagi');
+    }
+
     public function test_deposit_qris_can_be_downloaded(): void
     {
         Http::fake(['*' => Http::response('PNG-BYTES', 200, ['Content-Type' => 'image/png'])]);

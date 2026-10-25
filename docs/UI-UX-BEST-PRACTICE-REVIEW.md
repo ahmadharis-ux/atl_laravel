@@ -368,6 +368,8 @@ Perbaikan copy terminologi pada alur Saldo/checkout sudah diterapkan. Istilah ma
 - [x] Status QRIS pending menampilkan instruksi pembayaran, batas waktu pesanan Atlantic, dan CTA "Cek Status Pembayaran".
 - [ ] Batas waktu pesanan yang ditampilkan sudah diverifikasi selaras dengan expiry transaksi provider.
 - [ ] Pending, paid, failed, expired, stok habis, dan saldo berubah punya pesan/CTA yang benar.
+- [x] Detail transaksi menjelaskan pembayaran pending, keberhasilan, kegagalan/refund sesuai state tercatat, serta pembayaran kedaluwarsa dan cara mencoba lagi.
+- [x] Detail isi saldo membedakan pending, berhasil, gagal, dan kedaluwarsa; menjelaskan kapan saldo bertambah, cara cek status, dan langkah bila pembayaran sudah dilakukan.
 
 ### Poin reward
 

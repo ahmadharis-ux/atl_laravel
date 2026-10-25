@@ -40,6 +40,62 @@
         </div>
     @endif
 
+    @if ($order->status === \App\Enums\OrderStatus::Success)
+        <div class="alert-ap r-sm bg-mint-l tx-mintt d-flex align-items-start gap-2" role="status">
+            <span class="ms">check_circle</span>
+            <div class="fs-13">
+                <div class="fw-semibold">Transaksi berhasil</div>
+                <div>Pesanan sudah diproses. Nomor seri, jika tersedia, ada di rincian pembayaran.</div>
+            </div>
+        </div>
+    @elseif ($order->status === \App\Enums\OrderStatus::Failed)
+        <div class="alert-ap r-sm bg-errc-l tx-err d-flex align-items-start gap-2" role="alert">
+            <span class="ms">error</span>
+            <div class="fs-13">
+                <div class="fw-semibold">Pesanan gagal diproses</div>
+                @if ($order->refunded_at !== null || $order->refund_status === 'completed')
+                    <div>Pengembalian dana telah selesai. Periksa saldo atau metode pembayaran yang digunakan.</div>
+                @elseif (in_array($order->refund_status, ['pending', 'requested'], true))
+                    <div>Pengembalian dana sedang diproses. Jika belum terlihat setelah proses selesai, hubungi CS.</div>
+                @elseif ($order->refund_status === 'manual_required')
+                    <div>Pengembalian dana memerlukan bantuan CS. Hubungi CS untuk memeriksa statusnya.</div>
+                @elseif ($order->payment_method === \App\Enums\PaymentMethod::Saldo)
+                    <div>Periksa mutasi saldo untuk memastikan pengembalian dana. Jika belum tercatat, hubungi CS.</div>
+                @else
+                    <div>Periksa status pembayaran dan hubungi CS jika dana sudah terpotong atau dibayarkan.</div>
+                @endif
+                @if ($product && $product->status)
+                    <div>Jika ingin mencoba kembali, gunakan tombol Beli Lagi di bawah.</div>
+                @else
+                    <div>Produk ini sedang tidak tersedia untuk dibeli kembali. Hubungi CS jika perlu bantuan.</div>
+                @endif
+            </div>
+        </div>
+    @elseif ($order->status === \App\Enums\OrderStatus::Expired)
+        <div class="alert-ap r-sm {{ $order->status->tone() }} d-flex align-items-start gap-2" role="status">
+            <span class="ms">timer_off</span>
+            <div class="fs-13">
+                <div class="fw-semibold">Batas pembayaran sudah berakhir</div>
+                <div>Kode pembayaran ini tidak dapat digunakan lagi.
+                    @if ($product && $product->status)
+                        Jika ingin membeli, buat pesanan baru melalui tombol Beli Lagi di bawah.
+                    @else
+                        Produk ini sedang tidak tersedia untuk dibeli kembali.
+                    @endif
+                    @if ($order->refunded_at !== null || $order->refund_status === 'completed')
+                        Pengembalian dana telah selesai.
+                    @elseif (in_array($order->refund_status, ['pending', 'requested'], true))
+                        Pengembalian dana sedang diproses.
+                    @elseif ($order->refund_status === 'manual_required')
+                        Pengembalian dana memerlukan bantuan CS.
+                    @else
+                        Jika sudah membayar, hubungi CS sebelum membuat pesanan baru.
+                    @endif
+                </div>
+            </div>
+        </div>
+    @endif
+
     @if ($pending)
         {{-- <div class="alert-ap r-sm bg-glass d-flex align-items-center gap-2">
             <span class="ms tx-teal">autorenew</span>
@@ -105,7 +161,8 @@
                     @endif
                     <div class="num fw-bold fs-4 tx-tealc">{{ $order->payment_code }}</div>
                     <p class="fs-12 tx-mute m-0">{{ $method?->label() }}@if ($channelLabel) &middot; {{ $channelLabel }}@endif</p>
-                    <p class="fs-12 tx-mute m-0">Bayar tepat <b class="tx-tealt">Rp {{ number_format($order->amount, 0, ',', '.') }}</b>. Status pesanan akan otomatis diperbarui setelah pembayaran diterima.</p>
+                    <p class="fs-12 tx-mute m-0">Pesanan menunggu pembayaran. Bayar tepat <b class="tx-tealt">Rp {{ number_format($order->amount, 0, ',', '.') }}</b>; pesanan diproses setelah pembayaran diterima.</p>
+                    <p class="fs-12 tx-mute m-0">Halaman ini menyegarkan otomatis setelah pembayaran diterima.</p>
                     @if ($order->expires_at)
                         <p class="fs-12 tx-mute m-0">Selesaikan pembayaran sebelum <span class="tx-err fw-semibold" data-expiry-timer="{{ $order->expires_at->toIso8601String() }}">(00:00)</span></p>
                     @endif</p>

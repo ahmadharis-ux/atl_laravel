@@ -64,6 +64,7 @@
                     @if ($deposit->expires_at)
                         <p class="fs-12 tx-mute m-0">Berlaku sampai {{ $deposit->expires_at->locale('id')->translatedFormat('d M Y, H:i') }}.</p>
                     @endif
+                    <p class="fs-12 tx-mute m-0">Menunggu pembayaran. Saldo akun bertambah setelah pembayaran terkonfirmasi. Jika sudah membayar tetapi status belum berubah, tekan Cek Status.</p>
                     <div class="d-flex flex-wrap gap-2 justify-content-center w-100 mt-1">
                         <a href="{{ route('deposits.qris', $deposit) }}" class="btn-ap btn-ap-outline flex-fill" style="min-width:9rem">
                             <span class="ms ms-sm align-middle me-1">download</span>Unduh QRIS
@@ -228,11 +229,15 @@
         <x-ui.card title="Isi Saldo Tidak Selesai">
             <div class="d-flex flex-column align-items-center gap-2 text-center">
                 <span class="ibox ibox-48 bg-glass tx-mute"><span class="ms">{{ $deposit->status->icon() }}</span></span>
-                <p class="fs-13 tx-mute m-0">{{ $deposit->status->label() }}. Saldo tidak ditambahkan.</p>
+                @if ($deposit->status === \App\Enums\DepositStatus::Expired)
+                    <p class="fs-13 tx-mute m-0">Batas waktu pembayaran sudah lewat. Saldo tidak ditambahkan dan kode pembayaran tidak bisa digunakan lagi.</p>
+                @else
+                    <p class="fs-13 tx-mute m-0">Permintaan isi saldo gagal. Saldo tidak ditambahkan.</p>
+                @endif
                 @if ($deposit->status === \App\Enums\DepositStatus::Failed && $latestProof?->review_reason)
                     <div class="alert-ap r-sm bg-errc-l tx-err fs-12">{{ $latestProof->review_reason }}</div>
                 @endif
-                <p class="fs-12 tx-mute m-0">Silakan buat permintaan isi saldo baru bila ingin mencoba kembali.</p>
+                <p class="fs-12 tx-mute m-0">Bila kamu sudah membayar, hubungi CS dengan ID transaksi ini sebelum membuat permintaan baru.</p>
                 <a href="{{ route('deposits.create') }}" class="btn-ap btn-mint justify-content-center">Coba Isi Saldo Lagi</a>
                 @php
                     $helpUrl = \App\Support\SupportWhatsapp::depositIssueUrl($deposit);

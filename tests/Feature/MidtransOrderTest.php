@@ -78,6 +78,74 @@ class MidtransOrderTest extends TestCase
             ->assertDontSee('Data Testing (Sandbox Midtrans)');
     }
 
+    public function test_failed_order_explains_completed_balance_refund(): void
+    {
+        $user = User::factory()->create();
+        $order = Order::factory()->create([
+            'user_id' => $user->getKey(),
+            'status' => OrderStatus::Failed,
+            'payment_method' => PaymentMethod::Saldo,
+            'refunded_at' => now(),
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('orders.show', $order))
+            ->assertSee('Pesanan gagal diproses')
+            ->assertSee('Pengembalian dana telah selesai.')
+            ->assertSee('Beli Lagi');
+    }
+
+    public function test_failed_order_explains_refund_needing_manual_help(): void
+    {
+        $user = User::factory()->create();
+        $product = $this->product();
+        $order = Order::factory()->create([
+            'user_id' => $user->getKey(),
+            'product_id' => $product->getKey(),
+            'status' => OrderStatus::Failed,
+            'payment_method' => PaymentMethod::Qris,
+            'refund_status' => 'manual_required',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('orders.show', $order))
+            ->assertSee('Pengembalian dana memerlukan bantuan CS.')
+            ->assertSee('Hubungi CS');
+    }
+
+    public function test_expired_order_explains_payment_deadline_and_retry_action(): void
+    {
+        $user = User::factory()->create();
+        $product = $this->product();
+        $order = Order::factory()->create([
+            'user_id' => $user->getKey(),
+            'product_id' => $product->getKey(),
+            'status' => OrderStatus::Expired,
+            'payment_method' => PaymentMethod::Qris,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('orders.show', $order))
+            ->assertSee('Batas pembayaran sudah berakhir')
+            ->assertSee('Kode pembayaran ini tidak dapat digunakan lagi.')
+            ->assertSee('Beli Lagi');
+    }
+
+    public function test_expired_order_shows_when_its_refund_is_still_processing(): void
+    {
+        $user = User::factory()->create();
+        $order = Order::factory()->create([
+            'user_id' => $user->getKey(),
+            'status' => OrderStatus::Expired,
+            'payment_method' => PaymentMethod::Qris,
+            'refund_status' => 'pending',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('orders.show', $order))
+            ->assertSee('Pengembalian dana sedang diproses.');
+    }
+
     public function test_webhook_settles_order_and_starts_fulfillment_for_provider_products(): void
     {
         $this->configureMidtrans();
