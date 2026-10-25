@@ -713,7 +713,7 @@ a {
     align-items: center;
     text-align: center;
     padding: .75rem;
-    background: #fff;
+    /* background: #fff; */
     border-radius: 1rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, .06);
     transition: transform .15s, box-shadow .15s;
@@ -1112,15 +1112,29 @@ a {
     color: inherit
 }
 
+
 .pcard-thumb {
     position: relative;
     width: 100%;
-    aspect-ratio: 1/1;
+    aspect-ratio: 1 / 1;
+    padding: 0 !important;
+    margin: 0;
+    overflow: hidden;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    flex: none
+    align-items: stretch;
+    justify-content: stretch;
 }
+
+.pcard-thumb img {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none;
+    padding: 0 !important;
+    margin: 0;
+    object-fit: cover;
+}
+
 
 .pcard-thumb .ms {
     font-size: 2.25rem;
@@ -1548,4 +1562,35 @@ a {
         left: auto;
         max-width: 26rem
     }
+}
+/* Icon Catalog */
+
+.cat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    text-decoration: none;
+    gap: 8px;
+}
+
+.cat-icon {
+    /* width: 48px; */
+    /* height: 48px;  */
+    max-width: 70%;
+    object-fit: contain;
+    display: block;
+}
+
+.cat b {
+    font-size: 14px;
+    line-height: 1.4;
+}
+.place-icon {
+    /* width: 48px; */
+    /* height: 48px;  */
+    max-width: 70%;
+    object-fit: contain;
+    display: block;
 }

@@ -1,11 +1,11 @@
 @php
     $thumb = match ($p->category?->slug) {
-        'pulsa'   => ['icon' => 'smartphone',    'bg' => 'bg-tealc-l', 'tx' => 'tx-tealt'],
-        'games'   => ['icon' => 'sports_esports','bg' => 'bg-mint-l',  'tx' => 'tx-mintt'],
-        'tagihan' => ['icon' => 'receipt_long',  'bg' => 'bg-gold',    'tx' => 'tx-gold'],
-        'voucher' => ['icon' => 'star',          'bg' => 'bg-sky-l',   'tx' => 'tx-navy'],
-        'hiburan' => ['icon' => 'movie',         'bg' => 'bg-errc-l',  'tx' => 'tx-err'],
-        default   => ['icon' => 'storefront',    'bg' => 'bg-sky-l',   'tx' => 'tx-navy'],
+        'pulsa'   => ['icon' => 'phone-pcard.jpg', 'label' => 'smartphone',    'bg' => 'bg-tealc-l', 'tx' => 'tx-tealt'],
+        'games'   => ['icon' => 'games-pcard.jpg', 'label' => 'sports_esports','bg' => 'bg-mint-l',  'tx' => 'tx-mintt'],
+        'tagihan' => ['icon' => 'invoice-pcard.jpg', 'label' => 'receipt_long',  'bg' => 'bg-gold',    'tx' => 'tx-gold'],
+        'voucher' => ['icon' => 'voucher-pcard.jpg', 'label' => 'star',          'bg' => 'bg-sky-l',   'tx' => 'tx-navy'],
+        'hiburan' => ['icon' => 'premium-pcard.jpg', 'label' => 'premium',         'bg' => 'bg-errc-l',  'tx' => 'tx-err'],
+        default   => ['icon' => 'logo-pcard.jpg', 'label' => 'atlantic-pedia',    'bg' => 'bg-sky-l',   'tx' => 'tx-navy'],
     };
     $isOutOfStock = ! $p->unlimited_stock && $p->stock < 1;
     $isCheckout = $checkout ?? false;
@@ -19,7 +19,12 @@
             @if ($brandLogo)
                 <img src="{{ $brandLogo }}" alt="{{ $p->brand->name }}" class="pcard-logo" loading="lazy">
             @else
-                <span class="ms {{ $thumb['tx'] }}">{{ $thumb['icon'] }}</span>
+                {{-- <span class="ms {{ $thumb['tx'] }}">{{ $thumb['icon'] }}</span> --}}
+                 <img
+                            src="{{ asset('assets/icons/' . $thumb['icon']) }}"
+                            alt="{{ $thumb['icon'] }}"
+                            class="place-icon"
+                        >
             @endif
             @if ($region)
                 <span class="pill bg-glass tx-mute pcard-badge">{{ $region }}</span>

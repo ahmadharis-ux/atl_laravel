@@ -128,12 +128,12 @@ class DashboardController extends Controller
             ->map(fn ($rows) => $rows->sortByDesc('sold_count')->first()->payment_type->value);
 
         $items = [
-            ['label' => 'Pulsa',        'icon' => 'smartphone',    'slug' => 'pulsa'],
-            ['label' => 'Paket Data',   'icon' => 'link',          'slug' => 'data'],
-            ['label' => 'Token PLN',    'icon' => 'light_mode',    'slug' => 'tagihan'],
-            ['label' => 'Voucher Game', 'icon' => 'star',          'slug' => 'games'],
-            ['label' => 'E-Wallet',     'icon' => 'credit_card',   'slug' => 'e-wallet'],
-            ['label' => 'Akun Premium', 'icon' => 'verified_user', 'slug' => 'hiburan'],
+            ['label' => 'Pulsa',        'icon' => 'phone.png',    'slug' => 'pulsa'],
+            ['label' => 'Paket Data',   'icon' => 'data.png',          'slug' => 'data'],
+            ['label' => 'Token PLN',    'icon' => 'pln.png',    'slug' => 'tagihan'],
+            ['label' => 'Voucher Game', 'icon' => 'games.png',          'slug' => 'games'],
+            ['label' => 'E-Wallet',     'icon' => 'e-wallet.png',   'slug' => 'e-wallet'],
+            ['label' => 'Akun Premium', 'icon' => 'premium.png', 'slug' => 'hiburan'],
         ];
 
         return array_map(function (array $item) use ($categoryId, $typeByCategory): array {
