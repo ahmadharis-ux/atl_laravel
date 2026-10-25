@@ -343,7 +343,7 @@ Masih terbuka: sinkronisasi expiry QRIS dengan provider, pemetaan event notifika
 - [x] Helper text checkout menjelaskan kewajiban field sebelum submit.
 - [x] Helper/contoh input menyebut format spesifik yang sesuai produk dan tidak memberi contoh menyesatkan.
 - [x] Pesan error server-side muncul di field yang sesuai, input lain tetap terisi.
-- [ ] Validasi client-side bersifat bantuan; backend tetap menolak data invalid.
+- [x] Validasi client-side membantu pengguna; backend tetap menolak target/zone invalid atau saldo tidak mencukupi.
 - [x] Fokus keyboard berpindah ke field invalid pertama dan error terhubung melalui atribut aksesibilitas.
 
 ### Produk dan API reseller
@@ -361,6 +361,7 @@ Masih terbuka: sinkronisasi expiry QRIS dengan provider, pemetaan event notifika
 - [x] Status cukup/kurang tampil saat metode Saldo dipilih; CTA Isi Saldo tampil hanya saat jumlah saldo kurang.
 - [ ] Harga, fee, total, saldo saat ini, dan sisa saldo konsisten.
 - [x] Saldo kurang memiliki CTA Isi Saldo; penolakan backend tetap menjadi sumber kebenaran.
+- [x] Jika saldo tidak cukup saat submit, error tampil dekat metode pembayaran, menjelaskan bahwa order tidak dibuat, dan memberi CTA Isi Saldo.
 - [x] Konfirmasi menyertakan detail produk, tujuan/Zone ID, total, metode, dan dampak pembayaran.
 - [x] Status QRIS pending menampilkan instruksi pembayaran, batas waktu pesanan Atlantic, dan CTA "Cek Status Pembayaran".
 - [ ] Batas waktu pesanan yang ditampilkan sudah diverifikasi selaras dengan expiry transaksi provider.
@@ -391,7 +392,7 @@ Masih terbuka: sinkronisasi expiry QRIS dengan provider, pemetaan event notifika
 3. Nilai target di bawah batas panjang / melampaui batas → server memberi error pada target dan data tidak hilang.
 4. Saldo cukup → tampilkan pengurangan dan sisa saldo; setelah konfirmasi, order terbuat satu kali.
 5. Saldo kurang → pesan menjelaskan kekurangan dan tautan isi saldo; saldo tidak berubah.
-6. Saldo berubah setelah checkout dibuka → backend adalah otoritas; tampilkan error yang jelas dan izinkan user mencoba lagi setelah memperbarui halaman.
+6. Saldo berubah setelah checkout dibuka → backend adalah otoritas; tampilkan error dekat metode pembayaran, pastikan order tidak dibuat, lalu tawarkan isi saldo atau pilih QRIS.
 7. QRIS dipilih → fee dan total terlihat; setelah order, instruksi dan batas waktu tersedia.
 8. QRIS dibayar, belum terdeteksi, dan expired → setiap state memiliki label, waktu/status yang diperbarui, serta CTA berikutnya.
 9. Klik konfirmasi ganda / koneksi lambat → cegah order duplikat atau jelaskan hasil order yang sudah terbentuk.

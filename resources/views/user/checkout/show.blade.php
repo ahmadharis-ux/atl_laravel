@@ -78,7 +78,6 @@
                         @endif
 
                         @error('product')<div class="err show">{{ $message }}</div>@enderror
-                        @error('balance')<div class="err show">{{ $message }}</div>@enderror
                     </div>
                 </x-ui.card>
 
@@ -106,6 +105,15 @@
 
                         @error('payment_method')<div class="err show" id="payment_method-error">{{ $message }}</div>@enderror
                         @error('master_bank_id')<div class="err show" id="master_bank_id-error">{{ $message }}</div>@enderror
+                        @error('balance')
+                            <div class="card-ap r-sm p-3 bg-errc-l" id="balance-error" role="alert">
+                                <div class="fw-semibold fs-12">Saldo belum mencukupi</div>
+                                <p class="fs-11 mb-2 mt-1">{{ $message }} Pesanan belum dibuat dan saldo tidak terpotong. Isi saldo atau pilih QRIS untuk melanjutkan.</p>
+                                <a href="{{ route('deposits.create') }}" class="btn-soft justify-content-center">
+                                    <span class="ms ms-sm" aria-hidden="true">add</span> Isi Saldo
+                                </a>
+                            </div>
+                        @enderror
                     </div>
                 </x-ui.card>
 
