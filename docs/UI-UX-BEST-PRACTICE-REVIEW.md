@@ -347,7 +347,7 @@ Masih terbuka: konfirmasi checkout kontekstual, sinkronisasi expiry QRIS dengan 
 - [ ] Helper/contoh input menyebut format spesifik yang sesuai produk dan tidak memberi contoh menyesatkan.
 - [x] Pesan error server-side muncul di field yang sesuai, input lain tetap terisi.
 - [ ] Validasi client-side bersifat bantuan; backend tetap menolak data invalid.
-- [ ] Fokus keyboard berpindah ke field invalid atau error pertama dengan cara yang dapat diakses.
+- [x] Fokus keyboard berpindah ke field invalid pertama dan error terhubung melalui atribut aksesibilitas.
 
 ### Produk dan API reseller
 

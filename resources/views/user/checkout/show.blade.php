@@ -38,8 +38,8 @@
                                     document.querySelectorAll('input[name="target"], input[name="zone"]').forEach(function(i){ i.readOnly = true; i.setAttribute('readonly','readonly'); });
                                 });
                             </script>
-                            @error('target')<div class="err show">{{ $message }}</div>@enderror
-                            @error('zone')<div class="err show">{{ $message }}</div>@enderror
+                            @error('target')<div class="err show" id="target-error">{{ $message }}</div>@enderror
+                            @error('zone')<div class="err show" id="zone-error">{{ $message }}</div>@enderror
                         @else
                             <x-ui.input
                                 name="target"
@@ -94,8 +94,8 @@
                         <div data-payment-channel="ewallet" class="mt-1 d-none">
                         </div>
 
-                        @error('payment_method')<div class="err show">{{ $message }}</div>@enderror
-                        @error('master_bank_id')<div class="err show">{{ $message }}</div>@enderror
+                        @error('payment_method')<div class="err show" id="payment_method-error">{{ $message }}</div>@enderror
+                        @error('master_bank_id')<div class="err show" id="master_bank_id-error">{{ $message }}</div>@enderror
                     </div>
                 </x-ui.card>
 

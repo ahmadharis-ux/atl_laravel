@@ -313,6 +313,14 @@ body.ap-modal-open{overflow:hidden}
 .notif-reorder{flex:none;align-self:center;display:inline-flex;align-items:center;gap:.2rem;padding:.35rem .65rem;border-radius:50rem;background:rgba(100,253,185,.25);color:var(--tealt);font-size:.72rem;font-weight:800;text-decoration:none;white-space:nowrap;transition:background .15s,color .15s}
 .notif-reorder:hover{background:var(--teal);color:#fff}
 
+/* Menu akun pengguna di topbar */
+.user-menu{position:relative;z-index:1050}
+.user-menu-pop{position:absolute;top:calc(100% + .5rem);right:0;width:13rem;padding:.35rem;border:1px solid var(--line);border-radius:.85rem;background:var(--bg);box-shadow:0 18px 40px -18px rgba(6,40,58,.4)}
+.user-menu-pop[hidden]{display:none}
+.user-menu-item{display:flex;align-items:center;gap:.65rem;width:100%;padding:.65rem .75rem;border:0;border-radius:.55rem;background:transparent;color:var(--ink);font:inherit;font-size:.8125rem;font-weight:700;text-align:left;text-decoration:none}
+.user-menu-item:hover,.user-menu-item:focus-visible{background:rgba(159,240,247,.2);color:var(--tealt);outline:0}
+.user-menu-item .ms{font-size:1.125rem;color:var(--tealt)}
+.user-menu-form{margin:0}
 
 /* ---------------- Landing page publik ---------------- */
 .landing-body{background:#f6fbfa;color:var(--ink);min-height:100vh;display:flex;flex-direction:column}

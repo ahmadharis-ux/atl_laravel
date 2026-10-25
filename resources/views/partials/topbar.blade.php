@@ -64,19 +64,29 @@
                 <a href="{{ route('notifications.index') }}" class="notif-foot">Semua notifikasi</a>
             </div>
         </div>
-        <form action="{{ route('logout') }}" method="POST" class="d-flex m-0">
-            @csrf
-            <button type="submit" class="sq" aria-label="Keluar" title="Keluar">
-                <span class="ms">logout</span>
+        <div class="user-menu" data-user-menu>
+            <button class="ibox bg-deep rounded-circle" style="width:2rem;height:2rem" type="button"
+                aria-label="Menu pengguna" title="Menu pengguna" aria-expanded="false"
+                aria-controls="userMenuDesktop" data-user-menu-toggle>
+                <span class="ms ms-md text-white">person</span>
             </button>
-        </form>
-        <a href="{{ route('settings.index') }}" class="ibox bg-deep rounded-circle" style="width:2rem;height:2rem" aria-label="Pengaturan akun" title="Pengaturan"><span class="ms ms-md text-white">person</span></a>
+            <div class="user-menu-pop" id="userMenuDesktop" hidden data-user-menu-pop>
+                <a href="{{ route('settings.index') }}" class="user-menu-item">
+                    <span class="ms">settings</span>Pengaturan akun
+                </a>
+                <form action="{{ route('logout') }}" method="POST" class="user-menu-form">
+                    @csrf
+                    <button type="submit" class="user-menu-item">
+                        <span class="ms">logout</span>Keluar
+                    </button>
+                </form>
+            </div>
+        </div>
     </div>
 </header>
 
 {{-- Header mobile --}}
 <header class="d-flex d-lg-none align-items-center gap-3 px-3 pt-3 pb-2">
-    <a href="{{ route('settings.index') }}" class="ibox bg-deep rounded-circle" style="width:2rem;height:2rem" aria-label="Pengaturan akun" title="Pengaturan"><span class="ms ms-md text-white">person</span></a>
     <div class="d-flex align-items-center gap-3 min-w-0">
         @hasSection('breadcrumb')
             @yield('breadcrumb')
@@ -100,11 +110,23 @@
                 </span>
             @endif
         </a>
-        <form action="{{ route('logout') }}" method="POST" class="d-flex m-0">
-            @csrf
-            <button type="submit" class="sq rounded-circle shadow-sm flex-shrink-0" style="width:2.75rem;height:2.75rem" aria-label="Keluar" title="Keluar">
-                <span class="ms">logout</span>
+        <div class="user-menu flex-shrink-0" data-user-menu>
+            <button class="ibox bg-deep rounded-circle shadow-sm flex-shrink-0" style="width:2.75rem;height:2.75rem" type="button"
+                aria-label="Menu pengguna" title="Menu pengguna" aria-expanded="false"
+                aria-controls="userMenuMobile" data-user-menu-toggle>
+                <span class="ms text-white">person</span>
             </button>
-        </form>
+            <div class="user-menu-pop" id="userMenuMobile" hidden data-user-menu-pop>
+                <a href="{{ route('settings.index') }}" class="user-menu-item">
+                    <span class="ms">settings</span>Pengaturan akun
+                </a>
+                <form action="{{ route('logout') }}" method="POST" class="user-menu-form">
+                    @csrf
+                    <button type="submit" class="user-menu-item">
+                        <span class="ms">logout</span>Keluar
+                    </button>
+                </form>
+            </div>
+        </div>
     </div>
 </header>

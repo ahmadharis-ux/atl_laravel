@@ -188,10 +188,10 @@ body{min-height:100vh}
 @endif
 <form action="{{ route('login') }}" method="POST" novalidate>
   @csrf
-  <div class="field"><label for="email">Email</label><div class="inp"><span class="ms">person</span><input id="email" name="email" type="email" value="{{ old('email') }}" placeholder="nama@email.com" autocomplete="username" required autofocus></div>
-    @error('email')<div class="err show">{{ $message }}</div>@enderror</div>
-  <div class="field"><label for="password">Kata sandi</label><div class="inp"><span class="ms">lock</span><input id="password" name="password" type="password" placeholder="Masukkan kata sandi" autocomplete="current-password" required><button type="button" class="toggle" data-toggle="password" aria-label="Tampilkan atau sembunyikan kata sandi"><span class="ms">visibility</span></button></div>
-    @error('password')<div class="err show">{{ $message }}</div>@enderror</div>
+  <div class="field"><label for="email">Email</label><div class="inp"><span class="ms">person</span><input id="email" name="email" type="email" value="{{ old('email') }}" placeholder="nama@email.com" autocomplete="username" required autofocus @if ($errors->has('email')) aria-invalid="true" aria-describedby="email-error" @endif></div>
+    @error('email')<div class="err show" id="email-error">{{ $message }}</div>@enderror</div>
+  <div class="field"><label for="password">Kata sandi</label><div class="inp"><span class="ms">lock</span><input id="password" name="password" type="password" placeholder="Masukkan kata sandi" autocomplete="current-password" required @if ($errors->has('password')) aria-invalid="true" aria-describedby="password-error" @endif><button type="button" class="toggle" data-toggle="password" aria-label="Tampilkan atau sembunyikan kata sandi"><span class="ms">visibility</span></button></div>
+    @error('password')<div class="err show" id="password-error">{{ $message }}</div>@enderror</div>
   <div class="d-flex align-items-center justify-content-between mb-4">
     <label class="chk m-0"><input type="checkbox" name="remember" value="1">Ingat saya</label>
     <a href="{{ route('password.request') }}" class="lnk fs-12">Lupa kata sandi?</a>

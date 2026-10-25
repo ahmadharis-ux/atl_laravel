@@ -743,6 +743,63 @@
     window.addEventListener('scroll', close, true);
   }
 
+  function initUserMenus() {
+    document.querySelectorAll('[data-user-menu]').forEach(function (root) {
+      var toggle = root.querySelector('[data-user-menu-toggle]');
+      var pop = root.querySelector('[data-user-menu-pop]');
+      if (!toggle || !pop) return;
+
+      function close(restoreFocus) {
+        pop.hidden = true;
+        toggle.setAttribute('aria-expanded', 'false');
+        if (restoreFocus) toggle.focus();
+      }
+
+      toggle.addEventListener('click', function () {
+        var isOpen = toggle.getAttribute('aria-expanded') === 'true';
+        pop.hidden = isOpen;
+        toggle.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+      });
+
+      document.addEventListener('click', function (event) {
+        if (!root.contains(event.target)) close(false);
+      });
+
+      root.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && !pop.hidden) close(true);
+      });
+
+      pop.addEventListener('click', function (event) {
+        if (event.target.closest('a, button')) close(false);
+      });
+    });
+  }
+
+  function focusFirstInvalidField() {
+    var fields = [...document.querySelectorAll('[aria-invalid="true"]')];
+    var field = fields.find(function (candidate) {
+      var enhancedSelect = candidate.tagName === 'SELECT'
+        && candidate.nextElementSibling?.querySelector('.ts-control');
+
+      return !candidate.disabled && (candidate.getClientRects().length > 0 || enhancedSelect);
+    });
+
+    if (!field) {
+      var error = document.querySelector('.err.show');
+      if (!error) return;
+      error.setAttribute('tabindex', '-1');
+      field = error;
+    }
+
+    var focusTarget = field;
+    if (field.tagName === 'SELECT' && field.getClientRects().length === 0) {
+      focusTarget = field.nextElementSibling?.querySelector('.ts-control') || field;
+    }
+
+    focusTarget.focus();
+    focusTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
   // ---------------- Modal + Confirm ----------------
   function showModal(el) {
     if (!el) return;
@@ -2355,6 +2412,7 @@
   }
 
   function boot() {
+    focusFirstInvalidField();
     initTables();
     initWizards();
     initCharts();
@@ -2376,6 +2434,7 @@
     initExpiryTimers();
     initTooltips();
     initActions();
+    initUserMenus();
     initModals();
     initDepositProofZoom();
     initLoader();

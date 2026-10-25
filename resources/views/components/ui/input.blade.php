@@ -2,6 +2,7 @@
 
 @php($isPassword = $type === 'password')
 @php($inputId = $id ?? $name)
+@php($hasError = $errors->has($name))
 
 <div {{ $attributes->only('class') }}>
     @if ($label)<label class="ui-label" for="{{ $inputId }}">{{ $label }}</label>@endif
@@ -12,6 +13,7 @@
             name="{{ $name }}"
             type="{{ $type }}"
             value="{{ $type === 'file' ? null : $value ?? old($name) }}"
+            @if ($hasError) aria-invalid="true" aria-describedby="{{ $name }}-error" @endif
         >
         @if ($isPassword)
             <button type="button" class="ui-eye" data-toggle-password="{{ $name }}" tabindex="-1"
@@ -21,5 +23,5 @@
         @endif
     </div>
     @if ($hint)<div class="ui-hint">{{ $hint }}</div>@endif
-    @error($name)<div class="err show">{{ $message }}</div>@enderror
+    @error($name)<div class="err show" id="{{ $name }}-error">{{ $message }}</div>@enderror
 </div>

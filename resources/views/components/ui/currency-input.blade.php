@@ -3,6 +3,7 @@
 @php
     $raw = preg_replace('/\D/', '', (string) ($value ?? old($name, '')));
     $display = $raw === '' ? '' : preg_replace('/\B(?=(\d{3})+(?!\d))/', '.', $raw);
+    $hasError = $errors->has($name);
 @endphp
 
 <div {{ $attributes->only('class') }}>
@@ -19,9 +20,10 @@
             placeholder="0"
             data-currency-display
             value="{{ $display }}"
+            @if ($hasError) aria-invalid="true" aria-describedby="{{ $name }}-error" @endif
         >
         <input type="hidden" name="{{ $name }}" data-currency-value value="{{ $raw }}">
     </div>
     @if ($hint)<div class="ui-hint">{{ $hint }}</div>@endif
-    @error($name)<div class="err show">{{ $message }}</div>@enderror
+    @error($name)<div class="err show" id="{{ $name }}-error">{{ $message }}</div>@enderror
 </div>

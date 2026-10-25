@@ -2,6 +2,7 @@
 
 @php($selected = $value ?? old($name))
 @php($selectId = $id ?? $name)
+@php($hasError = $errors->has($name))
 
 <div {{ $attributes->only('class') }}>
     @if ($label)<label class="ui-label" for="{{ $selectId }}">{{ $label }}</label>@endif
@@ -9,6 +10,7 @@
         {{ $attributes->except(['class', 'id'])->merge(['class' => 'ui-select']) }}
         id="{{ $selectId }}"
         name="{{ $name }}"
+        @if ($hasError) aria-invalid="true" aria-describedby="{{ $name }}-error" @endif
     >
         @if ($placeholder)<option value="">{{ $placeholder }}</option>@endif
         @foreach ($options as $val => $text)
@@ -16,5 +18,5 @@
         @endforeach
     </select>
     @if ($hint)<div class="ui-hint">{{ $hint }}</div>@endif
-    @error($name)<div class="err show">{{ $message }}</div>@enderror
+    @error($name)<div class="err show" id="{{ $name }}-error">{{ $message }}</div>@enderror
 </div>

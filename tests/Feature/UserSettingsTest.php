@@ -24,11 +24,36 @@ class UserSettingsTest extends TestCase
             ->get(route('settings.index'))
             ->assertOk()
             ->assertSee('Pengaturan')
+            ->assertSee('Menu pengguna')
+            ->assertSee('id="userMenuDesktop"', false)
+            ->assertSee('id="userMenuMobile"', false)
+            ->assertSee('class="ibox bg-deep rounded-circle shadow-sm flex-shrink-0"', false)
+            ->assertSee('Pengaturan akun')
+            ->assertSee('action="'.route('logout').'"', false)
+            ->assertSee('aria-label="Keluar"', false)
             ->assertSee('Profil')
             ->assertSee('Rekening Bank')
             ->assertSee('Ubah Kata Sandi')
             ->assertSee('Autentikasi Dua Faktor')
             ->assertSee('Perangkat Aktif');
+    }
+
+    public function test_the_first_invalid_profile_field_is_marked_for_keyboard_focus(): void
+    {
+        $user = User::factory()->create();
+
+        $this->followingRedirects()
+            ->actingAs($user)
+            ->from(route('settings.profile'))
+            ->put(route('settings.profile.update'), [
+                'name' => '',
+                'email' => $user->email,
+                'phone' => null,
+            ])
+            ->assertOk()
+            ->assertSee('aria-invalid="true"', false)
+            ->assertSee('aria-describedby="name-error"', false)
+            ->assertSee('id="name-error"', false);
     }
 
     public function test_each_settings_detail_page_renders(): void

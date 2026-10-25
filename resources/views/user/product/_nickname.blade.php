@@ -7,14 +7,16 @@
         <label class="ui-label" for="nickname-target">ID Tujuan <span aria-hidden="true">*</span><span class="visually-hidden">wajib diisi</span></label>
         <input class="ui-input" id="nickname-target" name="target" type="text" inputmode="numeric"
                autocomplete="off" placeholder="Masukkan ID akun" value="{{ old('target', $target) }}" data-nickname-target
-               required aria-required="true">
+               required aria-required="true"
+               @if ($errors->has('target')) aria-invalid="true" aria-describedby="target-error" @endif>
     </div>
     @if ($requiresZone)
         <div>
             <label class="ui-label" for="nickname-zone">Zone ID <span aria-hidden="true">*</span><span class="visually-hidden">wajib diisi</span></label>
             <input class="ui-input" id="nickname-zone" name="zone" type="text" inputmode="numeric"
                    autocomplete="off" placeholder="Masukkan Zone ID" value="{{ old('zone', $zone) }}" data-nickname-zone
-                   required aria-required="true">
+                   required aria-required="true"
+                   @if ($errors->has('zone')) aria-invalid="true" aria-describedby="zone-error" @endif>
         </div>
     @endif
     <p class="ui-hint mb-0">Isi ID akun dengan benar. Zone ID wajib untuk produk yang menampilkannya.</p>

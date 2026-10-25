@@ -5,11 +5,12 @@
 @section('content')
 <div class="d-flex flex-column gap-4">
 
-    <div class="d-flex align-items-center gap-2">
+    <div class="d-flex align-items-center justify-content-between gap-2">
         <div>
             <h1 class="fw-bold fs-4 m-0">Pengaturan</h1>
             <p class="tx-mute fs-12 m-0">Kelola profil, keamanan, dan perangkat akun Anda.</p>
         </div>
+        
     </div>
 
     @php
@@ -40,5 +41,11 @@
             </div>
         @endforeach
     </div>
+    <form action="{{ route('logout') }}" method="POST" class="d-flex flex-column gap-2">
+        @csrf
+        <button type="submit" class="btn btn-outline-danger justify-content-center  " aria-label="Keluar" title="Keluar" data-tip="Keluar">
+            <span class="ms align-middle">logout</span>  <span class="lbl">Keluar</span>
+        </button>
+    </form>
 </div>
 @endsection

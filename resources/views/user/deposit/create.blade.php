@@ -86,8 +86,8 @@
                             @endif
                         </div>
 
-                        @error('payment_method')<div class="err show">{{ $message }}</div>@enderror
-                        @error('master_bank_id')<div class="err show">{{ $message }}</div>@enderror
+                        @error('payment_method')<div class="err show" id="payment_method-error">{{ $message }}</div>@enderror
+                        @error('master_bank_id')<div class="err show" id="master_bank_id-error">{{ $message }}</div>@enderror
                     </div>
                 </x-ui.card>
 
