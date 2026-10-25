@@ -362,7 +362,8 @@ Masih terbuka: sinkronisasi expiry QRIS dengan provider, pemetaan event notifika
 - [ ] Harga, fee, total, saldo saat ini, dan sisa saldo konsisten.
 - [x] Saldo kurang memiliki CTA Isi Saldo; penolakan backend tetap menjadi sumber kebenaran.
 - [x] Konfirmasi menyertakan detail produk, tujuan/Zone ID, total, metode, dan dampak pembayaran.
-- [ ] QRIS menampilkan instruksi serta expiry yang sama dengan status server/provider.
+- [x] Status QRIS pending menampilkan instruksi pembayaran, batas waktu pesanan Atlantic, dan CTA "Cek Status Pembayaran".
+- [ ] Batas waktu pesanan yang ditampilkan sudah diverifikasi selaras dengan expiry transaksi provider.
 - [ ] Pending, paid, failed, expired, stok habis, dan saldo berubah punya pesan/CTA yang benar.
 
 ### Top up manual

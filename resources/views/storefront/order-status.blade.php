@@ -7,6 +7,9 @@
     $paymentMethod = $storefront['payment_method'] ?? ($order->payment_method->value === 'qris' ? 'qris' : 'cash');
     $sellingPrice = (int) ($storefront['selling_price'] ?? $order->amount);
     $isPending = $order->status === \App\Enums\OrderStatus::Pending;
+    $statusLabel = $isPending && $paymentMethod === 'qris'
+        ? 'Menunggu Pembayaran'
+        : $order->status->label();
 @endphp
 
 <div class="row g-3">
@@ -19,7 +22,7 @@
                     <div class="tx-mute fs-11">Nomor pesanan</div>
                     <div class="fw-bold num">{{ $order->order_number }}</div>
                 </div>
-                <span class="pill {{ $order->status->tone() }}">{{ $order->status->label() }}</span>
+                <span class="pill {{ $order->status->tone() }}">{{ $statusLabel }}</span>
             </div>
 
             <div class="row g-3">
@@ -63,7 +66,15 @@
 
             @if ($isPending && $paymentMethod === 'qris')
                 <div class="card-ap r-sm p-3 d-flex flex-column gap-2">
-                    <p class="fs-12 mb-0">Selesaikan pembayaran di halaman aman Midtrans. Status pesanan akan diperbarui setelah pembayaran terkonfirmasi.</p>
+                    <div class="fw-semibold fs-12">Selesaikan Pembayaran QRIS</div>
+                    <p class="fs-12 mb-0">Selesaikan pembayaran di halaman aman Midtrans. Setelah membayar, cek status di bawah untuk memastikan pembayaran sudah diterima.</p>
+                    @if ($order->expires_at)
+                        <div class="card-ap r-sm p-2 bg-gold">
+                            <div class="fw-semibold fs-11">Batas waktu pesanan Atlantic (WIB)</div>
+                            <div class="fs-12">{{ $order->expires_at->locale('id')->translatedFormat('d F Y, H:i') }}</div>
+                            <div class="fs-11 mt-1">Jika pembayaran melewati batas ini, pesanan dapat kedaluwarsa. Pembayaran yang terkonfirmasi setelah pesanan kedaluwarsa akan ditangani untuk pengembalian dana.</div>
+                        </div>
+                    @endif
                     @if ($paymentUrl)
                         <a href="{{ $paymentUrl }}" class="btn-ap btn-mint justify-content-center" rel="noopener">
                             Bayar dengan Midtrans <span class="ms ms-sm">open_in_new</span>
@@ -71,7 +82,9 @@
                     @endif
                     <form method="POST" action="{{ $syncUrl }}">
                         @csrf
-                        <button type="submit" class="btn-soft w-100 justify-content-center">Perbarui Status</button>
+                        <button type="submit" class="btn-soft w-100 justify-content-center">
+                            <span class="ms ms-sm" aria-hidden="true">refresh</span> Cek Status Pembayaran
+                        </button>
                     </form>
                 </div>
             @elseif ($isPending && $paymentMethod === 'cash')
