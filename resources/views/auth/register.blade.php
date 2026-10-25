@@ -193,7 +193,7 @@ body{min-height:100vh}
   <div class="field"><label for="password">Kata sandi</label><div class="inp"><span class="ms">lock</span><input id="password" name="password" type="password" placeholder="Minimal 8 karakter" autocomplete="new-password" required><button type="button" class="toggle" data-toggle="password" aria-label="Tampilkan atau sembunyikan kata sandi"><span class="ms">visibility</span></button></div></div>
   <div class="strength" id="strength" data-s="0" style="margin:-.5rem 0 1rem"><i></i><i></i><i></i><i></i></div>
   <div class="field"><label for="password_confirmation">Konfirmasi kata sandi</label><div class="inp"><span class="ms">lock_reset</span><input id="password_confirmation" name="password_confirmation" type="password" placeholder="Ulangi kata sandi" autocomplete="new-password" required><button type="button" class="toggle" data-toggle="password_confirmation" aria-label="Tampilkan atau sembunyikan kata sandi"><span class="ms">visibility</span></button></div><div class="err" id="password_confirmation-err">Kata sandi tidak sama.</div></div>
-  <label class="chk mb-4"><input type="checkbox" name="terms" required><span>Saya menyetujui <a href="#" class="lnk">Syarat &amp; Ketentuan</a> dan <a href="#" class="lnk">Kebijakan Privasi</a>.</span></label>
+  <label class="chk mb-4"><input type="checkbox" name="terms" required><span>Saya menyetujui <a href="{{ route('pages.terms') }}" target="_blank" rel="noopener" class="lnk">Syarat &amp; Ketentuan</a> dan <a href="{{ route('pages.privacy') }}" target="_blank" rel="noopener" class="lnk">Kebijakan Privasi</a>.</span></label>
   <button type="submit" class="btn-main">Buat akun<span class="ms">arrow_forward</span></button>
 </form>
 @if (config('services.google.client_id'))

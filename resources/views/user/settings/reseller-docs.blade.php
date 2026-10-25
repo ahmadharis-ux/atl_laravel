@@ -44,9 +44,14 @@
         <p class="fs-12">
             Kirim API key kamu di setiap request memakai salah satu header berikut:
         </p>
-        <pre class="ap-log-pre">X-API-Key: ap_XXXXXXXX...
+        <pre class="ap-log-pre mb-0">X-API-Key: ap_XXXXXXXX...
 # atau
 Authorization: Bearer ap_XXXXXXXX...</pre>
+        <div class="mt-2 d-flex justify-content-end">
+            <button type="button" class="btn-soft" data-copy-text="X-API-Key: ap_XXXXXXXX...
+# atau
+Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span class="ms ms-sm">content_copy</span> Salin Contoh</button>
+        </div>
         <p class="fs-12 mb-0">
             Belum punya API key? Aktifkan dulu keanggotaan reseller di
             <a href="{{ route('settings.reseller') }}">halaman Reseller</a> —
@@ -56,7 +61,13 @@ Authorization: Bearer ap_XXXXXXXX...</pre>
     </x-ui.card>
 
     <x-ui.card id="doc-endpoint" title="Base URL dan Daftar Endpoint">
-        <pre class="ap-log-pre mb-3">Base URL: {{ $apiBase }}</pre>
+        <div class="position-relative">
+            <pre class="ap-log-pre pe-5 mb-0">Base URL: {{ $apiBase }}</pre>
+            <button type="button" class="btn-icon position-absolute top-0 end-0 m-2" data-copy-text="{{ $apiBase }}" data-copy-label="Base URL" data-tip="Salin"><span class="ms ms-sm">content_copy</span></button>
+        </div>
+        <div class="mt-2 d-flex justify-content-end">
+            <button type="button" class="btn-soft" data-copy-text="{{ $apiBase }}" data-copy-label="Base URL"><span class="ms ms-sm">content_copy</span> Salin Contoh</button>
+        </div>
         <div class="table-responsive">
             <table class="table table-ui align-middle">
                 <thead>
@@ -115,9 +126,19 @@ Authorization: Bearer ap_XXXXXXXX...</pre>
         </p>
 
         <p class="fs-12 fw-semibold mb-1">GET <code>/profile</code></p>
-        <pre class="ap-log-pre mb-2">curl "{{ $apiBase }}/profile" \
+        <div class="position-relative mb-2">
+            <pre class="ap-log-pre pe-5 mb-0">curl "{{ $apiBase }}/profile" \
   -H "X-API-Key: ap_XXXXXXXX..." \
   -H "Accept: application/json"</pre>
+            <button type="button" class="btn-icon position-absolute top-0 end-0 m-2" data-copy-text="curl &quot;{{ $apiBase }}/profile&quot; \
+  -H &quot;X-API-Key: ap_XXXXXXXX...&quot; \
+  -H &quot;Accept: application/json&quot;" data-copy-label="cURL Profil" data-tip="Salin"><span class="ms ms-sm">content_copy</span></button>
+        </div>
+        <div class="d-flex justify-content-end mb-3">
+            <button type="button" class="btn-soft" data-copy-text="curl &quot;{{ $apiBase }}/profile&quot; \
+  -H &quot;X-API-Key: ap_XXXXXXXX...&quot; \
+  -H &quot;Accept: application/json&quot;" data-copy-label="cURL Profil"><span class="ms ms-sm">content_copy</span> Salin Contoh cURL</button>
+        </div>
         <pre class="ap-log-pre mb-3">{
   "data": {
     "name": "Budi Reseller",
@@ -131,9 +152,19 @@ Authorization: Bearer ap_XXXXXXXX...</pre>
 }</pre>
 
         <p class="fs-12 fw-semibold mb-1">GET <code>/balance</code></p>
-        <pre class="ap-log-pre mb-2">curl "{{ $apiBase }}/balance" \
+        <div class="position-relative mb-2">
+            <pre class="ap-log-pre pe-5 mb-0">curl "{{ $apiBase }}/balance" \
   -H "X-API-Key: ap_XXXXXXXX..." \
   -H "Accept: application/json"</pre>
+            <button type="button" class="btn-icon position-absolute top-0 end-0 m-2" data-copy-text="curl &quot;{{ $apiBase }}/balance&quot; \
+  -H &quot;X-API-Key: ap_XXXXXXXX...&quot; \
+  -H &quot;Accept: application/json&quot;" data-copy-label="cURL Saldo" data-tip="Salin"><span class="ms ms-sm">content_copy</span></button>
+        </div>
+        <div class="d-flex justify-content-end mb-3">
+            <button type="button" class="btn-soft" data-copy-text="curl &quot;{{ $apiBase }}/balance&quot; \
+  -H &quot;X-API-Key: ap_XXXXXXXX...&quot; \
+  -H &quot;Accept: application/json&quot;" data-copy-label="cURL Saldo"><span class="ms ms-sm">content_copy</span> Salin Contoh cURL</button>
+        </div>
         <pre class="ap-log-pre mb-0">{
   "data": {
     "balance": 150000,
@@ -153,11 +184,25 @@ Authorization: Bearer ap_XXXXXXXX...</pre>
 
     <x-ui.card id="doc-produk" title="2. Ambil Daftar Produk dan Harga Reseller">
         <p class="fs-12">Query opsional: <code>q</code> (pencarian nama/kode), <code>brand_id</code>, <code>category_id</code>, <code>payment_type</code> (<code>prabayar</code>|<code>pascabayar</code>), <code>per_page</code> (default 50, maks 100).</p>
-        <pre class="ap-log-pre">curl -G "{{ $apiBase }}/products" \
+        <div class="position-relative mb-2">
+            <pre class="ap-log-pre pe-5 mb-0">curl -G "{{ $apiBase }}/products" \
   -H "X-API-Key: ap_XXXXXXXX..." \
   -H "Accept: application/json" \
   --data-urlencode "q=pulsa" \
   --data-urlencode "per_page=20"</pre>
+            <button type="button" class="btn-icon position-absolute top-0 end-0 m-2" data-copy-text="curl -G &quot;{{ $apiBase }}/products&quot; \
+  -H &quot;X-API-Key: ap_XXXXXXXX...&quot; \
+  -H &quot;Accept: application/json&quot; \
+  --data-urlencode &quot;q=pulsa&quot; \
+  --data-urlencode &quot;per_page=20&quot;" data-copy-label="cURL Produk" data-tip="Salin"><span class="ms ms-sm">content_copy</span></button>
+        </div>
+        <div class="d-flex justify-content-end mb-3">
+            <button type="button" class="btn-soft" data-copy-text="curl -G &quot;{{ $apiBase }}/products&quot; \
+  -H &quot;X-API-Key: ap_XXXXXXXX...&quot; \
+  -H &quot;Accept: application/json&quot; \
+  --data-urlencode &quot;q=pulsa&quot; \
+  --data-urlencode &quot;per_page=20&quot;" data-copy-label="cURL Produk"><span class="ms ms-sm">content_copy</span> Salin Contoh cURL</button>
+        </div>
         <pre class="ap-log-pre mb-2">{
   "data": [
     {
@@ -190,11 +235,25 @@ Authorization: Bearer ap_XXXXXXXX...</pre>
             (wajib untuk produk yang butuh zone, mis. Mobile Legends — cek dari field <code>requires_zone</code>).
             Pembayaran selalu lewat saldo; pastikan saldo cukup.
         </p>
-        <pre class="ap-log-pre">curl -X POST "{{ $apiBase }}/orders" \
+        <div class="position-relative mb-2">
+            <pre class="ap-log-pre pe-5 mb-0">curl -X POST "{{ $apiBase }}/orders" \
   -H "X-API-Key: ap_XXXXXXXX..." \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -d '{"product_id": 12, "target": "081234567890"}'</pre>
+            <button type="button" class="btn-icon position-absolute top-0 end-0 m-2" data-copy-text="curl -X POST &quot;{{ $apiBase }}/orders&quot; \
+  -H &quot;X-API-Key: ap_XXXXXXXX...&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -H &quot;Accept: application/json&quot; \
+  -d '{&quot;product_id&quot;: 12, &quot;target&quot;: &quot;081234567890&quot;}'" data-copy-label="cURL Buat Pesanan" data-tip="Salin"><span class="ms ms-sm">content_copy</span></button>
+        </div>
+        <div class="d-flex justify-content-end mb-3">
+            <button type="button" class="btn-soft" data-copy-text="curl -X POST &quot;{{ $apiBase }}/orders&quot; \
+  -H &quot;X-API-Key: ap_XXXXXXXX...&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -H &quot;Accept: application/json&quot; \
+  -d '{&quot;product_id&quot;: 12, &quot;target&quot;: &quot;081234567890&quot;}'" data-copy-label="cURL Buat Pesanan"><span class="ms ms-sm">content_copy</span> Salin Contoh cURL</button>
+        </div>
         <pre class="ap-log-pre mb-2">{
   "data": {
     "order_number": "TRX-20261020-AB12CD",

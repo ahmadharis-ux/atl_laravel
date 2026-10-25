@@ -30,7 +30,7 @@ use Throwable;
 
 class CheckoutController extends Controller
 {
-    public function show(Request $request, Product $product): View
+    public function show(Request $request, Product $product, MidtransService $midtrans): View
     {
         $this->ensurePurchasable($product);
 
@@ -48,7 +48,11 @@ class CheckoutController extends Controller
             'target' => (string) $request->query('target', ''),
             'zone' => (string) $request->query('zone', ''),
             'balance' => (int) $request->user()->balance,
-            'adminFee' => WalletSupport::ADMIN_FEE,
+            'adminFee' => match (old('payment_method', PaymentMethod::Saldo->value)) {
+                PaymentMethod::Qris->value => $midtrans->qrisFee($product->selling_price),
+                PaymentMethod::VirtualAccount->value, PaymentMethod::EWallet->value => 0,
+                default => 0,
+            },
             'paymentMethods' => PaymentMethod::cases(),
             'bankTargets' => $targets->where('type', MasterBank::TYPE_BANK)->values(),
             'ewalletTargets' => $targets->where('type', MasterBank::TYPE_EWALLET)->values(),
@@ -88,9 +92,11 @@ class CheckoutController extends Controller
         $method = PaymentMethod::from($validated['payment_method']);
         $masterBank = $this->resolveMasterBank($method, $validated['master_bank_id'] ?? null);
         $amount = $product->selling_price;
-        $fee = $method === PaymentMethod::Qris
-            ? $midtrans->qrisFee($amount)
-            : ($masterBank?->admin_fee ?? 0);
+        $fee = match ($method) {
+            PaymentMethod::Qris => $midtrans->qrisFee($amount),
+            PaymentMethod::VirtualAccount, PaymentMethod::EWallet => $masterBank?->admin_fee ?? 0,
+            PaymentMethod::Saldo => 0,
+        };
 
         try {
             $order = DB::transaction(function () use ($request, $product, $validated, $amount, $method, $masterBank, $fee): Order {

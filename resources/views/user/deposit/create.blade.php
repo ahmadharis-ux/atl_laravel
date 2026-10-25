@@ -53,7 +53,7 @@
                             <x-ui.radio-card
                                 name="payment_method"
                                 :value="$method->value"
-                                :label="$method->label().' — '.$method->description()"
+                                :label="$method->value === \App\Enums\PaymentMethod::Qris->value ? $method->label().' — '.$method->description().' (Biaya admin 0,7%)' : $method->label().' — '.$method->description()"
                                 :checked="$selectedMethod === $method->value"
                             />
                         @endforeach

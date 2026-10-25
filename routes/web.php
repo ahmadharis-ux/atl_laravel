@@ -25,6 +25,7 @@ use App\Http\Controllers\User\PulsaController as UserPulsaController;
 use App\Http\Controllers\User\ResellerController as UserResellerController;
 use App\Http\Controllers\User\SaldoController as UserSaldoController;
 use App\Http\Controllers\User\SearchHistoryController as UserSearchHistoryController;
+use App\Http\Controllers\PageController;
 use App\Http\Controllers\User\SettingsController as UserSettingsController;
 use App\Http\Controllers\User\TicketController as UserTicketController;
 use App\Http\Controllers\Webhook\DigiflazzWebhookController;
@@ -166,3 +167,7 @@ Route::middleware(['auth', 'non-admin', 'verified'])->group(function () {
 
     Route::delete('/search-history', [UserSearchHistoryController::class, 'clear'])->name('search.history.clear');
 });
+
+Route::get('/syarat-ketentuan', [PageController::class, 'terms'])->name('pages.terms');
+Route::get('/kebijakan-privasi', [PageController::class, 'privacy'])->name('pages.privacy');
+

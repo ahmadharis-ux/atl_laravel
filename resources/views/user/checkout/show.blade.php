@@ -117,9 +117,9 @@
                             <span class="text-white">Harga produk</span>
                             <span class="num fw-semibold">Rp {{ number_format($product->selling_price, 0, ',', '.') }}</span>
                         </li>
-                        <li class="d-flex align-items-center justify-content-between">
-                            <span class="text-white">Biaya admin</span>
-                            <span class="num fw-semibold">{{ $adminFee > 0 ? 'Rp '.number_format($adminFee, 0, ',', '.') : 'Gratis' }}</span>
+                        <li class="d-flex align-items-center justify-content-between" data-fee-row data-method="qris">
+                            <span class="text-white">Biaya admin QRIS (0,7%)</span>
+                            <span class="num fw-semibold">{{ $adminFee > 0 ? 'Rp '.number_format($adminFee, 0, ',', '.') : 'Rp '.number_format($product->selling_price > 0 ? app(\App\Services\MidtransService::class)->qrisFee($product->selling_price) : 0, 0, ',', '.') }}</span>
                         </li>
                         <li class="d-flex align-items-center justify-content-between pt-2 border-top">
                             <span class="fw-bold">Total</span>
