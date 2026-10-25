@@ -58,10 +58,14 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi" data-
 Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span class="ms ms-sm">content_copy</span> Salin Contoh</button>
         </div>
         <p class="fs-12 mb-0">
-            Belum punya API key? Aktifkan dulu keanggotaan reseller di
+            Belum punya API key? Ajukan keanggotaan reseller dan tunggu persetujuan admin di
             <a href="{{ route('settings.reseller') }}">halaman Reseller</a> —
             key hanya ditampilkan satu kali saat dibuat.
             API key bersifat rahasia; jangan bagikan ke pihak lain.
+        </p>
+        <p class="fs-12 mb-0 mt-2">
+            Jika allowlist IP diatur, request API hanya diterima dari IP server yang terdaftar.
+            Keanggotaan yang ditangguhkan akan kehilangan akses API dan toko untuk pesanan baru.
         </p>
     </x-ui.card>
 
@@ -188,7 +192,13 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span
     </x-ui.card>
 
     <x-ui.card id="doc-produk" title="2. Ambil Daftar Produk dan Harga Reseller">
-        <p class="fs-12">Query opsional: <code>q</code> (pencarian nama/kode), <code>brand_id</code>, <code>category_id</code>, <code>payment_type</code> (<code>prabayar</code>|<code>pascabayar</code>), <code>per_page</code> (default 50, maks 100).</p>
+        <p class="fs-12 mb-2">
+            Daftar hanya berisi produk aktif dan diurutkan berdasarkan nama.
+            Filter tersedia melalui query: <code>q</code> (nama/kode, maksimal 100 karakter),
+            <code>brand_id</code>, <code>category_id</code>, dan <code>payment_type</code>
+            (<code>prabayar</code>|<code>pascabayar</code>). Gunakan <code>per_page</code> antara 1–100;
+            default 50 item per halaman.
+        </p>
         <div class="position-relative mb-2">
             <pre class="ap-log-pre pe-5 mb-0">curl -G "{{ $apiBase }}/products" \
   -H "X-API-Key: ap_XXXXXXXX..." \
@@ -217,20 +227,71 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span
       "brand": "XL",
       "category": "Pulsa",
       "payment_type": "prabayar",
+      "region": null,
       "selling_price": 6500,
       "reseller_price": 6175,
       "discount": 325,
       "stock": 100,
       "unlimited_stock": false,
       "requires_zone": false,
-      "target_label": "Nomor Tujuan"
+      "target_label": "Nomor HP"
     }
   ],
   "meta": { "current_page": 1, "per_page": 20, "last_page": 3, "total": 54 }
 }</pre>
         <p class="fs-12 mb-0">
             <span class="fw-semibold">reseller_price</span> adalah yang kamu bayar;
-            <span class="fw-semibold">selling_price</span> adalah harga jual publik — selisihnya adalah untungmu kalau kamu jual dengan harga publik.
+            <span class="fw-semibold">selling_price</span> adalah harga jual publik;
+            <span class="fw-semibold">discount</span> adalah selisih nominal dalam Rupiah, bukan persentase atau jaminan laba bersih.
+        </p>
+        <h3 class="fs-13 fw-bold mt-3 mb-2">Kontrak field produk</h3>
+        <div class="table-responsive">
+            <table class="table table-ui align-middle fs-12">
+                <thead>
+                    <tr>
+                        <th>Field</th>
+                        <th>Tipe / nullability</th>
+                        <th>Arti</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>id</code></td><td>integer</td><td>ID untuk <code>product_id</code> saat membuat pesanan.</td></tr>
+                    <tr><td><code>code</code>, <code>name</code></td><td>string</td><td>Kode dan nama produk.</td></tr>
+                    <tr><td><code>brand</code>, <code>category</code></td><td>string atau null</td><td>Nama relasi; null bila relasi tidak tersedia.</td></tr>
+                    <tr><td><code>payment_type</code></td><td>string</td><td><code>prabayar</code> atau <code>pascabayar</code>.</td></tr>
+                    <tr><td><code>region</code></td><td>string atau null</td><td>Wilayah produk; null berarti produk umum/tidak ditentukan.</td></tr>
+                    <tr><td><code>selling_price</code>, <code>reseller_price</code>, <code>discount</code></td><td>integer</td><td>Nominal Rupiah. Harga reseller yang didebit; discount adalah selisih harga, bukan persentase.</td></tr>
+                    <tr><td><code>stock</code></td><td>integer atau null</td><td>Jumlah stok; null jika <code>unlimited_stock</code> true.</td></tr>
+                    <tr><td><code>unlimited_stock</code>, <code>requires_zone</code></td><td>boolean</td><td>Status stok tanpa batas dan apakah pesanan memerlukan <code>zone</code>.</td></tr>
+                    <tr><td><code>target_label</code></td><td>string</td><td>Label tujuan untuk membantu form integrasi.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3 class="fs-13 fw-bold mt-3 mb-2">Detail produk aktif</h3>
+        <p class="fs-12">Endpoint <code>GET /products/{id}</code> mengembalikan object <code>data</code> dengan field yang sama seperti item daftar dan tanpa <code>meta</code>.</p>
+        <pre class="ap-log-pre mb-2">{
+  "data": {
+    "id": 12,
+    "code": "ML172",
+    "name": "Mobile Legends 172 Diamonds",
+    "brand": "Mobile Legends",
+    "category": "Games",
+    "payment_type": "prabayar",
+    "region": null,
+    "selling_price": 6500,
+    "reseller_price": 6175,
+    "discount": 325,
+    "stock": null,
+    "unlimited_stock": true,
+    "requires_zone": true,
+    "target_label": "ID Game"
+  }
+}</pre>
+        <p class="fs-12 mb-0">
+            Daftar memakai <code>meta.current_page</code>, <code>meta.per_page</code>,
+            <code>meta.last_page</code>, dan <code>meta.total</code> (semuanya integer).
+            Produk tidak ditemukan atau tidak aktif pada endpoint detail menghasilkan <code>404</code>.
         </p>
     </x-ui.card>
 
@@ -359,9 +420,9 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span
             </table>
         </div>
         <pre class="ap-log-pre mb-0">{
-  "message": "422 Unprocessable Content",
+  "message": "The per page field must not be greater than 100.",
   "errors": {
-    "product_id": ["Stok produk habis."]
+    "per_page": ["The per page field must not be greater than 100."]
   }
 }</pre>
     </x-ui.card>

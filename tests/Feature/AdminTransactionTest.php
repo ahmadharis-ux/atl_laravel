@@ -101,6 +101,94 @@ class AdminTransactionTest extends TestCase
             ->assertSee('Rp 25.000');
     }
 
+    public function test_storefront_cash_payment_is_not_mislabelled_as_wallet_balance(): void
+    {
+        $admin = $this->admin();
+        $order = Order::factory()->create([
+            'source' => 'store_cash',
+            'payment_method' => PaymentMethod::Saldo,
+            'amount' => 10_800,
+            'metadata' => [
+                'storefront' => [
+                    'payment_method' => 'cash',
+                    'selling_price' => 12_000,
+                    'reseller_price' => 10_800,
+                ],
+            ],
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.transactions.index'))
+            ->assertOk()
+            ->assertSee('Tunai pelanggan')
+            ->assertSee('Saldo');
+
+        $this->actingAs($admin)
+            ->get(route('admin.transactions.show', $order))
+            ->assertOk()
+            ->assertSee('Tunai kepada reseller')
+            ->assertSee('Harga pelanggan')
+            ->assertSee('Potongan saldo reseller')
+            ->assertSee('Rp 10.800')
+            ->assertSee('<dd class="col-sm-7 m-0 fw-semibold">Saldo</dd>', false);
+
+        $this->actingAs($admin)
+            ->get(route('admin.transactions.invoice', $order))
+            ->assertOk()
+            ->assertSee('Pelanggan membayar tunai kepada reseller')
+            ->assertSee('Rp 10.800')
+            ->assertSee('Tagihan reseller');
+    }
+
+    public function test_unpaid_expired_storefront_qris_order_cannot_be_manually_refunded(): void
+    {
+        $admin = $this->admin(['dashboard.view', 'transactions.view', 'transactions.update']);
+        $order = Order::factory()->create([
+            'source' => 'store_qris',
+            'payment_method' => PaymentMethod::Qris,
+            'status' => OrderStatus::Expired,
+            'refund_status' => null,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.transactions.show', $order))
+            ->assertOk()
+            ->assertDontSee('Proses Refund');
+
+        $this->actingAs($admin)
+            ->from(route('admin.transactions.show', $order))
+            ->post(route('admin.transactions.refund', $order))
+            ->assertRedirect(route('admin.transactions.show', $order))
+            ->assertSessionHas('error');
+
+        $this->assertNull($order->fresh()->refunded_at);
+    }
+
+    public function test_admin_can_complete_a_storefront_qris_refund_marked_for_manual_handling(): void
+    {
+        $admin = $this->admin(['dashboard.view', 'transactions.view', 'transactions.update']);
+        $order = Order::factory()->create([
+            'source' => 'store_qris',
+            'payment_method' => PaymentMethod::Qris,
+            'status' => OrderStatus::Failed,
+            'refund_status' => 'manual_required',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.transactions.show', $order))
+            ->assertOk()
+            ->assertSee('Pengembalian Dana')
+            ->assertSee('Proses Refund');
+
+        $this->actingAs($admin)
+            ->post(route('admin.transactions.refund', $order))
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertSame('completed', $order->fresh()->refund_status);
+        $this->assertNotNull($order->fresh()->refunded_at);
+    }
+
     public function test_invoice_requires_the_view_permission(): void
     {
         $admin = $this->admin(['dashboard.view']);

@@ -92,12 +92,17 @@ class TransactionController extends Controller
 
     public function refund(Order $order): RedirectResponse
     {
-        if ($order->status !== OrderStatus::Failed) {
-            return back()->with('error', 'Hanya transaksi gagal yang dapat direfund.');
+        $canRefund = $order->source === 'store_qris'
+            ? in_array($order->status, [OrderStatus::Failed, OrderStatus::Expired], true)
+                && $order->refund_status === 'manual_required'
+            : $order->status === OrderStatus::Failed;
+
+        if (! $canRefund) {
+            return back()->with('error', 'Refund manual hanya tersedia untuk transaksi gagal atau refund QRIS yang memerlukan tindakan admin.');
         }
 
         if (! OrderFulfillment::refundManually($order)) {
-            return back()->with('error', 'Transaksi ini sudah direfund sebelumnya.');
+            return back()->with('error', 'Refund sedang diproses otomatis atau transaksi ini sudah direfund.');
         }
 
         return back()->with('success', 'Refund berhasil diproses.');

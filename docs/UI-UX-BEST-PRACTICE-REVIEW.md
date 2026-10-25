@@ -104,25 +104,23 @@ Perlu dibedakan dua surface yang sama-sama berkaitan dengan produk:
 
 Rekomendasi kontrak JSON di bawah ditujukan untuk API reseller, bukan response HTML internal katalog web. Jika response AJAX katalog dipelihara sebagai kontrak frontend, bentuk partial HTML dan state kosong/error-nya perlu dites terpisah.
 
-Yang belum sejelas best practice:
+Yang sudah diselaraskan pada kontrak produk:
 
-- Contoh response produk di dokumentasi belum membahas endpoint detail secara terpisah.
-- Tipe, nullability, satuan, dan semantik beberapa field belum dirangkum sebagai kontrak field yang lengkap.
-- Contoh response error disebutkan melalui kode status dan `errors`, tetapi belum ditampilkan sebagai payload JSON nyata berdampingan dengan skenario penyebabnya.
-- Perbedaan response list produk dan detail produk serta perilaku nilai stok untuk produk unlimited perlu dinyatakan eksplisit.
-- Field `brand`, `category`, `payment_type`, dan `region` dapat bernilai null bergantung pada data produk; konsumen API perlu tahu apakah null berbeda makna dengan string kosong.
-- API list menerima `per_page` maksimal 100, default 50; dokumentasi contoh memakai 20. Batas aktual dan default perlu dinyatakan bersama agar integrator tidak mengasumsikan jumlah halaman.
-- Untuk produk yang tidak ditemukan atau tidak aktif, endpoint detail memberikan 404; dokumentasi sebaiknya menjelaskan hasil ini terpisah dari daftar yang hanya menampilkan produk aktif.
+- Contoh list dan detail produk aktif tersedia terpisah, dengan bentuk payload sesuai controller.
+- Tipe, nullability, satuan Rupiah, dan makna field didokumentasikan; `payment_type` tidak nullable, sedangkan `brand`, `category`, dan `region` dapat null.
+- Contoh validasi `422` menggunakan bentuk JSON aktual beserta penyebabnya.
+- Perbedaan response list/detail, metadata pagination, dan arti `stock: null` untuk stok unlimited dinyatakan eksplisit.
+- Filter produk dan batas `per_page` 1–100 dengan default 50 didokumentasikan.
+- Produk tidak ditemukan atau tidak aktif pada endpoint detail dinyatakan menghasilkan `404`.
 
-### Rekomendasi
+### Kontrak yang dipertahankan
 
-1. Pertahankan bentuk response yang sudah ada, lalu dokumentasikan kontraknya; tidak perlu mengubah bentuk API hanya demi menambah kompleksitas.
-2. Buat tabel field berisi nama, tipe JSON, nullability, satuan, arti, dan kapan field dipakai.
-3. Dokumentasikan bahwa `stock` bernilai `null` jika `unlimited_stock` true, dan jelaskan apakah nilai `discount` merupakan selisih harga nominal.
-4. Berikan contoh response lengkap untuk `GET /products`, `GET /products/{id}`, dan contoh validasi gagal `422` dengan bentuk `errors`.
-5. Jelaskan query filter, nilai maksimum `per_page`, pagination, dan arti `total`.
-6. Tegaskan kebijakan harga yang sudah disebutkan di dokumentasi reseller: harga reseller adalah harga yang dibayar reseller; harga publik adalah referensi harga jual, bukan jaminan reseller mendapat laba jika ia menjual di bawah harga publik.
-7. Beri nama jelas untuk nilai null: bedakan atribut yang memang tidak tersedia dari produk yang tidak memerlukan zone.
+- Bentuk response API tidak diubah; dokumentasi mengikuti kontrak yang sudah digunakan client.
+- Tabel field menjelaskan tipe JSON, nullability, satuan, dan kapan field dipakai.
+- `stock: null` berarti stok tidak terbatas; `discount` adalah selisih nominal harga, bukan persentase atau jaminan laba bersih.
+- Contoh response mencakup list, detail, dan validasi `422`.
+- Filter, batas/default `per_page`, metadata pagination, serta arti `total` dijelaskan.
+- Nilai null pada relasi/region dibedakan dari `requires_zone`, yang selalu boolean.
 
 ### Kriteria penerimaan
 
@@ -131,24 +129,23 @@ Yang belum sejelas best practice:
 - Nama field dan bentuk JSON dalam dokumentasi cocok dengan implementasi yang diuji.
 - Perilaku produk tidak aktif, stok habis, target/zone salah, saldo kurang, dan API key tidak valid memiliki keterangan status serta langkah tindak lanjut.
 
-### Kontrak response produk yang perlu didokumentasikan
+### Kontrak response produk
 
-Tabel berikut merangkum output yang sudah ada di transform produk. Tipe di bawah mengacu pada JSON yang dikirimkan, bukan tipe database.
+Kontrak field dan contoh response list/detail/error tersedia di [docs/RESELLER-API.md](./RESELLER-API.md) dan dokumentasi API pada halaman pengaturan reseller. Tipe mengacu pada JSON yang dikirimkan, bukan tipe database.
 
-| Field | Bentuk saat ini | Makna yang perlu dinyatakan |
+| Field | Bentuk JSON | Makna |
 |---|---|---|
-| `id` | integer | ID produk yang dipakai pada `product_id` saat membuat order |
-| `code`, `name` | string | Kode dan nama katalog |
-| `brand`, `category` | string atau null | Nama relasi; null bila relasi tidak tersedia |
-| `payment_type`, `region` | string atau null | Enum/value produk dan wilayah; dokumentasikan nilai yang mungkin |
-| `selling_price`, `reseller_price` | integer | Harga satuan Rupiah; harga yang didebit API reseller adalah `reseller_price` |
-| `discount` | integer | Selisih nominal `selling_price - reseller_price`; bukan persentase |
-| `stock` | integer atau null | Jumlah stok, atau null untuk stok unlimited |
-| `unlimited_stock` | boolean | Bila true, `stock` null dan stok tidak membatasi pembelian |
-| `requires_zone` | boolean | Menandakan field `zone` wajib untuk order produk terkait |
-| `target_label` | string | Petunjuk label tujuan untuk membantu integrasi form |
+| `id` | integer | ID produk untuk `product_id` pada order |
+| `code`, `name` | string | Kode dan nama produk |
+| `brand`, `category` | string atau null | Nama relasi, dapat null |
+| `payment_type` | string | `prabayar` atau `pascabayar`; tidak null |
+| `region` | string atau null | Wilayah atau null untuk produk umum |
+| Harga dan `discount` | integer | Nominal Rupiah; discount adalah selisih harga |
+| `stock` | integer atau null | null saat unlimited |
+| `unlimited_stock`, `requires_zone` | boolean | Stok tanpa batas dan kebutuhan zone |
+| `target_label` | string | Label tujuan |
 
-**Catatan:** tabel ini perlu dibandingkan dengan output aktual melalui test/response contoh sebelum dipublikasikan. Perubahan kontrak API harus tetap kompatibel dengan client yang sudah ada.
+Feature tests memeriksa struktur list/detail, harga, nullability, stok unlimited, kebutuhan zone, pagination, dan validasi batas `per_page`. Perubahan kontrak API tetap perlu dijaga kompatibel dengan client yang sudah ada.
 
 ---
 
@@ -323,7 +320,7 @@ Masih terbuka: sinkronisasi expiry QRIS dengan provider, pemetaan event notifika
 | P1 | Wajib/helper text untuk target dan zone | Salah input tujuan dapat menyebabkan transaksi gagal atau salah sasaran | ✅ Field wajib, helper text, dan petunjuk kategori sudah ditambahkan |
 | P1 | Penjelasan rule aktivasi dan API key | User tidak memahami kredensial dan dampak regenerate/deaktivasi | ✅ Ringkasan aturan aktivasi sudah ditampilkan sebelum tombol aktivasi |
 | P1 | Status saldo dan CTA Isi Saldo | User tidak tahu apakah saldo cukup atau cara mengatasinya | ✅ Status cukup/kurang dan tautan Isi Saldo ditampilkan saat Saldo dipilih |
-| P2 | Dokumen kontrak response produk | Integrator harus menebak tipe/nullability/arti nilai | Field table, contoh list/detail/error, pagination dan filter sesuai output |
+| P2 | Dokumen kontrak response produk | Integrator harus menebak tipe/nullability/arti nilai | ✅ Field table, contoh list/detail/error, pagination, dan filter dicocokkan dengan output serta feature tests |
 | P2 | Pemetaan feedback transaksi ke notifikasi | User tidak tahu langkah berikutnya saat pending/gagal/expired | Event matrix menentukan inline/toast/notification center dan CTA |
 | P3 | Onboarding reseller kontekstual | User baru perlu mencari sendiri urutan mulai | Checklist langkah dan tautan relevan tanpa mengulang untuk user lama |
 | P3 | Aksesibilitas feedback | User screen reader/keyboard dapat kehilangan status atau error | Focus, label, live announcement, dan status tidak hanya dibedakan dengan warna |
@@ -351,9 +348,9 @@ Masih terbuka: sinkronisasi expiry QRIS dengan provider, pemetaan event notifika
 
 ### Produk dan API reseller
 
-- [ ] Response daftar produk hanya berisi produk aktif dan pagination terdokumentasi.
-- [ ] Response detail produk aktif sesuai kontrak yang didokumentasikan.
-- [ ] Harga, stok unlimited, zone, nullability, dan status error diuji.
+- [x] Response daftar produk hanya berisi produk aktif dan pagination terdokumentasi.
+- [x] Response detail produk aktif sesuai kontrak yang didokumentasikan.
+- [x] Harga, stok unlimited, zone, nullability, dan status error diuji.
 - [x] Rule aktivasi, diskon, penggunaan saldo, regenerate, dan deaktivasi dijelaskan sebelum aktivasi.
 - [ ] Key plaintext hanya ditampilkan saat dibuat dan tidak masuk notifikasi/log/UI yang tidak aman.
 

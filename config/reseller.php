@@ -25,4 +25,14 @@ return [
     */
     'key_random_length' => 40,
 
+    /*
+    |--------------------------------------------------------------------------
+    | Versi ketentuan reseller
+    |--------------------------------------------------------------------------
+    |
+    | Naikkan versi ini setiap kali ketentuan pendaftaran reseller berubah.
+    |
+    */
+    'terms_version' => '1.0',
+
 ];

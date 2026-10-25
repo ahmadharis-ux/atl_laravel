@@ -130,7 +130,109 @@ class ResellerApiTest extends TestCase
             ->assertJsonPath('data.0.selling_price', 11_000)
             ->assertJsonPath('data.0.reseller_price', 10_450)
             ->assertJsonPath('data.0.discount', 550)
+            ->assertJsonPath('meta.current_page', 1)
+            ->assertJsonPath('meta.per_page', 50)
+            ->assertJsonPath('meta.last_page', 1)
             ->assertJsonPath('meta.total', 1);
+    }
+
+    public function test_product_list_and_detail_match_the_documented_contract(): void
+    {
+        config(['reseller.discount_percent' => 5]);
+        [, $plain] = $this->reseller();
+        $product = $this->product([
+            'brand_id' => null,
+            'category_id' => null,
+            'region' => null,
+            'unlimited_stock' => true,
+        ]);
+
+        $listResponse = $this->withHeaders(['X-API-Key' => $plain])
+            ->getJson('/api/v1/reseller/products?per_page=10')
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [[
+                    'id',
+                    'code',
+                    'name',
+                    'brand',
+                    'category',
+                    'payment_type',
+                    'region',
+                    'selling_price',
+                    'reseller_price',
+                    'discount',
+                    'stock',
+                    'unlimited_stock',
+                    'requires_zone',
+                    'target_label',
+                ]],
+                'meta' => ['current_page', 'per_page', 'last_page', 'total'],
+            ])
+            ->assertJsonPath('meta.current_page', 1)
+            ->assertJsonPath('meta.per_page', 10)
+            ->assertJsonPath('meta.last_page', 1)
+            ->assertJsonPath('meta.total', 1);
+
+        $listedProduct = $listResponse->json('data.0');
+        $this->assertSame($product->getKey(), $listedProduct['id']);
+        $this->assertSame(null, $listedProduct['brand']);
+        $this->assertSame(null, $listedProduct['category']);
+        $this->assertSame('prabayar', $listedProduct['payment_type']);
+        $this->assertSame(null, $listedProduct['region']);
+        $this->assertSame(11_000, $listedProduct['selling_price']);
+        $this->assertSame(10_450, $listedProduct['reseller_price']);
+        $this->assertSame(550, $listedProduct['discount']);
+        $this->assertSame(null, $listedProduct['stock']);
+        $this->assertSame(true, $listedProduct['unlimited_stock']);
+        $this->assertSame(false, $listedProduct['requires_zone']);
+        $this->assertSame('Nomor Tujuan', $listedProduct['target_label']);
+
+        $this->withHeaders(['X-API-Key' => $plain])
+            ->getJson('/api/v1/reseller/products/'.$product->getKey())
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    'id',
+                    'code',
+                    'name',
+                    'brand',
+                    'category',
+                    'payment_type',
+                    'region',
+                    'selling_price',
+                    'reseller_price',
+                    'discount',
+                    'stock',
+                    'unlimited_stock',
+                    'requires_zone',
+                    'target_label',
+                ],
+            ])
+            ->assertJsonPath('data.id', $product->getKey())
+            ->assertJsonPath('data.stock', null)
+            ->assertJsonPath('data.unlimited_stock', true);
+
+        $mobileLegendsProduct = $this->product([
+            'brand_id' => Brand::factory()->create(['slug' => 'mobile-legends'])->getKey(),
+        ]);
+
+        $this->withHeaders(['X-API-Key' => $plain])
+            ->getJson('/api/v1/reseller/products/'.$mobileLegendsProduct->getKey())
+            ->assertOk()
+            ->assertJsonPath('data.requires_zone', true)
+            ->assertJsonPath('data.target_label', 'ID Game');
+    }
+
+    public function test_products_index_rejects_per_page_above_one_hundred(): void
+    {
+        [, $plain] = $this->reseller();
+
+        $this->withHeaders(['X-API-Key' => $plain])
+            ->getJson('/api/v1/reseller/products?per_page=101')
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'The per page field must not be greater than 100.')
+            ->assertJsonPath('errors.per_page.0', 'The per page field must not be greater than 100.');
     }
 
     public function test_products_can_be_filtered_by_search_term(): void

@@ -18,14 +18,15 @@
         [
             'label' => 'Laporan',
             'icon' => 'bar_chart',
-            'active' => request()->routeIs('admin.reports.*') || request()->routeIs('admin.resellers.*'),
-            'show' => ($auth?->can('reports.view') || $auth?->can('resellers.view')) ?? false,
+            'active' => request()->routeIs('admin.reports.*') || request()->routeIs('admin.resellers.*') || request()->routeIs('admin.reseller-payouts.*'),
+            'show' => ($auth?->can('reports.view') || $auth?->can('resellers.view') || $auth?->can('resellers.update') || $auth?->can('resellers.payouts.view')) ?? false,
             'children' => [
                 ['label' => 'Ringkasan',  'url' => route('admin.reports.overview'),  'active' => request()->routeIs('admin.reports.overview'),  'show' => $auth?->can('reports.view') ?? false],
                 ['label' => 'Produk',     'url' => route('admin.reports.products'),  'active' => request()->routeIs('admin.reports.products'),  'show' => $auth?->can('reports.view') ?? false],
                 ['label' => 'Provider',   'url' => route('admin.reports.providers'), 'active' => request()->routeIs('admin.reports.providers'), 'show' => $auth?->can('reports.view') ?? false],
                 ['label' => 'Pelanggan',  'url' => route('admin.reports.customers'), 'active' => request()->routeIs('admin.reports.customers'), 'show' => $auth?->can('reports.view') ?? false],
-                ['label' => 'Reseller',   'url' => route('admin.resellers.index'),   'active' => request()->routeIs('admin.resellers.*'),      'show' => $auth?->can('resellers.view') ?? false],
+                ['label' => 'Reseller',   'url' => route('admin.resellers.index'),   'active' => request()->routeIs('admin.resellers.*'),      'show' => ($auth?->can('resellers.view') || $auth?->can('resellers.update')) ?? false],
+                ['label' => 'Pencairan Reseller', 'url' => route('admin.reseller-payouts.index'), 'active' => request()->routeIs('admin.reseller-payouts.*'), 'show' => $auth?->can('resellers.payouts.view') ?? false],
             ],
         ],
        

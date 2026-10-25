@@ -32,6 +32,8 @@ final class OrderPaymentSettler
                 'paid_at' => now(),
             ]);
 
+            ResellerCommissionLedger::creditForSuccessfulOrder($locked);
+
             TransactionLogger::info('order.paid', 'Pembayaran dikonfirmasi.', [
                 'payment_method' => $locked->payment_method->value,
                 'amount' => $locked->amount,
@@ -44,14 +46,22 @@ final class OrderPaymentSettler
             return false;
         }
 
-        $order->refresh();
+        $orderId = $order->getKey();
 
-        if ($order->status === OrderStatus::Success) {
-            $order->user?->addPoint();
-            OrderNotifier::success($order);
-        }
+        DB::afterCommit(function () use ($orderId): void {
+            $settledOrder = Order::query()->find($orderId);
 
-        OrderFulfillment::start($order);
+            if ($settledOrder === null) {
+                return;
+            }
+
+            if ($settledOrder->status === OrderStatus::Success) {
+                $settledOrder->user?->addPoint();
+                OrderNotifier::success($settledOrder);
+            }
+
+            OrderFulfillment::start($settledOrder);
+        });
 
         return true;
     }

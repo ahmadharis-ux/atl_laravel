@@ -2,6 +2,9 @@
     $product = $order->product;
     $targetLabel = \App\Support\OrderTarget::label($product?->category?->slug);
     $method = $order->payment_method;
+    $methodLabel = $method?->label();
+    $isStorefrontCash = ($order->metadata['storefront']['payment_method'] ?? null) === 'cash';
+    $storefrontSellingPrice = (int) ($order->metadata['storefront']['selling_price'] ?? 0);
     $channelLabel = $method?->channelLabel($order->payment_channel);
     $rupiah = fn (int|float $n): string => 'Rp '.number_format((float) $n, 0, ',', '.');
     $meta = collect([$product?->code, $product?->brand?->name, $product?->category?->name])->filter()->implode(' · ');
@@ -81,7 +84,10 @@
                     </td>
                     <td width="50%" class="right">
                         <div class="label">Pembayaran</div>
-                        <div class="value">{{ $method?->label() }}@if ($channelLabel) &middot; {{ $channelLabel }}@endif</div>
+                        <div class="value">{{ $methodLabel }}@if ($channelLabel) &middot; {{ $channelLabel }}@endif</div>
+                        @if ($isStorefrontCash)
+                            <div class="sub">Pelanggan membayar tunai kepada reseller: {{ $rupiah($storefrontSellingPrice) }}</div>
+                        @endif
                         <div class="sub">{{ $order->paid_at ? 'Dibayar '.$order->paid_at->locale('id')->translatedFormat('d F Y, H:i') : 'Belum dibayar' }}</div>
                     </td>
                 </tr>
@@ -92,7 +98,7 @@
                     <tr>
                         <th width="48%">Produk</th>
                         <th width="34%">Tujuan</th>
-                        <th width="18%" class="right">Harga</th>
+                        <th width="18%" class="right">{{ $isStorefrontCash ? 'Tagihan reseller' : 'Harga' }}</th>
                     </tr>
                 </thead>
                 <tbody>

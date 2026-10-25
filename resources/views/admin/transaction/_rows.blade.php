@@ -44,6 +44,9 @@
             @if ($order->payment_channel)
                 <div class="tx-mute fs-11 text-uppercase">{{ $order->payment_channel }}</div>
             @endif
+            @if (($order->metadata['storefront']['payment_method'] ?? null) === 'cash')
+                <div class="tx-mute fs-11">Tunai pelanggan</div>
+            @endif
         </td>
         <td class="text-end fw-semibold">Rp {{ number_format($order->amount, 0, ',', '.') }}</td>
         <td><span class="pill {{ $order->status->tone() }}">{{ $order->status->label() }}</span></td>

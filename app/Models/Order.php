@@ -10,12 +10,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
     'user_id', 'product_id', 'order_number', 'target', 'target_zone', 'amount', 'fee', 'status',
     'payment_method', 'payment_channel', 'payment_code', 'master_bank_id', 'paid_at', 'expires_at', 'metadata', 'notes',
     'provider', 'provider_ref', 'provider_sn', 'provider_status', 'provider_price',
-    'provider_admin', 'provider_payload', 'processed_at', 'refunded_at', 'source',
+    'provider_admin', 'provider_payload', 'processed_at', 'refunded_at', 'source', 'storefront_key',
+    'refund_status', 'refund_requested_at', 'refund_transaction_id',
 ])]
 class Order extends Model
 {
@@ -40,6 +42,11 @@ class Order extends Model
     public function logs(): HasMany
     {
         return $this->hasMany(TransactionLog::class)->latest('id');
+    }
+
+    public function resellerCommission(): HasOne
+    {
+        return $this->hasOne(ResellerCommission::class);
     }
 
     public function isPending(): bool
@@ -102,6 +109,7 @@ class Order extends Model
             'provider_payload' => 'array',
             'processed_at' => 'datetime',
             'refunded_at' => 'datetime',
+            'refund_requested_at' => 'datetime',
         ];
     }
 }

@@ -19,10 +19,12 @@ X-API-Key: ap_XXXXXXXX...
 Authorization: Bearer ap_XXXXXXXX...
 ```
 
-- API key dibuat di **Pengaturan → Reseller** (aktifkan keanggotaan reseller).
+- Ajukan keanggotaan di **Pengaturan → Reseller** dan setujui ketentuannya. API key baru dapat dibuat setelah admin menyetujui permohonan.
 - Key ditampilkan **satu kali** saat dibuat/disimpan ulang; yang tersimpan di server hanya hash SHA-256.
 - "Buat ulang API key" langsung mencabut key lama.
-- Bila keanggotaan reseller dinonaktifkan, semua API key dicabut (401).
+- Bila reseller dinonaktifkan atau ditangguhkan, semua API key dicabut (401) dan pesanan baru dari toko hosted dihentikan.
+- IP server dapat dibatasi melalui allowlist opsional pada pengajuan. Request dari IP yang tidak diizinkan mendapat balasan `403`.
+- Aktivitas dicatat sebagai waktu pemakaian API terakhir (pembaruan paling banyak sekali per menit), bukan indikator reseller sedang online.
 
 ### Rate limit
 
@@ -32,7 +34,7 @@ Authorization: Bearer ap_XXXXXXXX...
 
 - `selling_price` — harga jual publik.
 - `reseller_price` — yang dibayar reseller: diskon `config/reseller.discount_percent` (env `RESELLER_DISCOUNT_PERCENT`, default **5%**) dari `selling_price`, **dibatasi tidak di bawah `cost_price`**.
-- `discount` — selisih `selling_price - reseller_price` (potensi untung reseller bila dijual dengan harga publik).
+- `discount` — selisih nominal `selling_price - reseller_price`; margin kotor indikatif bila dijual dengan harga publik, bukan jaminan laba bersih.
 
 ## Alur pembayaran (saldo)
 
@@ -63,7 +65,17 @@ Semua endpoint membalas JSON. Pesanan selalu dibayar dari **saldo akun** (`payme
 
 ### GET `/products`
 
-Query opsional: `q` (nama/kode), `brand_id`, `category_id`, `payment_type` (`prabayar`|`pascabayar`), `per_page` (default 50, maks 100).
+Query opsional:
+
+| Parameter | Tipe | Aturan | Fungsi |
+|---|---|---|---|
+| `q` | string | Maksimal 100 karakter | Cari berdasarkan nama atau kode produk |
+| `brand_id` | integer | — | Filter berdasarkan ID brand |
+| `category_id` | integer | — | Filter berdasarkan ID kategori |
+| `payment_type` | string | `prabayar` atau `pascabayar` | Filter jenis pembayaran produk |
+| `per_page` | integer | 1–100; default 50 | Jumlah item per halaman |
+
+Daftar hanya berisi produk aktif dan diurutkan berdasarkan nama. Response memakai `data` untuk item dan `meta` untuk paginasi; `total` adalah jumlah hasil yang cocok dengan filter.
 
 ```bash
 curl -G "https://<domain>/api/v1/reseller/products" \
@@ -80,20 +92,86 @@ curl -G "https://<domain>/api/v1/reseller/products" \
       "brand": "XL",
       "category": "Pulsa",
       "payment_type": "prabayar",
+      "region": null,
       "selling_price": 6500,
       "reseller_price": 6175,
       "discount": 325,
       "stock": 100,
       "unlimited_stock": false,
       "requires_zone": false,
-      "target_label": "Nomor Tujuan"
+      "target_label": "Nomor HP"
     }
   ],
   "meta": { "current_page": 1, "per_page": 20, "last_page": 3, "total": 54 }
 }
 ```
 
-`stock: null` berarti stok tidak terbatas. `requires_zone: true` → field `zone` wajib saat membuat pesanan (mis. Mobile Legends).
+#### Kontrak field produk
+
+List dan detail memakai bentuk objek produk yang sama.
+
+| Field | Tipe JSON | Null? | Arti |
+|---|---|---:|---|
+| `id` | integer | Tidak | ID produk untuk `product_id` saat membuat pesanan |
+| `code` | string | Tidak | Kode produk |
+| `name` | string | Tidak | Nama produk |
+| `brand` | string atau null | Ya | Nama brand; null jika relasi brand tidak tersedia |
+| `category` | string atau null | Ya | Nama kategori; null jika relasi kategori tidak tersedia |
+| `payment_type` | string | Tidak | `prabayar` atau `pascabayar` |
+| `region` | string atau null | Ya | Wilayah produk; null berarti umum/tidak ditentukan |
+| `selling_price` | integer | Tidak | Harga jual publik dalam Rupiah |
+| `reseller_price` | integer | Tidak | Harga yang dibayar reseller dalam Rupiah |
+| `discount` | integer | Tidak | Selisih nominal `selling_price - reseller_price` dalam Rupiah, bukan persentase |
+| `stock` | integer atau null | Ya | Stok tersedia; null bila stok tidak terbatas |
+| `unlimited_stock` | boolean | Tidak | Menyatakan stok tidak dibatasi |
+| `requires_zone` | boolean | Tidak | Bila true, `zone` wajib dikirim saat membuat pesanan |
+| `target_label` | string | Tidak | Label tujuan untuk membantu integrasi form |
+
+Harga dalam respons berupa bilangan bulat Rupiah. `reseller_price` adalah jumlah yang didebit untuk pesanan API; `discount` adalah selisih nominal terhadap harga jual publik, bukan jaminan laba karena harga jual reseller dapat berbeda.
+
+### GET `/products/{id}`
+
+Mengambil detail produk aktif. Body response berisi objek `data` dengan kontrak field yang sama dengan setiap item pada endpoint list, tanpa `meta`.
+
+```bash
+curl "https://<domain>/api/v1/reseller/products/12" \
+  -H "X-API-Key: ap_XXXX" \
+  -H "Accept: application/json"
+```
+
+```json
+{
+  "data": {
+    "id": 12,
+    "code": "ML172",
+    "name": "Mobile Legends 172 Diamonds",
+    "brand": "Mobile Legends",
+    "category": "Games",
+    "payment_type": "prabayar",
+    "region": null,
+    "selling_price": 6500,
+    "reseller_price": 6175,
+    "discount": 325,
+    "stock": null,
+    "unlimited_stock": true,
+    "requires_zone": true,
+    "target_label": "ID Game"
+  }
+}
+```
+
+Produk yang tidak ditemukan atau tidak aktif menghasilkan `404`. `requires_zone: true` berarti kirim field `zone` ketika membuat pesanan.
+
+Parameter query yang tidak valid (mis. `per_page=101`) menghasilkan `422` dengan format validasi:
+
+```json
+{
+  "message": "The per page field must not be greater than 100.",
+  "errors": {
+    "per_page": ["The per page field must not be greater than 100."]
+  }
+}
+```
 
 ### POST `/orders`
 

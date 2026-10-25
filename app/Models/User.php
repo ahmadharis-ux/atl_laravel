@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -48,6 +49,26 @@ class User extends Authenticatable implements MustVerifyEmail
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
+    }
+
+    public function resellerCommissions(): HasMany
+    {
+        return $this->hasMany(ResellerCommission::class);
+    }
+
+    public function resellerPayouts(): HasMany
+    {
+        return $this->hasMany(ResellerPayout::class);
+    }
+
+    public function resellerStatusHistories(): HasMany
+    {
+        return $this->hasMany(ResellerStatusHistory::class);
+    }
+
+    public function resellerReviewer(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'reseller_reviewed_by');
     }
 
     public function deposits(): HasMany
@@ -174,6 +195,10 @@ class User extends Authenticatable implements MustVerifyEmail
             'balance' => 'integer',
             'is_reseller' => 'boolean',
             'reseller_since' => 'datetime',
+            'reseller_allowed_ips' => 'array',
+            'reseller_terms_accepted_at' => 'datetime',
+            'reseller_last_api_at' => 'datetime',
+            'reseller_reviewed_at' => 'datetime',
             'two_factor_secret' => 'encrypted',
             'two_factor_recovery_codes' => 'encrypted:array',
             'two_factor_confirmed_at' => 'datetime',

@@ -38,6 +38,23 @@ class AuthenticateReseller
             ], 401);
         }
 
+        $allowedIps = $user->reseller_allowed_ips ?? [];
+
+        if ($allowedIps !== [] && ! in_array($request->ip(), $allowedIps, true)) {
+            return response()->json([
+                'message' => 'Alamat IP server ini tidak diizinkan untuk API reseller.',
+            ], 403);
+        }
+
+        $lastActivityThreshold = now()->subMinute();
+        User::query()
+            ->whereKey($user->getKey())
+            ->where(function ($query) use ($lastActivityThreshold): void {
+                $query->whereNull('reseller_last_api_at')
+                    ->orWhere('reseller_last_api_at', '<=', $lastActivityThreshold);
+            })
+            ->update(['reseller_last_api_at' => now()]);
+
         $request->setUserResolver(fn () => $user);
 
         return $next($request);

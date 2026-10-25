@@ -44,7 +44,7 @@ class ResellerTest extends TestCase
             ->assertSee('Aktifkan Menjadi Reseller')
             ->assertSee('Aturan penting sebelum aktivasi')
             ->assertSee('Pesanan melalui API dibayar dari saldo akun menggunakan harga reseller.')
-            ->assertSee('Menonaktifkan reseller mencabut API key dan menghentikan akses API reseller.')
+            ->assertSee('Menonaktifkan reseller mencabut API key serta menutup akses API dan toko untuk pesanan baru.')
             ->assertSee('Akses API & API Key', false)
             ->assertSee(route('settings.reseller.docs'));
     }
@@ -162,6 +162,10 @@ class ResellerTest extends TestCase
             ->assertSee('Dokumentasi API Reseller')
             ->assertSee(url('/api/v1/reseller/products'), false)
             ->assertSee('X-API-Key')
-            ->assertSee('reseller_price');
+            ->assertSee('reseller_price')
+            ->assertSee('Kontrak field produk')
+            ->assertSee('"region": null', false)
+            ->assertSee('"requires_zone": true', false)
+            ->assertSee('The per page field must not be greater than 100.');
     }
 }

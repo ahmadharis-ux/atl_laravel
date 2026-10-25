@@ -10,6 +10,7 @@ use App\Http\Controllers\FirebaseServiceWorkerController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\StorefrontController;
 use App\Http\Controllers\User\BankAccountController as UserBankAccountController;
 use App\Http\Controllers\User\CheckoutController as UserCheckoutController;
 use App\Http\Controllers\User\ContactController as UserContactController;
@@ -24,6 +25,7 @@ use App\Http\Controllers\User\PhoneOperatorController as UserPhoneOperatorContro
 use App\Http\Controllers\User\ProductController as UserProductController;
 use App\Http\Controllers\User\PulsaController as UserPulsaController;
 use App\Http\Controllers\User\ResellerController as UserResellerController;
+use App\Http\Controllers\User\ResellerStorefrontController;
 use App\Http\Controllers\User\SaldoController as UserSaldoController;
 use App\Http\Controllers\User\SearchHistoryController as UserSearchHistoryController;
 use App\Http\Controllers\User\SettingsController as UserSettingsController;
@@ -40,6 +42,17 @@ Route::get('/firebase-messaging-sw.js', FirebaseServiceWorkerController::class)-
 Route::get('/', LandingController::class)->name('landing');
 
 Route::get('/', LandingController::class)->name('landing');
+
+Route::get('/toko/{reseller}', [StorefrontController::class, 'index'])
+    ->whereNumber('reseller')->name('storefront.index');
+Route::get('/toko/{reseller}/produk/{product}', [StorefrontController::class, 'product'])
+    ->whereNumber(['reseller', 'product'])->name('storefront.product');
+Route::post('/toko/{reseller}/produk/{product}', [StorefrontController::class, 'checkout'])
+    ->whereNumber(['reseller', 'product'])->middleware('throttle:10,1')->name('storefront.checkout');
+Route::get('/toko/pesanan/{order}/{token}', [StorefrontController::class, 'orderStatus'])
+    ->where('token', '[A-Za-z0-9]{48}')->name('storefront.orders.show');
+Route::post('/toko/pesanan/{order}/{token}/cek-status', [StorefrontController::class, 'syncOrderStatus'])
+    ->where('token', '[A-Za-z0-9]{48}')->middleware('throttle:10,1')->name('storefront.orders.sync');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -142,9 +155,15 @@ Route::middleware(['auth', 'non-admin', 'verified'])->group(function () {
 
     Route::get('/pengaturan/reseller', [UserResellerController::class, 'show'])->name('settings.reseller');
     Route::get('/pengaturan/reseller/dokumentasi', [UserResellerController::class, 'docs'])->name('settings.reseller.docs');
-    Route::post('/pengaturan/reseller/aktifkan', [UserResellerController::class, 'activate'])->name('settings.reseller.activate');
+    Route::post('/pengaturan/reseller/aktifkan', [UserResellerController::class, 'activate'])
+        ->middleware('throttle:5,1')->name('settings.reseller.activate');
     Route::post('/pengaturan/reseller/buat-ulang', [UserResellerController::class, 'regenerate'])->name('settings.reseller.regenerate');
     Route::post('/pengaturan/reseller/nonaktifkan', [UserResellerController::class, 'deactivate'])->name('settings.reseller.deactivate');
+    Route::get('/pengaturan/reseller/toko', [ResellerStorefrontController::class, 'index'])->name('settings.reseller.store');
+    Route::post('/pengaturan/reseller/toko/pesanan/{order}/konfirmasi-tunai', [ResellerStorefrontController::class, 'confirmCash'])
+        ->name('settings.reseller.store.cash.confirm');
+    Route::post('/pengaturan/reseller/toko/pencairan', [ResellerStorefrontController::class, 'requestPayout'])
+        ->name('settings.reseller.store.payouts.store');
 
     Route::get('/pengaturan/profil', [UserSettingsController::class, 'profile'])->name('settings.profile');
     Route::put('/pengaturan/profil', [UserSettingsController::class, 'updateProfile'])->name('settings.profile.update');
