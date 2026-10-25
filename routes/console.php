@@ -11,3 +11,4 @@ Artisan::command('inspire', function () {
 Schedule::command('digiflazz:reconcile-orders')->everyFiveMinutes()->withoutOverlapping();
 Schedule::command('orders:expire-pending')->everyTenMinutes()->withoutOverlapping();
 Schedule::command('deposits:expire-pending')->everyTenMinutes()->withoutOverlapping();
+Schedule::command('deposits:purge-expired-proofs')->dailyAt('02:30')->withoutOverlapping();

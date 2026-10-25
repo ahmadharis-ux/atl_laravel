@@ -4,8 +4,10 @@
 
 @section('content')
 @php
-    $total = $product->selling_price + $adminFee;
-    $sisaSaldo = $balance - $total;
+    $qrisSelected = $selectedMethod === \App\Enums\PaymentMethod::Qris->value;
+    $total = $product->selling_price + ($qrisSelected ? $qrisFee : 0);
+    $sisaSaldo = $balance - $product->selling_price;
+    $saldoCukup = $sisaSaldo >= 0;
 @endphp
 
 <div class="d-flex flex-column gap-3">
@@ -41,17 +43,23 @@
                         @else
                             <x-ui.input
                                 name="target"
-                                :label="$targetLabel"
+                                :label="$targetLabel.' *'"
                                 :placeholder="$targetPlaceholder"
                                 :value="old('target', $target)"
+                                hint="Wajib diisi. Pastikan data tujuan sudah benar sebelum melanjutkan."
+                                required
+                                aria-required="true"
                                 autocomplete="off"
                                 autofocus
                             />
                             @if ($requiresZone)
                                 <x-ui.input
                                     name="zone"
-                                    label="Zone ID"
+                                    label="Zone ID *"
                                     placeholder="Masukkan Zone ID"
+                                    hint="Wajib diisi untuk produk ini."
+                                    required
+                                    aria-required="true"
                                     inputmode="numeric"
                                     :value="old('zone', $zone)"
                                     autocomplete="off"
@@ -75,7 +83,7 @@
                             <x-ui.radio-card
                                 name="payment_method"
                                 :value="$method->value"
-                                :label="$method->label().' — '.$method->description()"
+                                :label="$method->label().' — '.($val === 'saldo' ? 'Dipotong dari saldo saat pesanan dibuat.' : 'Scan QRIS dan selesaikan pembayaran dalam 3 jam.')"
                                 :checked="$selectedMethod === $method->value"
                             />
                         @endforeach
@@ -117,13 +125,18 @@
                             <span class="text-white">Harga produk</span>
                             <span class="num fw-semibold">Rp {{ number_format($product->selling_price, 0, ',', '.') }}</span>
                         </li>
-                        <li class="d-flex align-items-center justify-content-between" data-fee-row data-method="qris">
+                        <li @class(['d-flex align-items-center justify-content-between' => true, 'd-none' => ! $qrisSelected]) data-fee-row data-method="qris">
                             <span class="text-white">Biaya admin QRIS (0,7%)</span>
-                            <span class="num fw-semibold">{{ $adminFee > 0 ? 'Rp '.number_format($adminFee, 0, ',', '.') : 'Rp '.number_format($product->selling_price > 0 ? app(\App\Services\MidtransService::class)->qrisFee($product->selling_price) : 0, 0, ',', '.') }}</span>
+                            <span class="num fw-semibold">Rp {{ number_format($qrisFee, 0, ',', '.') }}</span>
                         </li>
                         <li class="d-flex align-items-center justify-content-between pt-2 border-top">
                             <span class="fw-bold">Total</span>
-                            <span class="num fw-bold tx-tealc">Rp {{ number_format($total, 0, ',', '.') }}</span>
+                            <span
+                                class="num fw-bold tx-tealc"
+                                data-checkout-total
+                                data-base-amount="{{ $product->selling_price }}"
+                                data-qris-fee="{{ $qrisFee }}"
+                            >Rp {{ number_format($total, 0, ',', '.') }}</span>
                         </li>
                     </ul>
 
@@ -132,14 +145,35 @@
                             <span>Saldo kamu</span>
                             <span class="num">Rp {{ number_format($balance, 0, ',', '.') }}</span>
                         </div>
-                        <div class="d-flex align-items-center justify-content-between fs-12 {{ $sisaSaldo < 0 ? 'tx-err' : 'tx-skyd' }}">
+                        <div class="d-flex align-items-center justify-content-between fs-12 {{ $saldoCukup ? 'tx-skyd' : 'tx-err' }}">
                             <span>Sisa setelah transaksi</span>
                             <span class="num" data-sisa-saldo>Rp {{ number_format($sisaSaldo, 0, ',', '.') }}</span>
                         </div>
+                        <div
+                            class="fs-12 {{ $saldoCukup ? 'tx-mintt' : 'tx-err' }}"
+                            role="status"
+                            aria-live="polite"
+                            data-checkout-saldo-status
+                            data-sufficient="{{ $saldoCukup ? '1' : '0' }}"
+                        >
+                            <span data-saldo-sufficient-message @class(['d-none' => ! $saldoCukup])>
+                                Saldo cukup untuk membayar pesanan ini.
+                            </span>
+                            <span data-saldo-insufficient-message @class(['d-none' => $saldoCukup])>
+                                Saldo kurang untuk membayar pesanan ini.
+                            </span>
+                        </div>
+                        <a
+                            href="{{ route('deposits.create') }}"
+                            class="btn-ap btn-mint justify-content-center{{ $saldoCukup ? ' d-none' : '' }}"
+                            data-checkout-topup
+                        >
+                            <span class="ms">add</span>Isi Saldo
+                        </a>
                     </div>
                 </div>
 
-                <span class="fs-12 tx-mute">Saldo hanya terpotong bila kamu memilih metode Saldo.</span>
+                <span class="fs-12 tx-mute">Pembayaran Saldo langsung memotong saldo akun saat pesanan dibuat. Pembayaran QRIS menunggu pembayaran dan tidak memotong saldo akun.</span>
             </div>
         </div>
     </div>

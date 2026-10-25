@@ -28,16 +28,11 @@
                 @php($method = $deposit->payment_method)
                 @php($channelLabel = $deposit->masterBank?->bank_name ?? $method?->channelLabel($deposit->payment_channel))
                 @php($resumable = $deposit->status === \App\Enums\DepositStatus::Pending && ! $deposit->isExpired())
-                @php($isQris = $method === \App\Enums\PaymentMethod::Qris)
                 <li data-row-href="{{ route('deposits.show', $deposit) }}">
                     <span class="ibox ibox-44 {{ $deposit->status->tone() }}"><span class="ms" style="font-size:20px">{{ $deposit->status->icon() }}</span></span>
                     <div class="t">
                         <div class="fw-bold text-truncate">
-                            @if ($isQris)
-                                {{ $method?->label() }}
-                            @else
-                                TF
-                            @endif
+                            {{ $method?->label() ?? 'TF' }}
                             @if ($channelLabel) &middot; {{ $channelLabel }}@endif
                         </div>
                         <div class="fs-12 tx-mute text-truncate">{{ $deposit->reference }}</div>

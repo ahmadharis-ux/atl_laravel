@@ -848,6 +848,31 @@
     });
   }
 
+  function initDepositProofZoom() {
+    document.querySelectorAll('[data-proof-zoom]').forEach(function (viewer) {
+      var image = viewer.querySelector('[data-proof-image]');
+      if (!image) return;
+
+      var zoom = 1;
+      function updateZoom() {
+        image.classList.toggle('is-zoomed', zoom > 1);
+        image.style.width = zoom === 1 ? '' : (zoom * 100) + '%';
+        image.style.maxWidth = zoom < 1 ? (zoom * 100) + '%' : '';
+      }
+
+      viewer.addEventListener('click', function (event) {
+        var button = event.target.closest('[data-proof-zoom-in], [data-proof-zoom-out], [data-proof-zoom-reset]');
+        if (!button) return;
+
+        if (button.hasAttribute('data-proof-zoom-in')) zoom = Math.min(3, zoom + 0.25);
+        else if (button.hasAttribute('data-proof-zoom-out')) zoom = Math.max(0.5, zoom - 0.25);
+        else zoom = 1;
+
+        updateZoom();
+      });
+    });
+  }
+
   // ---------------- Search box (Shopee-style suggestions + history) ----------------
   function initSearchBoxes() {
     document.querySelectorAll('.ui-search').forEach(function (form) {
@@ -1427,6 +1452,19 @@
           if (field) field.disabled = !on;
         });
 
+        document.querySelectorAll('[data-fee-row]').forEach(function (row) {
+          var isVisible = (row.dataset.method || '') === value;
+          row.classList.toggle('d-none', !isVisible);
+        });
+
+        var checkoutTotal = document.querySelector('[data-checkout-total]');
+        if (checkoutTotal) {
+          var baseAmount = parseInt(checkoutTotal.dataset.baseAmount, 10) || 0;
+          var qrisFee = parseInt(checkoutTotal.dataset.qrisFee, 10) || 0;
+          var total = baseAmount + (value === 'qris' ? qrisFee : 0);
+          checkoutTotal.textContent = 'Rp ' + total.toLocaleString('id-ID');
+        }
+
         var saldoWrap = document.querySelector('[data-checkout-saldo]');
         if (saldoWrap) {
           if (value === 'saldo') {
@@ -1435,6 +1473,20 @@
           } else {
             saldoWrap.classList.add('d-none');
             saldoWrap.classList.remove('d-flex');
+          }
+
+          var saldoStatus = saldoWrap.querySelector('[data-checkout-saldo-status]');
+          if (saldoStatus) {
+            var sufficient = saldoStatus.dataset.sufficient === '1';
+            var sufficientMessage = saldoStatus.querySelector('[data-saldo-sufficient-message]');
+            var insufficientMessage = saldoStatus.querySelector('[data-saldo-insufficient-message]');
+            var topupAction = saldoWrap.querySelector('[data-checkout-topup]');
+
+            if (sufficientMessage) sufficientMessage.classList.toggle('d-none', !sufficient);
+            if (insufficientMessage) insufficientMessage.classList.toggle('d-none', sufficient);
+            saldoStatus.classList.toggle('tx-mintt', sufficient);
+            saldoStatus.classList.toggle('tx-err', !sufficient);
+            if (topupAction) topupAction.classList.toggle('d-none', sufficient || value !== 'saldo');
           }
         }
       }
@@ -1451,11 +1503,29 @@
   function initMinLoaderForms() {
     document.querySelectorAll('form[data-min-loader]').forEach(function (form) {
       form.addEventListener('submit', function (e) {
+        if (form.dataset.nativeSubmit === '1') {
+          form.dataset.nativeSubmit = '';
+          return;
+        }
         if (form.dataset.submitting === '1') return;
         e.preventDefault();
         form.dataset.submitting = '1';
 
         var isCheckout = form.hasAttribute('data-checkout-form') || (form.action && form.action.indexOf('/checkout/') !== -1);
+        var submitCheckoutNormally = function () {
+          if (!form.reportValidity()) {
+            form.dataset.submitting = '';
+            return;
+          }
+
+          var buttons = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+          buttons.forEach(function (button) { button.disabled = true; });
+
+          if (window.AP && AP.showLoader) AP.showLoader();
+
+          form.dataset.nativeSubmit = '1';
+          form.requestSubmit();
+        };
         if (isCheckout) {
           var targetInput = form.querySelector('input[name="target"]');
           var zoneInput = form.querySelector('input[name="zone"]');
@@ -1583,6 +1653,10 @@
                 }
               }
             }
+            if (isCheckout) {
+              submitCheckoutNormally();
+              return;
+            }
             var min = parseInt(form.dataset.minLoader, 10);
             if (isNaN(min) || min < 0) min = 2000;
             var started = Date.now();
@@ -1676,6 +1750,11 @@
               buttons2f.forEach(function (b) { b.disabled = false; });
             });
           });
+          return;
+        }
+
+        if (isCheckout) {
+          submitCheckoutNormally();
           return;
         }
 
@@ -2298,6 +2377,7 @@
     initTooltips();
     initActions();
     initModals();
+    initDepositProofZoom();
     initLoader();
     initPollers();
     initBreadcrumbs();

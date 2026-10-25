@@ -40,7 +40,7 @@ class DepositTest extends TestCase
             ->assertSee('PT Atlantic Pedia');
     }
 
-    public function test_va_and_ewallet_deposit_page_waits_for_admin_confirmation(): void
+    public function test_va_and_ewallet_deposit_page_asks_for_proof_before_admin_review(): void
     {
         $user = User::factory()->create();
         $bank = MasterBank::factory()->create([
@@ -60,8 +60,9 @@ class DepositTest extends TestCase
         $this->actingAs($user)
             ->get(route('deposits.show', $deposit))
             ->assertOk()
-            ->assertSee('Menunggu konfirmasi admin')
-            ->assertSee('Pembayaran akan dikonfirmasi admin')
+            ->assertSee('Menunggu pembayaran')
+            ->assertSee('Kirim bukti untuk diverifikasi')
+            ->assertSee('Saldo belum ditambahkan')
             ->assertDontSee('Simulasikan Pembayaran');
     }
 
@@ -222,6 +223,11 @@ class DepositTest extends TestCase
             'user_id' => $user->getKey(),
             'payment_method' => PaymentMethod::VirtualAccount,
         ]);
+        $ewallet = Deposit::factory()->create([
+            'user_id' => $user->getKey(),
+            'payment_method' => PaymentMethod::EWallet,
+            'payment_channel' => 'dana',
+        ]);
         $expired = Deposit::factory()->create([
             'user_id' => $user->getKey(),
             'status' => DepositStatus::Expired,
@@ -233,10 +239,14 @@ class DepositTest extends TestCase
             ->get(route('deposits.index'))
             ->assertOk()
             ->assertSee('Riwayat Top Up')
+            ->assertSee('QRIS')
+            ->assertSee('Transfer Bank')
+            ->assertSee('E-Wallet')
             ->assertSee($pending->reference)
             ->assertSee($paid->reference)
+            ->assertSee($ewallet->reference)
             ->assertSee($expired->reference)
-            ->assertSee('Lanjutkan bayar')
+            ->assertSee(route('deposits.show', $pending), false)
             ->assertDontSee($foreign->reference);
     }
 
@@ -542,8 +552,7 @@ class DepositTest extends TestCase
             ->get(route('deposits.show', $deposit))
             ->assertOk()
             ->assertSee('data-poll-url="'.route('deposits.show', $deposit).'"', false)
-            ->assertSee('data-poll-status="pending"', false)
-            ->assertSee('menyegarkan otomatis');
+            ->assertSee('data-poll-status="pending"', false);
     }
 
     public function test_paid_deposit_page_does_not_render_the_poll_hook(): void

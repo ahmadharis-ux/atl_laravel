@@ -18,7 +18,6 @@ use App\Support\OrderTarget;
 use App\Support\PaymentInstruction;
 use App\Support\Roles;
 use App\Support\TransactionLogger;
-use App\Support\Wallet as WalletSupport;
 use App\Support\WalletLedger;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -48,11 +47,7 @@ class CheckoutController extends Controller
             'target' => (string) $request->query('target', ''),
             'zone' => (string) $request->query('zone', ''),
             'balance' => (int) $request->user()->balance,
-            'adminFee' => match (old('payment_method', PaymentMethod::Saldo->value)) {
-                PaymentMethod::Qris->value => $midtrans->qrisFee($product->selling_price),
-                PaymentMethod::VirtualAccount->value, PaymentMethod::EWallet->value => 0,
-                default => 0,
-            },
+            'qrisFee' => $midtrans->qrisFee($product->selling_price),
             'paymentMethods' => PaymentMethod::cases(),
             'bankTargets' => $targets->where('type', MasterBank::TYPE_BANK)->values(),
             'ewalletTargets' => $targets->where('type', MasterBank::TYPE_EWALLET)->values(),

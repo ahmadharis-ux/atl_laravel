@@ -181,6 +181,10 @@
 .ap-modal-head h3{font-size:1rem;font-weight:800;margin:0}
 .ap-modal-body{padding:1.1rem;font-size:.875rem}
 .ap-modal-foot{display:flex;justify-content:flex-end;gap:.5rem;padding:.85rem 1.1rem;border-top:1px solid var(--line);background:#f8fcfb;border-radius:0 0 1rem 1rem}
+.deposit-proof-controls{display:flex;align-items:center;gap:.5rem;margin-bottom:.75rem}
+.deposit-proof-frame{max-height:70vh;overflow:auto;background:#f3f7f8;border-radius:.6rem;padding:.5rem}
+.deposit-proof-image{display:block;width:auto;max-width:100%;max-height:68vh;margin:0 auto}
+.deposit-proof-image.is-zoomed{max-width:none;max-height:none}
 body.ap-modal-open{overflow:hidden}
 @keyframes apFade{from{opacity:0}to{opacity:1}}
 @keyframes apPop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}

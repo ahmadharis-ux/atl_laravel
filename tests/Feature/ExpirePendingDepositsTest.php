@@ -22,6 +22,7 @@ class ExpirePendingDepositsTest extends TestCase
         $this->artisan('deposits:expire-pending')->assertSuccessful();
 
         $this->assertSame(DepositStatus::Expired, $deposit->fresh()->status);
+        $this->assertNotNull($deposit->fresh()->finalized_at);
     }
 
     public function test_a_recent_pending_deposit_is_left_alone(): void

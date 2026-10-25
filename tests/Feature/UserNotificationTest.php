@@ -62,6 +62,17 @@ class UserNotificationTest extends TestCase
         $this->assertNotNull($response->json('latest_id'));
     }
 
+    public function test_warning_notifications_use_a_warning_icon_by_default(): void
+    {
+        $user = User::factory()->create();
+        $user->notify(new TransactionResult('Bukti perlu diperbaiki', 'Mohon unggah ulang.', 'warning'));
+
+        $notification = $user->notifications()->sole();
+
+        $this->assertSame('warning', $notification->data['level']);
+        $this->assertSame('warning', $notification->data['icon']);
+    }
+
     public function test_opening_a_notification_marks_it_read_and_redirects(): void
     {
         $user = User::factory()->create();

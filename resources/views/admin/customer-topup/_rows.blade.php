@@ -1,15 +1,20 @@
 @forelse ($deposits as $deposit)
     @php
+        $canSettleDirectly = $deposit->isPending()
+            && $deposit->payment_method === \App\Enums\PaymentMethod::Qris
+            && auth()->user()->can('topups.update');
         $actions = [
             ['label' => 'Detail', 'icon' => 'visibility', 'href' => route('admin.topup.show', $deposit)],
         ];
         if ($deposit->isPending() && auth()->user()->can('topups.update')) {
-            $actions[] = [
-                'label' => 'Tandai Lunas',
-                'icon' => 'check_circle',
-                'tone' => 'tx-mintt',
-                'modal' => 'modalSettleTopup-'.$deposit->id,
-            ];
+            if ($canSettleDirectly) {
+                $actions[] = [
+                    'label' => 'Tandai Lunas',
+                    'icon' => 'check_circle',
+                    'tone' => 'tx-mintt',
+                    'modal' => 'modalSettleTopup-'.$deposit->id,
+                ];
+            }
             $actions[] = [
                 'label' => 'Batalkan',
                 'icon' => 'cancel',
@@ -38,14 +43,16 @@
         <td class="tx-mute fs-12 text-nowrap">{{ $deposit->paid_at?->locale('id')->translatedFormat('d M Y H:i') ?? '—' }}</td>
         <td class="text-end">
             <x-ui.actions :actions="$actions" />
-            @if ($deposit->isPending() && auth()->user()->can('topups.update'))
+            @if ($canSettleDirectly)
                 <form id="topup-settle-{{ $deposit->id }}" method="POST" action="{{ route('admin.topup.settle', $deposit) }}" class="d-none">@csrf</form>
+            @endif
+            @if ($deposit->isPending() && auth()->user()->can('topups.update'))
                 <form id="topup-expire-{{ $deposit->id }}" method="POST" action="{{ route('admin.topup.expire', $deposit) }}" class="d-none">@csrf</form>
             @endif
         </td>
     </tr>
 
-    @if ($deposit->isPending() && auth()->user()->can('topups.update'))
+    @if ($canSettleDirectly)
         <x-ui.modal id="modalSettleTopup-{{ $deposit->id }}" title="Konfirmasi Top Up" size="sm">
             <form id="topup-settle-form-{{ $deposit->id }}" method="POST" action="{{ route('admin.topup.settle', $deposit) }}">
                 @csrf

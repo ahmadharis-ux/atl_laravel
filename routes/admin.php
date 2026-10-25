@@ -31,8 +31,9 @@ use App\Http\Controllers\Admin\SearchController;
 use App\Http\Controllers\Admin\TicketController;
 use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\Admin\UserController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\User\DepositController;
+use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->middleware('permission:dashboard.view')->name('dashboard');
@@ -58,7 +59,10 @@ Route::middleware(['auth', 'admin'])->group(function () {
 
     Route::get('/customer-topup/topup', [TopupController::class, 'index'])->middleware('permission:topups.view')->name('topup.index');
     Route::get('/customer-topup/topup/{deposit}', [TopupController::class, 'show'])->middleware('permission:topups.view')->name('topup.show');
+    Route::get('/customer-topup/topup/{deposit}/bukti/{proof}/preview', [DepositController::class, 'previewProofForAdmin'])->middleware('permission:topups.view')->name('topup.proof.preview');
+    Route::get('/customer-topup/topup/{deposit}/bukti/{proof}', [DepositController::class, 'downloadProofForAdmin'])->middleware('permission:topups.view')->name('topup.proof.download');
     Route::post('/customer-topup/topup/{deposit}/settle', [TopupController::class, 'settle'])->middleware('permission:topups.update')->name('topup.settle');
+    Route::post('/customer-topup/topup/{deposit}/review', [TopupController::class, 'review'])->middleware('permission:topups.update')->name('topup.review');
     Route::post('/customer-topup/topup/{deposit}/expire', [TopupController::class, 'expire'])->middleware('permission:topups.update')->name('topup.expire');
     Route::get('/customer-topup/product', [ProductController::class, 'index'])->middleware('permission:products.view')->name('product.index');
 

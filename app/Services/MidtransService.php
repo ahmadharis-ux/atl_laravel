@@ -209,7 +209,10 @@ class MidtransService
             }
 
             if ($status === 'expire' && $deposit->status === DepositStatus::Pending) {
-                $deposit->update(['status' => DepositStatus::Expired]);
+                $deposit->update([
+                    'status' => DepositStatus::Expired,
+                    'finalized_at' => now(),
+                ]);
 
                 return $deposit->refresh();
             }

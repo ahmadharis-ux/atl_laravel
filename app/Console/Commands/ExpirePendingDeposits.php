@@ -32,7 +32,14 @@ class ExpirePendingDeposits extends Command
         }
 
         foreach ($deposits as $deposit) {
-            $updated = Deposit::query()->whereKey($deposit->getKey())->update(['status' => DepositStatus::Expired]);
+            $updated = Deposit::query()
+                ->whereKey($deposit->getKey())
+                ->where('status', DepositStatus::Pending)
+                ->where('expires_at', '<=', now())
+                ->update([
+                    'status' => DepositStatus::Expired,
+                    'finalized_at' => now(),
+                ]);
 
             if ($updated > 0) {
                 TransactionLogger::warning('deposit.expired', 'Top up kedaluwarsa karena tidak dibayar.', [

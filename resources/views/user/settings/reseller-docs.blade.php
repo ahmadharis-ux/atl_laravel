@@ -44,10 +44,15 @@
         <p class="fs-12">
             Kirim API key kamu di setiap request memakai salah satu header berikut:
         </p>
-        <pre class="ap-log-pre mb-0">X-API-Key: ap_XXXXXXXX...
+        <div class="position-relative mb-2">
+            <pre class="ap-log-pre pe-5 mb-0">X-API-Key: ap_XXXXXXXX...
 # atau
 Authorization: Bearer ap_XXXXXXXX...</pre>
-        <div class="mt-2 d-flex justify-content-end">
+            <button type="button" class="ap-icon-btn position-absolute top-0 end-0 m-2" data-copy-text="X-API-Key: ap_XXXXXXXX...
+# atau
+Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi" data-tip="Salin"><span class="ms ms-sm">content_copy</span></button>
+        </div>
+        <div class="d-flex justify-content-end mb-2">
             <button type="button" class="btn-soft" data-copy-text="X-API-Key: ap_XXXXXXXX...
 # atau
 Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span class="ms ms-sm">content_copy</span> Salin Contoh</button>
@@ -61,11 +66,11 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span
     </x-ui.card>
 
     <x-ui.card id="doc-endpoint" title="Base URL dan Daftar Endpoint">
-        <div class="position-relative">
+        <div class="position-relative mb-2">
             <pre class="ap-log-pre pe-5 mb-0">Base URL: {{ $apiBase }}</pre>
-            <button type="button" class="btn-icon position-absolute top-0 end-0 m-2" data-copy-text="{{ $apiBase }}" data-copy-label="Base URL" data-tip="Salin"><span class="ms ms-sm">content_copy</span></button>
+            <button type="button" class="ap-icon-btn position-absolute top-0 end-0 m-2" data-copy-text="{{ $apiBase }}" data-copy-label="Base URL" data-tip="Salin"><span class="ms ms-sm">content_copy</span></button>
         </div>
-        <div class="mt-2 d-flex justify-content-end">
+        <div class="d-flex justify-content-end mb-2">
             <button type="button" class="btn-soft" data-copy-text="{{ $apiBase }}" data-copy-label="Base URL"><span class="ms ms-sm">content_copy</span> Salin Contoh</button>
         </div>
         <div class="table-responsive">
@@ -130,7 +135,7 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span
             <pre class="ap-log-pre pe-5 mb-0">curl "{{ $apiBase }}/profile" \
   -H "X-API-Key: ap_XXXXXXXX..." \
   -H "Accept: application/json"</pre>
-            <button type="button" class="btn-icon position-absolute top-0 end-0 m-2" data-copy-text="curl &quot;{{ $apiBase }}/profile&quot; \
+            <button type="button" class="ap-icon-btn position-absolute top-0 end-0 m-2" data-copy-text="curl &quot;{{ $apiBase }}/profile&quot; \
   -H &quot;X-API-Key: ap_XXXXXXXX...&quot; \
   -H &quot;Accept: application/json&quot;" data-copy-label="cURL Profil" data-tip="Salin"><span class="ms ms-sm">content_copy</span></button>
         </div>
@@ -156,7 +161,7 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span
             <pre class="ap-log-pre pe-5 mb-0">curl "{{ $apiBase }}/balance" \
   -H "X-API-Key: ap_XXXXXXXX..." \
   -H "Accept: application/json"</pre>
-            <button type="button" class="btn-icon position-absolute top-0 end-0 m-2" data-copy-text="curl &quot;{{ $apiBase }}/balance&quot; \
+            <button type="button" class="ap-icon-btn position-absolute top-0 end-0 m-2" data-copy-text="curl &quot;{{ $apiBase }}/balance&quot; \
   -H &quot;X-API-Key: ap_XXXXXXXX...&quot; \
   -H &quot;Accept: application/json&quot;" data-copy-label="cURL Saldo" data-tip="Salin"><span class="ms ms-sm">content_copy</span></button>
         </div>
@@ -190,7 +195,7 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span
   -H "Accept: application/json" \
   --data-urlencode "q=pulsa" \
   --data-urlencode "per_page=20"</pre>
-            <button type="button" class="btn-icon position-absolute top-0 end-0 m-2" data-copy-text="curl -G &quot;{{ $apiBase }}/products&quot; \
+            <button type="button" class="ap-icon-btn position-absolute top-0 end-0 m-2" data-copy-text="curl -G &quot;{{ $apiBase }}/products&quot; \
   -H &quot;X-API-Key: ap_XXXXXXXX...&quot; \
   -H &quot;Accept: application/json&quot; \
   --data-urlencode &quot;q=pulsa&quot; \
@@ -241,7 +246,7 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -d '{"product_id": 12, "target": "081234567890"}'</pre>
-            <button type="button" class="btn-icon position-absolute top-0 end-0 m-2" data-copy-text="curl -X POST &quot;{{ $apiBase }}/orders&quot; \
+            <button type="button" class="ap-icon-btn position-absolute top-0 end-0 m-2" data-copy-text="curl -X POST &quot;{{ $apiBase }}/orders&quot; \
   -H &quot;X-API-Key: ap_XXXXXXXX...&quot; \
   -H &quot;Content-Type: application/json&quot; \
   -H &quot;Accept: application/json&quot; \

@@ -6,6 +6,7 @@ use App\Enums\DepositStatus;
 use App\Enums\PaymentMethod;
 use App\Http\Controllers\Controller;
 use App\Models\Deposit;
+use App\Models\DepositProof;
 use App\Models\MasterBank;
 use App\Models\User;
 use App\Notifications\TransactionResult;
@@ -19,9 +20,16 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\File;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
 class DepositController extends Controller
@@ -170,9 +178,158 @@ class DepositController extends Controller
             ]);
         }
 
+        $deposit->load(['masterBank', 'proofs']);
+
         return view('user.deposit.show', [
             'deposit' => $deposit,
         ]);
+    }
+
+    public function uploadProof(Request $request, Deposit $deposit): RedirectResponse
+    {
+        abort_unless($deposit->user_id === $request->user()->getKey(), 403);
+        abort_unless(in_array($deposit->payment_method, [PaymentMethod::VirtualAccount, PaymentMethod::EWallet], true), 404);
+
+        $validated = $request->validate([
+            'proof' => [
+                'required',
+                'file',
+                'mimes:jpg,jpeg,png,webp,pdf',
+                'extensions:jpg,jpeg,png,webp,pdf',
+                File::types(['jpg', 'jpeg', 'png', 'webp', 'pdf'])->max(5120),
+            ],
+        ], [
+            'proof.required' => 'Pilih bukti transfer yang ingin diunggah.',
+            'proof.mimes' => 'Bukti transfer harus berupa JPG, PNG, WEBP, atau PDF.',
+            'proof.extensions' => 'Ekstensi berkas harus JPG, PNG, WEBP, atau PDF.',
+            'proof.max' => 'Ukuran bukti transfer maksimal 5 MB.',
+        ]);
+
+        /** @var UploadedFile $proofFile */
+        $proofFile = $validated['proof'];
+        $path = $proofFile->store('deposit-proofs', 'local');
+
+        if (! is_string($path)) {
+            throw new \RuntimeException('Bukti transfer gagal disimpan ke penyimpanan privat.');
+        }
+
+        try {
+            $uploaded = DB::transaction(function () use ($deposit, $path): bool {
+                $locked = Deposit::query()->whereKey($deposit->getKey())->lockForUpdate()->firstOrFail();
+
+                if ($locked->status === DepositStatus::Pending && $locked->isExpired()) {
+                    $locked->update([
+                        'status' => DepositStatus::Expired,
+                        'finalized_at' => now(),
+                    ]);
+
+                    return false;
+                }
+
+                if (! in_array($locked->status, [DepositStatus::Pending, DepositStatus::NeedsRevision], true)) {
+                    throw ValidationException::withMessages([
+                        'proof' => 'Bukti transfer hanya dapat diunggah saat top up menunggu pembayaran atau perbaikan.',
+                    ]);
+                }
+
+                $locked->proofs()->create([
+                    'disk' => 'local',
+                    'file_path' => $path,
+                    'submitted_at' => now(),
+                ]);
+
+                $locked->update([
+                    'status' => DepositStatus::UnderReview,
+                    'expires_at' => null,
+                    'finalized_at' => null,
+                ]);
+
+                return true;
+            });
+        } catch (Throwable $exception) {
+            $this->deleteUnattachedProof($path);
+
+            throw $exception;
+        }
+
+        if (! $uploaded) {
+            $this->deleteUnattachedProof($path);
+
+            return redirect()
+                ->route('deposits.show', $deposit)
+                ->with('status', 'Batas waktu pembayaran berakhir. Buat top up baru untuk melanjutkan.');
+        }
+
+        $deposit->refresh();
+        TransactionLogger::info('deposit.proof_submitted', 'Bukti transfer top up dikirim untuk ditinjau.', [
+            'reference' => $deposit->reference,
+        ], null, $request->user());
+
+        User::permission('topups.view')->get()->each(
+            fn (User $admin) => $admin->notify(new TransactionResult(
+                title: 'Bukti Top Up Menunggu Verifikasi',
+                body: 'Bukti transfer '.$deposit->reference.' telah diunggah oleh '.$request->user()->name.'.',
+                level: 'info',
+                url: route('admin.topup.show', $deposit),
+                context: ['type' => 'deposit_proof_submitted', 'reference' => $deposit->reference],
+            )),
+        );
+
+        return redirect()
+            ->route('deposits.show', $deposit)
+            ->with('status', 'Bukti transfer berhasil dikirim. Saldo akan ditambahkan setelah admin memverifikasinya.');
+    }
+
+    public function downloadProof(Request $request, Deposit $deposit, DepositProof $proof): StreamedResponse
+    {
+        abort_unless($deposit->user_id === $request->user()->getKey(), 403);
+        abort_unless($proof->deposit_id === $deposit->getKey(), 404);
+
+        return $this->proofDownload($deposit, $proof);
+    }
+
+    public function downloadProofForAdmin(Deposit $deposit, DepositProof $proof): StreamedResponse
+    {
+        abort_unless($proof->deposit_id === $deposit->getKey(), 404);
+
+        return $this->proofDownload($deposit, $proof);
+    }
+
+    public function previewProofForAdmin(Deposit $deposit, DepositProof $proof): BinaryFileResponse
+    {
+        abort_unless($proof->deposit_id === $deposit->getKey(), 404);
+
+        $disk = Storage::disk($proof->disk);
+        abort_unless($disk->exists($proof->file_path), 404);
+
+        $mimeType = $disk->mimeType($proof->file_path);
+        abort_unless(in_array($mimeType, ['image/jpeg', 'image/png', 'image/webp'], true), 404);
+
+        return response()->file($disk->path($proof->file_path), [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => 'inline; filename="bukti-transfer-'.$proof->getKey().'.'.pathinfo($proof->file_path, PATHINFO_EXTENSION).'"',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+
+    private function proofDownload(Deposit $deposit, DepositProof $proof): StreamedResponse
+    {
+        $disk = Storage::disk($proof->disk);
+        abort_unless($disk->exists($proof->file_path), 404);
+
+        $extension = pathinfo($proof->file_path, PATHINFO_EXTENSION);
+
+        return $disk->download(
+            $proof->file_path,
+            'bukti-transfer-'.$deposit->reference.'-'.$proof->getKey().'.'.$extension,
+        );
+    }
+
+    private function deleteUnattachedProof(string $path): void
+    {
+        if (! Storage::disk('local')->delete($path)) {
+            Log::error('Failed to remove an unlinked deposit proof upload.', ['path' => $path]);
+        }
     }
 
     /**
@@ -182,13 +339,17 @@ class DepositController extends Controller
     public function pay(Request $request, Deposit $deposit): RedirectResponse
     {
         abort_unless($deposit->user_id === $request->user()->getKey(), 403);
+        abort_unless($deposit->payment_method === PaymentMethod::Qris, 404);
 
         if (! $deposit->isPending()) {
             return redirect()->route('deposits.show', $deposit);
         }
 
         if ($deposit->isExpired()) {
-            $deposit->update(['status' => DepositStatus::Expired]);
+            $deposit->update([
+                'status' => DepositStatus::Expired,
+                'finalized_at' => now(),
+            ]);
 
             return redirect()
                 ->route('deposits.show', $deposit)

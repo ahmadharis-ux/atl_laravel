@@ -9,6 +9,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FirebaseServiceWorkerController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\PageController;
 use App\Http\Controllers\User\BankAccountController as UserBankAccountController;
 use App\Http\Controllers\User\CheckoutController as UserCheckoutController;
 use App\Http\Controllers\User\ContactController as UserContactController;
@@ -25,7 +26,6 @@ use App\Http\Controllers\User\PulsaController as UserPulsaController;
 use App\Http\Controllers\User\ResellerController as UserResellerController;
 use App\Http\Controllers\User\SaldoController as UserSaldoController;
 use App\Http\Controllers\User\SearchHistoryController as UserSearchHistoryController;
-use App\Http\Controllers\PageController;
 use App\Http\Controllers\User\SettingsController as UserSettingsController;
 use App\Http\Controllers\User\TicketController as UserTicketController;
 use App\Http\Controllers\Webhook\DigiflazzWebhookController;
@@ -83,6 +83,8 @@ Route::middleware(['auth', 'non-admin', 'verified'])->group(function () {
     Route::post('/saldo/topup', [UserDepositController::class, 'store'])->name('deposits.store');
     Route::get('/saldo/topup/riwayat', [UserDepositController::class, 'index'])->name('deposits.index');
     Route::get('/saldo/topup/{deposit}', [UserDepositController::class, 'show'])->name('deposits.show');
+    Route::post('/saldo/topup/{deposit}/bukti', [UserDepositController::class, 'uploadProof'])->middleware('throttle:10,1')->name('deposits.proof.store');
+    Route::get('/saldo/topup/{deposit}/bukti/{proof}', [UserDepositController::class, 'downloadProof'])->name('deposits.proof.download');
     Route::get('/saldo/topup/{deposit}/qris', [UserDepositController::class, 'downloadQris'])->name('deposits.qris');
     Route::post('/saldo/topup/{deposit}/cek-status', [UserDepositController::class, 'sync'])
         ->middleware('throttle:10,1')->name('deposits.sync');
@@ -170,4 +172,3 @@ Route::middleware(['auth', 'non-admin', 'verified'])->group(function () {
 
 Route::get('/syarat-ketentuan', [PageController::class, 'terms'])->name('pages.terms');
 Route::get('/kebijakan-privasi', [PageController::class, 'privacy'])->name('pages.privacy');
-

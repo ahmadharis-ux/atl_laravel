@@ -9,9 +9,10 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 
-#[Fillable(['user_id', 'reference', 'amount', 'fee', 'received_amount', 'payment_method', 'payment_channel', 'payment_code', 'master_bank_id', 'status', 'expires_at', 'paid_at', 'metadata'])]
+#[Fillable(['user_id', 'reference', 'amount', 'fee', 'received_amount', 'payment_method', 'payment_channel', 'payment_code', 'master_bank_id', 'status', 'expires_at', 'paid_at', 'finalized_at', 'metadata'])]
 class Deposit extends Model
 {
     /** @use HasFactory<DepositFactory> */
@@ -25,6 +26,11 @@ class Deposit extends Model
     public function masterBank(): BelongsTo
     {
         return $this->belongsTo(MasterBank::class);
+    }
+
+    public function proofs(): HasMany
+    {
+        return $this->hasMany(DepositProof::class)->latest('id');
     }
 
     /**
@@ -74,6 +80,7 @@ class Deposit extends Model
             'status' => DepositStatus::class,
             'expires_at' => 'datetime',
             'paid_at' => 'datetime',
+            'finalized_at' => 'datetime',
             'metadata' => 'array',
         ];
     }

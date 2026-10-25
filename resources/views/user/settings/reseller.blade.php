@@ -45,7 +45,7 @@
             <div class="row g-3 mb-3">
                 <div class="col-sm-4">
                     <div class="card-ap r-sm p-3 h-100">
-                        <span class="ibox ibox-48 bg-mint-l tx-mintt mb-2">5%</span>
+                        <span class="ibox ibox-48 bg-mint-l tx-mintt mb-2">{{ rtrim(rtrim(number_format($discountPercent, 0, ',', '.'), '0'), '.') }}%</span>
                         <div class="fw-semibold fs-12">Harga Lebih Murah</div>
                         <div class="tx-mute fs-11">Diskon {{ rtrim(rtrim(number_format($discountPercent, 0, ',', '.'), '0'), '.') }}% dari harga jual untuk setiap produk yang kamu beli lewat API.</div>
                     </div>
@@ -64,6 +64,17 @@
                         <div class="tx-mute fs-11">Semua pesanan lewat API tercatat rapi dan bisa kamu pantau lewat riwayat transaksi.</div>
                     </div>
                 </div>
+            </div>
+
+            <div class="pt-3 mt-3 border-top mb-3">
+                <h2 class="fw-semibold fs-13 mb-2">Aturan penting sebelum aktivasi</h2>
+                <ul class="fs-12 tx-mute mb-0 ps-3">
+                    <li>Harga reseller mengikuti diskon yang berlaku dan tidak lebih rendah dari harga modal produk.</li>
+                    <li>Pesanan melalui API dibayar dari saldo akun menggunakan harga reseller.</li>
+                    <li>API key bersifat rahasia dan hanya ditampilkan saat dibuat. Simpan di tempat aman dan jangan bagikan.</li>
+                    <li>Membuat ulang API key langsung mencabut key lama; integrasi kamu perlu diperbarui dengan key baru.</li>
+                    <li>Menonaktifkan reseller mencabut API key dan menghentikan akses API reseller.</li>
+                </ul>
             </div>
 
             <div class="d-flex flex-wrap gap-2">

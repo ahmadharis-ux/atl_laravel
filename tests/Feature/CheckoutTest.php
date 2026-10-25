@@ -45,10 +45,61 @@ class CheckoutTest extends TestCase
             ->assertOk()
             ->assertSee('Diamond Mobile Legends')
             ->assertSee('ID Game')
+            ->assertSee('ID Game *')
             ->assertSee('Rp 10.000')
             ->assertSee('Saldo')
             ->assertSee('QRIS')
+            ->assertSee('data-checkout-saldo-status', false)
+            ->assertSee('data-sufficient="1"', false)
+            ->assertSee('Saldo cukup untuk membayar pesanan ini.')
+            ->assertSee('Dipotong dari saldo saat pesanan dibuat.')
+            ->assertSee('Scan QRIS dan selesaikan pembayaran dalam 3 jam.')
+            ->assertSee('required', false)
             ->assertSee('data-min-loader="2000"', false);
+    }
+
+    public function test_checkout_hides_qris_fee_and_shows_product_total_when_saldo_is_selected(): void
+    {
+        config(['midtrans.qris_fee_percent' => 0.7]);
+        $user = User::factory()->create();
+        $product = $this->product();
+
+        $this->actingAs($user)
+            ->get(route('checkout.show', $product))
+            ->assertSee('<li class="d-flex align-items-center justify-content-between d-none" data-fee-row data-method="qris">', false)
+            ->assertSee('data-base-amount="10000"', false)
+            ->assertSee('data-qris-fee="71"', false)
+            ->assertSee('>Rp 10.000</span>', false);
+    }
+
+    public function test_checkout_shows_qris_fee_and_includes_it_in_total_when_qris_is_selected(): void
+    {
+        config(['midtrans.qris_fee_percent' => 0.7]);
+        $user = User::factory()->create();
+        $product = $this->product();
+
+        $this->actingAs($user)
+            ->withSession(['_old_input' => ['payment_method' => PaymentMethod::Qris->value]])
+            ->get(route('checkout.show', $product))
+            ->assertSee('<li class="d-flex align-items-center justify-content-between" data-fee-row data-method="qris">', false)
+            ->assertSee('Rp 71')
+            ->assertSee('data-base-amount="10000"', false)
+            ->assertSee('data-qris-fee="71"', false)
+            ->assertSee('>Rp 10.071</span>', false);
+    }
+
+    public function test_checkout_shows_top_up_action_when_balance_is_insufficient(): void
+    {
+        $user = User::factory()->create(['balance' => 5_000]);
+        $product = $this->product();
+
+        $this->actingAs($user)
+            ->get(route('checkout.show', $product))
+            ->assertOk()
+            ->assertSee('data-sufficient="0"', false)
+            ->assertSee('Saldo kurang untuk membayar pesanan ini.')
+            ->assertSee(route('deposits.create'), false)
+            ->assertSee('Isi Saldo');
     }
 
     public function test_balance_checkout_creates_a_successful_order_and_deducts_balance(): void
@@ -196,6 +247,24 @@ class CheckoutTest extends TestCase
             ->assertSessionHasErrors('target');
 
         $this->assertSame(0, Order::query()->count());
+    }
+
+    public function test_checkout_validation_redirect_displays_field_errors_and_preserves_input(): void
+    {
+        $user = User::factory()->create(['balance' => 1_000_000]);
+        $brand = Brand::factory()->create(['slug' => 'mobile-legends']);
+        $product = $this->product(['brand_id' => $brand->getKey()]);
+
+        $this->actingAs($user)
+            ->from(route('checkout.show', $product))
+            ->followingRedirects()
+            ->post(route('checkout.store', $product), [
+                'target' => '123456789',
+                'payment_method' => PaymentMethod::Saldo->value,
+            ])
+            ->assertOk()
+            ->assertSee('The zone field is required.')
+            ->assertSee('value="123456789"', false);
     }
 
     public function test_checkout_requires_zone_for_brands_that_use_one(): void
