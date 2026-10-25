@@ -1,3 +1,24 @@
+@php
+    use Illuminate\Support\Facades\View;
+
+    $titleSection = trim((string) View::yieldContent('title', ''));
+    $pageTitle = trim((string) View::yieldContent('page-title', ''));
+
+    if ($pageTitle === '') {
+        $pageTitle = $titleSection !== ''
+            ? trim(preg_replace('/\s*[-\x{2013}]\s*Atlantic Pedia Tab\s*$/u', '', $titleSection))
+            : 'Beranda';
+    }
+
+    if ($pageTitle === '') {
+        $pageTitle = 'Beranda';
+    }
+
+    $unreadNotificationsAdmin = auth()->user()?->unreadNotifications()->count() ?? 0;
+
+    $rp = auth()->user()?->is_admin ? 'admin.' : '';
+
+@endphp
 {{-- Header desktop --}}
 <header class="topbar d-none d-lg-flex align-items-center justify-content-between">
     <button class="sq js-sidebar-toggle" type="button" aria-label="Perluas / perkecil sidebar" title="Perluas / perkecil sidebar">
@@ -13,10 +34,33 @@
             </div>
             <div class="ui-search-pop" data-admin-search-pop hidden></div>
         </div>
-        <button class="sq" aria-label="Notifikasi">
+         <div class="notif" data-notif data-notif-url="{{ route($rp . 'notifications.index') }}" data-notif-interval="15000" data-notif-user="{{ auth()->id() }}">
+            <button class="sq" type="button" aria-label="Notifikasi" data-notif-toggle>
+                <span class="ms">notifications</span>
+                @if ($unreadNotificationsAdmin > 0)
+                    <span class="pill text-white" data-notif-dot style="position:absolute;top:-.25rem;right:-.25rem;min-width:1.25rem;height:1.25rem;font-size:.6875rem;padding:.125rem .25rem;border-radius:999px;line-height:1;display:flex;align-items:center;justify-content:center;background:var(--err)">
+                        {{ $unreadNotificationsAdmin > 99 ? '99+' : $unreadNotificationsAdmin }}
+                    </span>
+                @endif
+            </button>
+            <div class="notif-pop" data-notif-pop hidden>
+                <div class="notif-head">
+                    <span class="fw-bold">Notifikasi</span>
+                    <form method="POST" action="{{ route($rp . 'notifications.read-all') }}" class="m-0">
+                        @csrf
+                        <button type="submit" class="notif-link">Tandai semua dibaca</button>
+                    </form>
+                </div>
+                <div class="notif-list" data-notif-list>
+                    <div class="notif-empty">Memuat…</div>
+                </div>
+                <a href="{{ route('admin.notifications.index') }}" class="notif-foot">Semua notifikasi</a>
+            </div>
+        </div>
+        {{-- <button class="sq" aria-label="Notifikasi">
             <span class="ms">notifications</span>
             <span class="dot" style="top:.5rem;right:.5rem;background:var(--err)"></span>
-        </button>
+        </button> --}}
         <form action="{{ route('logout') }}" method="POST" class="d-flex m-0">
             @csrf
             <button type="submit" class="sq" aria-label="Keluar" title="Keluar">

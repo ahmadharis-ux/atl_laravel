@@ -23,7 +23,10 @@
         <a href="{{ route('deposits.index') }}" class="ap-icon-btn" data-tip="Kembali"><span class="ms ms-md">arrow_back</span></a>
         <div>
             <h1 class="fw-bold fs-5 m-0">Top Up Saldo</h1>
-            <p class="tx-mute fs-12 m-0">{{ $deposit->reference }}</p>
+            <div class="d-flex align-items-center gap-2">
+                <p class="tx-mute fs-12 m-0">{{ $deposit->reference }}</p>
+                 <button type="button" class="ap-icon-btn" data-copy="{{ $deposit->reference }}" data-copy-label="ID Deposit" data-tip="Salin ID Deposit"><span class="ms ms-sm">content_copy</span></button>
+            </div>
         </div>
         <span class="pill ms-auto {{ $deposit->status->tone() }}">{{ $deposit->status->label() }}</span>
     </div>

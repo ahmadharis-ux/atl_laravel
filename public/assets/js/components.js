@@ -2080,6 +2080,7 @@
       var pop = root.querySelector('[data-notif-pop]');
       var list = root.querySelector('[data-notif-list]');
       var url = root.dataset.notifUrl || '';
+      console.log('notif url', url, root);
       if (!toggle || !pop || !list || !url) return;
 
       var interval = parseInt(root.dataset.notifInterval, 10) || 15000;

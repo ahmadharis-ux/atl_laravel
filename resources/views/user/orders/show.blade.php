@@ -24,7 +24,10 @@
         <a href="{{ route('orders.index') }}" class="ap-icon-btn" data-tip="Kembali"><span class="ms ms-md">arrow_back</span></a>
         <div>
             <h1 class="fw-bold fs-5 m-0">Detail Pesanan</h1>
-            <p class="tx-mute fs-12 m-0">{{ $order->order_number }}</p>
+            <div class="d-flex align-items-center gap-2">
+                <p class="tx-mute fs-12 m-0">{{ $order->order_number }}</p>
+                <button type="button" class="ap-icon-btn" data-copy="{{ $order->order_number }}" data-copy-label="ID Pesanan" data-tip="Salin ID Pesanan"><span class="ms ms-sm">content_copy</span></button>
+            </div>
         </div>
         <a href="{{ route('orders.invoice', $order) }}" target="_blank" rel="noopener" class="ap-icon-btn ms-auto" data-tip="Cetak Invoice"><span class="ms ms-md">receipt_long</span></a>
         <span class="pill {{ $order->status->tone() }}">{{ $order->status->label() }}</span>
