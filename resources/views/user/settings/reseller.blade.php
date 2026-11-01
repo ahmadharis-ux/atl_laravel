@@ -13,21 +13,21 @@
     </div>
 
     @if (session('status'))
-        <div class="card-ap r-card p-3 d-flex align-items-center gap-2 bg-mint-l">
+        <div class="card-ap r-card p-3 d-flex align-items-center gap-2 bg-mint-l" role="status" aria-live="polite">
             <span class="ms tx-mintt">check_circle</span>
             <span class="fw-semibold fs-12">{{ session('status') }}</span>
         </div>
     @endif
 
     @if (session('error'))
-        <div class="card-ap r-card p-3 d-flex align-items-center gap-2 bg-errc-l">
+        <div class="card-ap r-card p-3 d-flex align-items-center gap-2 bg-errc-l" role="alert" aria-live="assertive">
             <span class="ms tx-err">error</span>
             <span class="fw-semibold fs-12 tx-err">{{ session('error') }}</span>
         </div>
     @endif
 
     @if ($errors->any())
-        <div class="card-ap r-card p-3 d-flex align-items-center gap-2 bg-errc-l">
+        <div class="card-ap r-card p-3 d-flex align-items-center gap-2 bg-errc-l" role="alert" aria-live="assertive">
             <span class="ms tx-err">error</span>
             <span class="fw-semibold fs-12 tx-err">{{ $errors->all()[0] }}</span>
         </div>
@@ -84,7 +84,7 @@
                     <div class="col-sm-4">
                         <div class="card-ap r-sm p-3 h-100">
                             <span class="ibox ibox-48 bg-sky-l tx-navy mb-2"><span class="ms">api</span></span>
-                            <div class="fw-semibold fs-12">Akses API &amp; API Key</div>
+                            <div class="fw-semibold fs-12">Akses API & API Key</div>
                             <div class="tx-mute fs-11">Opsional. API key baru dibuat setelah permohonan disetujui.</div>
                         </div>
                     </div>
@@ -98,6 +98,14 @@
                 </div>
 
                 <div class="card-ap r-card p-3 mb-3 bg-sky-l">
+                    <h2 class="fw-semibold fs-13 mb-2">Aturan penting sebelum aktivasi</h2>
+                    <ul class="fs-12 tx-mute mb-2 ps-3">
+                        <li>Pesanan melalui API dibayar dari saldo akun menggunakan harga reseller.</li>
+                        <li>Menonaktifkan reseller mencabut API key serta menutup akses API dan toko untuk pesanan baru.</li>
+                        <li>Domain wajib untuk integrasi API; toko hosted dapat digunakan tanpa domain sendiri.</li>
+                        <li>IP server bersifat opsional. Jika diisi, hanya alamat tersebut yang boleh mengakses API.</li>
+                    </ul>
+
                     <h2 class="fw-semibold fs-13 mb-2">Ketentuan Reseller · Versi {{ $termsVersion }}</h2>
                     <ul class="fs-12 tx-mute mb-0 ps-3">
                         <li>Data usaha dan kontak harus benar serta dapat digunakan admin untuk menghubungi kamu.</li>
@@ -175,7 +183,7 @@
                     @error('reseller')<div class="err show">{{ $message }}</div>@enderror
 
                     <div class="d-flex flex-wrap gap-2">
-                        <button type="submit" class="btn-navy">Kirim Permohonan</button>
+                        <button type="submit" class="btn-navy">Kirim Permohonan Reseller</button>
                         <a href="{{ route('settings.reseller.docs') }}" class="btn-soft">Lihat Dokumentasi API</a>
                     </div>
                 </form>
@@ -199,21 +207,65 @@
             </div>
         </div>
 
-        <x-ui.card title="API Key">
+        <x-ui.card id="reseller-start" title="Langkah berikutnya">
+            <p class="fs-12 tx-mute mb-3">Pilih langkah sesuai kanal penjualanmu. Status hanya ditampilkan untuk hal yang dapat dipastikan sistem; halaman ini tidak melacak apakah dokumentasi sudah dibaca atau key sudah disalin.</p>
+            <div class="row g-3">
+                @if ($usesApi)
+                    <div class="col-lg-6">
+                        <x-ui.card title="Mulai dengan API" pad="p-3 h-100">
+                            <ol class="fs-12 mb-3 ps-3">
+                                <li class="mb-2">
+                                    @if ($user->reseller_api_key_hint)
+                                        <span class="pill bg-mint-l tx-mintt">Siap</span>
+                                        API key sudah dibuat. Salin dan simpan dengan aman dari bagian
+                                        <a href="#api-key">API Key</a>.
+                                    @else
+                                        <span class="pill bg-gold tx-gold">Perlu dibuat</span>
+                                        Buat API key sebelum menghubungkan aplikasi.
+                                        <a href="#api-key">Buat API key</a>.
+                                    @endif
+                                </li>
+                                <li class="mb-2">Ambil daftar produk dan harga reseller melalui <a href="{{ route('settings.reseller.docs') }}#doc-produk">dokumentasi produk API</a>.</li>
+                                <li class="mb-2">Pastikan saldo cukup sebelum mengirim pesanan API. <a href="{{ route('deposits.create') }}">Isi saldo</a>.</li>
+                                <li>Buat pesanan dan pantau statusnya melalui <a href="{{ route('settings.reseller.docs') }}#doc-pesanan">panduan pesanan API</a>.</li>
+                            </ol>
+                            <a href="{{ route('settings.reseller.docs') }}" class="btn-soft">Buka Dokumentasi API</a>
+                        </x-ui.card>
+                    </div>
+                @endif
+
+                @if ($usesHostedStore)
+                    <div class="col-lg-6">
+                        <x-ui.card title="Mulai dengan Toko Hosted" pad="p-3 h-100">
+                            <p class="fs-12 tx-mute">Bagikan toko Atlantic agar pelanggan dapat memilih produk dan membayar langsung. Pantau pesanan tunai dan komisi QRIS dari halaman kelola toko.</p>
+                            <div class="d-flex flex-wrap gap-2">
+                                <a href="{{ route('storefront.index', $user) }}" class="btn-navy" target="_blank" rel="noopener">Lihat Toko</a>
+                                <a href="{{ route('settings.reseller.store') }}" class="btn-soft">Kelola Toko &amp; Komisi</a>
+                            </div>
+                        </x-ui.card>
+                    </div>
+                @endif
+            </div>
+        </x-ui.card>
+
+        @if ($usesApi)
+        <x-ui.card id="api-key" title="API Key">
             <x-slot:header>
                 <span class="pill bg-sky-l tx-navy">Kredensial API</span>
             </x-slot:header>
 
             @if (session('api_key'))
-                <p class="fs-12 tx-mute mb-2">
-                    Ini API key kamu. <span class="fw-semibold">Salin dan simpan di tempat aman sekarang</span> —
-                    key asli tidak akan ditampilkan lagi setelah halaman ini ditutup.
-                </p>
-                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-                    <pre class="ap-log-pre flex-grow-1 mb-0">{{ session('api_key') }}</pre>
-                    <button type="button" class="btn-soft" data-copy="{{ session('api_key') }}" data-copy-label="API Key">
-                        <span class="ms ms-sm">content_copy</span> Salin
-                    </button>
+                <div role="status" aria-live="polite">
+                    <p class="fs-12 tx-mute mb-2">
+                        Ini API key kamu. <span class="fw-semibold">Salin dan simpan di tempat aman sekarang</span> —
+                        key asli tidak akan ditampilkan lagi setelah halaman ini ditutup.
+                    </p>
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                        <pre class="ap-log-pre flex-grow-1 mb-0">{{ session('api_key') }}</pre>
+                        <button type="button" class="btn-soft" data-copy="{{ session('api_key') }}" data-copy-label="API Key">
+                            <span class="ms ms-sm">content_copy</span> Salin
+                        </button>
+                    </div>
                 </div>
             @else
                 <p class="fs-12 tx-mute mb-2">
@@ -221,7 +273,7 @@
                         API key aktif: <span class="fw-semibold num">{{ $user->reseller_api_key_hint }}</span>
                         (hanya awalan yang ditampilkan). Server menyimpan hash key, bukan key aslinya.
                     @else
-                        Belum ada API key. Buat key jika kamu akan memakai integrasi API.
+                        API key belum dibuat. Buat key untuk mulai memakai integrasi API.
                     @endif
                 </p>
             @endif
@@ -245,7 +297,66 @@
                 </form>
             </div>
         </x-ui.card>
+        @endif
 
+        @if ($usesApi)
+        <x-ui.card id="webhook" title="Webhook Status Pesanan">
+            <p class="fs-12 tx-mute mb-3">
+                Notifikasi otomatis untuk perubahan status pesanan API. Gunakan URL HTTPS publik;
+                setiap request ditandatangani dengan secret yang hanya ditampilkan saat dibuat.
+            </p>
+
+            @if (session('webhook_secret'))
+                <div class="card-ap r-card p-3 mb-3 bg-gold" role="status">
+                    <p class="fs-12 fw-semibold mb-2">Salin secret webhook sekarang. Secret ini tidak akan ditampilkan lagi.</p>
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <pre class="ap-log-pre flex-grow-1 mb-0">{{ session('webhook_secret') }}</pre>
+                        <button type="button" class="btn-soft" data-copy="{{ session('webhook_secret') }}" data-copy-label="Webhook Secret">
+                            <span class="ms ms-sm">content_copy</span> Salin
+                        </button>
+                    </div>
+                </div>
+            @endif
+
+            <p class="fs-12 mb-3">
+                Secret aktif:
+                <span class="fw-semibold num">{{ $user->reseller_webhook_secret_hint ?? 'Belum dibuat' }}</span>
+                · Status pengiriman:
+                <span class="fw-semibold">{{ $user->reseller_webhook_last_status ?? 'Belum ada pengiriman' }}</span>
+                @if ($user->reseller_webhook_last_sent_at)
+                    · {{ $user->reseller_webhook_last_sent_at->locale('id')->translatedFormat('d F Y H:i') }}
+                @endif
+            </p>
+
+            <form method="POST" action="{{ route('settings.reseller.webhook.update') }}" class="d-flex flex-column gap-2 mb-3">
+                @csrf
+                @method('PUT')
+                <x-ui.input
+                    name="webhook_url"
+                    type="url"
+                    label="URL webhook"
+                    placeholder="https://contoh.com/webhook/atlantic"
+                    :value="old('webhook_url', $user->reseller_webhook_url)"
+                    hint="Kosongkan URL lalu simpan untuk menonaktifkan webhook."
+                />
+                <div>
+                    <button type="submit" class="btn-navy">Simpan URL Webhook</button>
+                </div>
+            </form>
+
+            <form method="POST" action="{{ route('settings.reseller.webhook.secret') }}"
+                  data-confirm="Membuat secret baru akan langsung membatalkan secret lama. Perbarui konfigurasi endpoint kamu. Lanjutkan?"
+                  data-confirm-title="Buat Secret Webhook Baru" data-confirm-danger>
+                @csrf
+                <button type="submit" class="btn-soft">
+                    <span class="ms ms-sm">key</span>
+                    {{ $user->reseller_webhook_secret_hint ? 'Buat Ulang Secret' : 'Buat Secret Webhook' }}
+                </button>
+            </form>
+        </x-ui.card>
+        @endif
+
+        @if ($usesApi)
         <x-ui.card title="Cara Pakai Singkat">
             <ol class="fs-12 mb-3 ps-3">
                 <li>Ambil daftar produk &amp; harga reseller lewat <code>GET {{ url('/api/v1/reseller/products') }}</code>.</li>
@@ -255,6 +366,7 @@
             </ol>
             <a href="{{ route('settings.reseller.docs') }}" class="btn-navy">Buka Dokumentasi API Lengkap</a>
         </x-ui.card>
+        @endif
     @endif
 </div>
 @endsection

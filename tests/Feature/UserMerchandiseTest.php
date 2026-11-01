@@ -24,13 +24,30 @@ class UserMerchandiseTest extends TestCase
 
     public function test_user_can_view_the_merchandise_catalog(): void
     {
-        $user = User::factory()->create(['points' => 200]);
+        $user = User::factory()->create(['points' => 200, 'lifetime_points' => 300]);
         $this->merchandise();
 
         $this->actingAs($user)
             ->get(route('merchandise.index'))
             ->assertOk()
-            ->assertSee('Merchandise');
+            ->assertSee('Merchandise')
+            ->assertSee('Saldo poin yang dapat ditukar')
+            ->assertSee('Tier Gold')
+            ->assertSee('300 lifetime poin')
+            ->assertSee('Tidak ada minimum penukaran global')
+            ->assertSee('tidak kedaluwarsa');
+    }
+
+    public function test_negative_point_balance_is_explained_on_the_merchandise_page(): void
+    {
+        $user = User::factory()->create(['points' => -25]);
+        $this->merchandise();
+
+        $this->actingAs($user)
+            ->get(route('merchandise.index'))
+            ->assertSee('-25')
+            ->assertSee('Poin reward berikutnya akan menutup saldo minus')
+            ->assertSee('disabled', false);
     }
 
     public function test_inactive_items_are_hidden_from_the_catalog(): void

@@ -92,6 +92,12 @@ class Product extends Model
         return $this->provider !== null && $this->provider !== '';
     }
 
+    public function supportsResellerApiOrder(): bool
+    {
+        return $this->provider === self::PROVIDER_DIGIFLAZZ
+            && $this->payment_type === ProductPaymentType::Prabayar;
+    }
+
     /**
      * Harga khusus reseller: potongan persen dari harga jual publik
      * (config/reseller.php), tidak pernah di bawah harga modal.

@@ -4,7 +4,6 @@ namespace App\Support;
 
 use App\Enums\DepositStatus;
 use App\Enums\PaymentMethod;
-use App\Enums\PointTransactionType;
 use App\Enums\WalletTransactionType;
 use App\Models\Deposit;
 use App\Models\DepositProof;
@@ -78,8 +77,6 @@ final class DepositSettler
                     $locked,
                     'Top up saldo '.$locked->reference,
                 );
-
-                $owner->changePoints(1, PointTransactionType::TopupReward, 'Bonus top up '.$locked->reference, $locked);
 
                 $owner->notify(new TransactionResult(
                     title: 'Isi saldo berhasil',

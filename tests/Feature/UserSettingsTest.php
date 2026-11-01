@@ -43,13 +43,13 @@ class UserSettingsTest extends TestCase
     {
         $thresholds = LoyaltySetting::current();
         $tiers = [
-            ['points' => 0, 'badge' => 'silver'],
-            ['points' => $thresholds->gold_points, 'badge' => 'gold'],
-            ['points' => $thresholds->platinum_points, 'badge' => 'platinum'],
+            ['lifetime_points' => 0, 'badge' => 'silver'],
+            ['lifetime_points' => $thresholds->gold_points, 'badge' => 'gold'],
+            ['lifetime_points' => $thresholds->platinum_points, 'badge' => 'platinum'],
         ];
 
         foreach ($tiers as $tier) {
-            $user = User::factory()->create(['points' => $tier['points']]);
+            $user = User::factory()->create(['lifetime_points' => $tier['lifetime_points']]);
 
             $this->actingAs($user)
                 ->get(route('settings.index'))

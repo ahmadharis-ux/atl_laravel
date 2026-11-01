@@ -139,6 +139,11 @@ class StorefrontController extends Controller
                 'target_zone' => $validated['zone'] ?? null,
                 'amount' => $amount,
                 'fee' => $fee,
+                'supplier_cost_snapshot' => (int) $item->cost_price,
+                'company_cost_snapshot' => $paymentMethod === 'qris'
+                    ? $sellingPrice - $resellerPrice
+                    : 0,
+                'reward_eligible' => true,
                 'status' => OrderStatus::Pending,
                 'provider' => $item->provider,
                 'provider_ref' => $item->provider !== null ? $orderNumber : null,

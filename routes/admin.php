@@ -74,6 +74,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('/transactions/{order}/settle', [TransactionController::class, 'settle'])->middleware('permission:transactions.update')->name('transactions.settle');
     Route::post('/transactions/{order}/expire', [TransactionController::class, 'expire'])->middleware('permission:transactions.update')->name('transactions.expire');
     Route::post('/transactions/{order}/refund', [TransactionController::class, 'refund'])->middleware('permission:transactions.update')->name('transactions.refund');
+    Route::post('/transactions/{order}/sync-digiflazz', [TransactionController::class, 'syncDigiflazz'])->middleware('permission:transactions.update')->name('transactions.sync-digiflazz');
 
     Route::get('/resellers', [ResellerController::class, 'index'])->middleware('permission:resellers.view')->name('resellers.index');
     Route::post('/resellers/{reseller}/status', [ResellerController::class, 'updateStatus'])

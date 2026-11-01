@@ -21,7 +21,9 @@
             <li><a href="#doc-produk">2. Ambil Daftar Produk dan Harga Reseller</a></li>
             <li><a href="#doc-pesanan">3. Buat Pesanan (Bayar dari Saldo)</a></li>
             <li><a href="#doc-status">4. Pantau Status Pesanan</a></li>
-            <li><a href="#doc-error">5. Error dan Kode Status</a></li>
+            <li><a href="#doc-h2h">Kompatibilitas H2H Lama</a></li>
+            <li><a href="#doc-webhook">Webhook Status Pesanan</a></li>
+            <li><a href="#doc-error">6. Error dan Kode Status</a></li>
         </ul>
     </x-ui.card>
 
@@ -33,9 +35,10 @@
             semua dari aplikasi, kasir, atau bot kamu sendiri.
         </p>
         <ul class="fs-12 mb-0 ps-3">
-            <li>Semua produk aktif dapat dilihat lewat <code>GET /products</code>.</li>
-            <li>Harga reseller = <span class="fw-semibold">minimal {{ number_format($discountPercent, fmod($discountPercent, 1) === 0.0 ? 0 : 1, ',', '.') }}% lebih murah</span> dari harga jual publik (tidak di bawah modal).</li>
+            <li>Produk prabayar yang sudah didukung fulfillment dapat dilihat lewat <code>GET /products</code>.</li>
+            <li>Diskon reseller dihitung hingga {{ number_format($discountPercent, fmod($discountPercent, 1) === 0.0 ? 0 : 1, ',', '.') }}% dari harga publik; harga tidak pernah di bawah modal, jadi diskon aktual bisa lebih kecil.</li>
             <li>Pesanan dibayar dengan <span class="fw-semibold">saldo akun</span> (tanpa transfer manual).</li>
+            <li>Pesanan API saat ini mendukung produk prabayar dengan fulfillment Digiflazz.</li>
             <li>Format respons JSON; kirim <code>Accept: application/json</code> agar error juga berupa JSON.</li>
         </ul>
     </x-ui.card>
@@ -44,6 +47,7 @@
         <p class="fs-12">
             Kirim API key kamu di setiap request memakai salah satu header berikut:
         </p>
+        <p class="fs-12">Bentuk header Bearer yang valid: <code>Authorization: Bearer ap_XXXXXXXX...</code>.</p>
         <div class="position-relative mb-2">
             <pre class="ap-log-pre pe-5 mb-0">X-API-Key: ap_XXXXXXXX...
 # atau
@@ -66,6 +70,10 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span
         <p class="fs-12 mb-0 mt-2">
             Jika allowlist IP diatur, request API hanya diterima dari IP server yang terdaftar.
             Keanggotaan yang ditangguhkan akan kehilangan akses API dan toko untuk pesanan baru.
+        </p>
+        <p class="fs-12 mb-0 mt-2">
+            Klien H2H lama dapat memakai endpoint kompatibilitas di bawah dengan field <code>api_key</code> pada body.
+            Ganti API key lama dengan key reseller baru dari halaman pengaturan; key lama tidak dapat digunakan.
         </p>
     </x-ui.card>
 
@@ -121,6 +129,21 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span
                         <td><span class="pill bg-mint-l tx-mintt">GET</span></td>
                         <td><code>/orders/{order_number}</code></td>
                         <td>Detail satu pesanan.</td>
+                    </tr>
+                    <tr>
+                        <td><span class="pill bg-sky-l tx-navy">POST</span></td>
+                        <td><code>{{ url('/transaksi/create') }}</code></td>
+                        <td>Kompatibilitas H2H lama: buat pesanan dengan kode produk.</td>
+                    </tr>
+                    <tr>
+                        <td><span class="pill bg-sky-l tx-navy">POST</span></td>
+                        <td><code>{{ url('/transaksi/status') }}</code></td>
+                        <td>Kompatibilitas H2H lama: cek status pesanan prabayar.</td>
+                    </tr>
+                    <tr>
+                        <td><span class="pill bg-sky-l tx-navy">POST</span></td>
+                        <td><code>{{ url('/layanan/price_list') }}</code></td>
+                        <td>Kompatibilitas H2H lama: daftar harga produk prabayar.</td>
                     </tr>
                 </tbody>
             </table>
@@ -193,10 +216,10 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span
 
     <x-ui.card id="doc-produk" title="2. Ambil Daftar Produk dan Harga Reseller">
         <p class="fs-12 mb-2">
-            Daftar hanya berisi produk aktif dan diurutkan berdasarkan nama.
+            Daftar hanya berisi produk aktif prabayar dengan fulfillment Digiflazz dan diurutkan berdasarkan nama.
             Filter tersedia melalui query: <code>q</code> (nama/kode, maksimal 100 karakter),
             <code>brand_id</code>, <code>category_id</code>, dan <code>payment_type</code>
-            (<code>prabayar</code>|<code>pascabayar</code>). Gunakan <code>per_page</code> antara 1–100;
+            (<code>prabayar</code>|<code>pascabayar</code>; filter pascabayar menghasilkan daftar kosong). Gunakan <code>per_page</code> antara 1–100;
             default 50 item per halaman.
         </p>
         <div class="position-relative mb-2">
@@ -258,7 +281,7 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span
                     <tr><td><code>id</code></td><td>integer</td><td>ID untuk <code>product_id</code> saat membuat pesanan.</td></tr>
                     <tr><td><code>code</code>, <code>name</code></td><td>string</td><td>Kode dan nama produk.</td></tr>
                     <tr><td><code>brand</code>, <code>category</code></td><td>string atau null</td><td>Nama relasi; null bila relasi tidak tersedia.</td></tr>
-                    <tr><td><code>payment_type</code></td><td>string</td><td><code>prabayar</code> atau <code>pascabayar</code>.</td></tr>
+                    <tr><td><code>payment_type</code></td><td>string</td><td><code>prabayar</code>; produk pascabayar belum didukung.</td></tr>
                     <tr><td><code>region</code></td><td>string atau null</td><td>Wilayah produk; null berarti produk umum/tidak ditentukan.</td></tr>
                     <tr><td><code>selling_price</code>, <code>reseller_price</code>, <code>discount</code></td><td>integer</td><td>Nominal Rupiah. Harga reseller yang didebit; discount adalah selisih harga, bukan persentase.</td></tr>
                     <tr><td><code>stock</code></td><td>integer atau null</td><td>Jumlah stok; null jika <code>unlimited_stock</code> true.</td></tr>
@@ -291,14 +314,16 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span
         <p class="fs-12 mb-0">
             Daftar memakai <code>meta.current_page</code>, <code>meta.per_page</code>,
             <code>meta.last_page</code>, dan <code>meta.total</code> (semuanya integer).
-            Produk tidak ditemukan atau tidak aktif pada endpoint detail menghasilkan <code>404</code>.
+            Produk tidak ditemukan, tidak aktif, atau belum didukung pada endpoint detail menghasilkan <code>404</code>.
         </p>
     </x-ui.card>
 
     <x-ui.card id="doc-pesanan" title="3. Buat Pesanan (Bayar dari Saldo)">
         <p class="fs-12">
-            Field: <code>product_id</code> (wajib), <code>target</code> (wajib — nomor tujuan), <code>zone</code>
-            (wajib untuk produk yang butuh zone, mis. Mobile Legends — cek dari field <code>requires_zone</code>).
+            Field: <code>product_id</code> atau <code>code</code> (wajib; <code>code</code> cocok untuk integrasi H2H lama),
+            <code>target</code> (wajib), <code>zone</code> (wajib untuk produk yang butuh zone, mis. Mobile Legends),
+            <code>reff_id</code> (opsional, maks. 50 karakter untuk idempotensi), dan <code>limit_price</code> (opsional).
+            Untuk kompatibilitas, zona juga boleh dikirim sebagai <code>target: "userId|zoneId"</code>.
             Pembayaran selalu lewat saldo; pastikan saldo cukup.
         </p>
         <div class="position-relative mb-2">
@@ -306,27 +331,29 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span
   -H "X-API-Key: ap_XXXXXXXX..." \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
-  -d '{"product_id": 12, "target": "081234567890"}'</pre>
+  -d '{"product_id": 12, "target": "081234567890", "reff_id": "order-0001", "limit_price": 7000}'</pre>
             <button type="button" class="ap-icon-btn position-absolute top-0 end-0 m-2" data-copy-text="curl -X POST &quot;{{ $apiBase }}/orders&quot; \
   -H &quot;X-API-Key: ap_XXXXXXXX...&quot; \
   -H &quot;Content-Type: application/json&quot; \
   -H &quot;Accept: application/json&quot; \
-  -d '{&quot;product_id&quot;: 12, &quot;target&quot;: &quot;081234567890&quot;}'" data-copy-label="cURL Buat Pesanan" data-tip="Salin"><span class="ms ms-sm">content_copy</span></button>
+  -d '{&quot;product_id&quot;: 12, &quot;target&quot;: &quot;081234567890&quot;, &quot;reff_id&quot;: &quot;order-0001&quot;, &quot;limit_price&quot;: 7000}'" data-copy-label="cURL Buat Pesanan" data-tip="Salin"><span class="ms ms-sm">content_copy</span></button>
         </div>
         <div class="d-flex justify-content-end mb-3">
             <button type="button" class="btn-soft" data-copy-text="curl -X POST &quot;{{ $apiBase }}/orders&quot; \
   -H &quot;X-API-Key: ap_XXXXXXXX...&quot; \
   -H &quot;Content-Type: application/json&quot; \
   -H &quot;Accept: application/json&quot; \
-  -d '{&quot;product_id&quot;: 12, &quot;target&quot;: &quot;081234567890&quot;}'" data-copy-label="cURL Buat Pesanan"><span class="ms ms-sm">content_copy</span> Salin Contoh cURL</button>
+  -d '{&quot;product_id&quot;: 12, &quot;target&quot;: &quot;081234567890&quot;, &quot;reff_id&quot;: &quot;order-0001&quot;, &quot;limit_price&quot;: 7000}'" data-copy-label="cURL Buat Pesanan"><span class="ms ms-sm">content_copy</span> Salin Contoh cURL</button>
         </div>
         <pre class="ap-log-pre mb-2">{
   "data": {
     "order_number": "TRX-20261020-AB12CD",
+    "reff_id": "order-0001",
     "status": "processing",
     "status_label": "Diproses",
     "product": { "id": 12, "code": "XL5000", "name": "XL 5.000" },
     "target": "081234567890",
+    "target_zone": null,
     "amount": 6175,
     "fee": 0,
     "total": 6175,
@@ -337,7 +364,9 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span
 }</pre>
         <p class="fs-12 mb-0">
             <span class="fw-semibold">Stok di-decrement dan saldo didebit dalam satu transaksi.</span>
-            Jika stok habis atau saldo kurang, request dibalas <code>422</code> dan tidak ada perubahan apa pun.
+            Jika stok habis, saldo kurang, atau harga melebihi <code>limit_price</code>, request dibalas <code>422</code>
+            dan tidak ada perubahan apa pun. Request ulang dengan <code>reff_id</code> yang sama mengembalikan pesanan
+            yang sudah dibuat tanpa mendebit saldo atau stok lagi.
         </p>
     </x-ui.card>
 
@@ -390,7 +419,67 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span
         </p>
     </x-ui.card>
 
-    <x-ui.card id="doc-error" title="5. Error dan Kode Status">
+    <x-ui.card id="doc-h2h" title="Kompatibilitas H2H Lama">
+        <p class="fs-12">
+            Endpoint ini mempertahankan field dan bentuk respons transaksi utama untuk integrasi H2H lama.
+            Gunakan API key reseller baru sebagai <code>api_key</code> form-urlencoded; request GET untuk membuat transaksi
+            tidak didukung. Produk pascabayar dan provider selain Digiflazz belum tersedia pada API reseller.
+        </p>
+        <pre class="ap-log-pre mb-2">POST {{ url('/transaksi/create') }}
+api_key={{ 'ap_XXXXXXXX' }}
+code=ML86
+reff_id=order-0001
+target=12345678|1234
+limit_price=7000</pre>
+        <pre class="ap-log-pre mb-2">{
+  "status": true,
+  "message": "Pesanan berhasil dibuat.",
+  "data": {
+    "id": "TRX-20261020-AB12CD",
+    "reff_id": "order-0001",
+    "layanan": "Mobile Legends 86 Diamonds",
+    "code": "ML86",
+    "target": "12345678|1234",
+    "price": 6500,
+    "sn": null,
+    "status": "processing",
+    "created_at": "2026-10-20T10:15:00+07:00"
+  },
+  "code": 200
+}</pre>
+        <p class="fs-12 mb-0">
+            Cek transaksi melalui <code>POST {{ url('/transaksi/status') }}</code> dengan field
+            <code>api_key</code>, <code>id</code> dari respons create, dan <code>type=prabayar</code>.
+            Daftar produk tersedia di <code>POST {{ url('/layanan/price_list') }}</code> dengan
+            <code>api_key</code> dan <code>type=prabayar</code>.
+        </p>
+    </x-ui.card>
+
+    <x-ui.card id="doc-webhook" title="Webhook Status Pesanan">
+        <p class="fs-12">
+            Atur URL dan buat secret webhook dari halaman Reseller. Notifikasi dikirim untuk pesanan API yang sukses,
+            gagal, atau kedaluwarsa. Payload dikirim sebagai JSON; validasi tanda tangan menggunakan HMAC-SHA256 atas
+            body mentah dan secret webhook.
+        </p>
+        <div class="table-responsive mb-2">
+            <table class="table table-ui align-middle fs-12">
+                <thead><tr><th>Header</th><th>Nilai</th></tr></thead>
+                <tbody>
+                    <tr><td><code>X-ATL-Signature</code></td><td><code>sha256=&lt;hmac_hex&gt;</code></td></tr>
+                    <tr><td><code>X-ATL-Event</code></td><td><code>order.success</code>, <code>order.failed</code>, atau <code>order.expired</code></td></tr>
+                    <tr><td><code>X-ATL-Delivery</code></td><td>ID delivery yang sama dipakai untuk semua percobaan ulang.</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <p class="fs-12 mb-0">
+            Webhook memakai antrean, timeout koneksi 5 detik, timeout respons 10 detik, dan maksimal 3 percobaan.
+            DNS diperiksa dan alamat publik dipin untuk mencegah DNS rebinding; redirect tidak diikuti.
+            Produksi memerlukan HTTPS port 443, ekstensi PHP cURL, akses egress langsung, dan queue worker aktif.
+            Tanggapi dengan HTTP 2xx setelah notifikasi diterima.
+        </p>
+    </x-ui.card>
+
+    <x-ui.card id="doc-error" title="6. Error dan Kode Status">
         <div class="table-responsive">
             <table class="table table-ui align-middle">
                 <thead>
@@ -411,6 +500,10 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span
                     <tr>
                         <td class="text-center"><span class="pill bg-gold tx-gold">422</span></td>
                         <td>Validasi gagal: field kurang, stok habis, saldo kurang, operator tidak cocok, atau zone wajib diisi. Cek objek <code>errors</code>.</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center"><span class="pill bg-errc-l tx-err">503</span></td>
+                        <td>Endpoint kompatibilitas H2H lama memakai 503 jika produk tidak tersedia/belum didukung; API v1 membalas 422 untuk validasi pesanan dan 404 untuk detail produk.</td>
                     </tr>
                     <tr>
                         <td class="text-center"><span class="pill bg-errc-l tx-err">429</span></td>

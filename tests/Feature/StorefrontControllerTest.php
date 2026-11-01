@@ -85,6 +85,8 @@ class StorefrontControllerTest extends TestCase
         $this->assertSame(OrderStatus::Pending, $order->status);
         $this->assertSame('store_cash', $order->source);
         $this->assertSame(10_800, $order->amount);
+        $this->assertSame(10_000, $order->supplier_cost_snapshot);
+        $this->assertSame(0, $order->company_cost_snapshot);
         $this->assertSame(12_000, $order->metadata['storefront']['selling_price']);
         $this->assertSame(50_000, $reseller->fresh()->balance);
         $this->assertSame(4, $product->fresh()->stock);
@@ -236,6 +238,8 @@ class StorefrontControllerTest extends TestCase
         $this->assertSame('store_qris', $order->source);
         $this->assertSame(12_000, $order->amount);
         $this->assertSame(300, $order->fee);
+        $this->assertSame(10_000, $order->supplier_cost_snapshot);
+        $this->assertSame(1_200, $order->company_cost_snapshot);
         $this->assertSame(50_000, $reseller->fresh()->balance);
         $this->assertDatabaseCount('wallet_transactions', 0);
         $this->assertDatabaseCount('reseller_commissions', 0);

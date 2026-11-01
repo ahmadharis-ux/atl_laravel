@@ -34,6 +34,10 @@ final class OrderPaymentSettler
 
             ResellerCommissionLedger::creditForSuccessfulOrder($locked);
 
+            if ($locked->status === OrderStatus::Success) {
+                OrderRewardLedger::award($locked);
+            }
+
             TransactionLogger::info('order.paid', 'Pembayaran dikonfirmasi.', [
                 'payment_method' => $locked->payment_method->value,
                 'amount' => $locked->amount,
@@ -56,7 +60,6 @@ final class OrderPaymentSettler
             }
 
             if ($settledOrder->status === OrderStatus::Success) {
-                $settledOrder->user?->addPoint();
                 OrderNotifier::success($settledOrder);
             }
 

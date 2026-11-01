@@ -52,6 +52,12 @@ class AdminLoyaltySettingTest extends TestCase
                 ->assertSee(asset('assets/images/'.$tier.'.png'), false)
                 ->assertSee('alt="'.ucfirst($tier).'"', false);
         }
+
+        $response
+            ->assertSee('Tier berdasarkan total poin reward yang pernah diperoleh')
+            ->assertSee('Multiplier reward 1x')
+            ->assertSee('Multiplier reward 1,25x')
+            ->assertSee('Multiplier reward 1,5x');
     }
 
     public function test_admin_without_update_permission_cannot_change_thresholds(): void
@@ -114,7 +120,7 @@ class AdminLoyaltySettingTest extends TestCase
     public function test_tier_changes_are_reflected_on_user_pages(): void
     {
         $admin = $this->admin();
-        $user = User::factory()->create(['points' => 60]);
+        $user = User::factory()->create(['lifetime_points' => 60]);
 
         $this->assertSame(UserTier::Silver, $user->tier());
 

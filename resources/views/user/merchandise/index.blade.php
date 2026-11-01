@@ -9,7 +9,7 @@
         <a href="{{ route('dashboard') }}" class="ap-icon-btn" data-tip="Kembali"><span class="ms ms-md">arrow_back</span></a>
         <div>
             <h1 class="fw-bold fs-5 m-0">Merchandise</h1>
-            <p class="tx-mute fs-12 m-0">Tukar poin reward kamu dengan merchandise menarik.</p>
+            <p class="tx-mute fs-12 m-0">Tukar saldo poin dengan biaya yang tertera pada setiap merchandise.</p>
         </div>
     </div>
 
@@ -27,14 +27,36 @@
         </div>
     @endif
 
-    <div class="card-ap r-card p-3 d-flex align-items-center justify-content-between gap-3">
-        <div class="d-flex align-items-center gap-2">
-            <span class="ibox ibox-44 bg-gold tx-gold"><span class="ms">star</span></span>
-            <div>
-                <div class="fs-12 tx-mute">Poin kamu</div>
-                <div class="num fw-bold fs-4">{{ number_format($points, 0, ',', '.') }} <span class="fs-6 tx-gold">Poin</span></div>
+    <div class="row g-3">
+        <div class="col-md-6">
+            <div class="card-ap r-card p-3 h-100 d-flex align-items-center gap-2">
+                <span class="ibox ibox-44 bg-gold tx-gold"><span class="ms">star</span></span>
+                <div>
+                    <div class="fs-12 tx-mute">Saldo poin yang dapat ditukar</div>
+                    <div class="num fw-bold fs-4">{{ number_format($points, 0, ',', '.') }} <span class="fs-6 tx-gold">Poin</span></div>
+                    @if ($points < 0)
+                        <div class="fs-11 tx-mute">Poin reward berikutnya akan menutup saldo minus sebelum bisa ditukar.</div>
+                    @endif
+                </div>
             </div>
         </div>
+        <div class="col-md-6">
+            <div class="card-ap r-card p-3 h-100 d-flex flex-column justify-content-center gap-1">
+                <div class="d-flex align-items-center justify-content-between gap-2">
+                    <span class="fs-12 tx-mute">Tier {{ $tier->label() }} · {{ $tier->rewardMultiplierLabel() }}</span>
+                    <span class="num fw-bold">{{ number_format($lifetimePoints, 0, ',', '.') }} lifetime poin</span>
+                </div>
+                @if ($nextTierThreshold !== null)
+                    <div class="fs-11 tx-mute">{{ number_format(max(0, $nextTierThreshold - $lifetimePoints), 0, ',', '.') }} lifetime poin lagi ke tier berikutnya.</div>
+                @else
+                    <div class="fs-11 tx-mute">Tier tertinggi telah tercapai.</div>
+                @endif
+            </div>
+        </div>
+    </div>
+
+    <div class="alert-ap r-sm bg-glass fs-12 tx-mute">
+        Poin diberikan setelah pesanan produk berhasil, bukan saat top up, dan tidak kedaluwarsa. Menukar poin tidak menurunkan tier. Tidak ada minimum penukaran global; setiap merchandise memakai biaya poin yang tertera. Reward dari pesanan yang direfund dibalik, sehingga saldo poin dapat menjadi minus.
     </div>
 
     <div class="row g-3">

@@ -76,6 +76,8 @@ class QrisAdminFeeTest extends TestCase
         $this->assertSame(DepositStatus::Paid, $deposit->status);
         $this->assertSame(50_000 + $expectedFee, $deposit->received_amount);
         $this->assertSame(50_000, $user->fresh()->balance);
+        $this->assertSame(0, (int) $user->fresh()->points);
+        $this->assertDatabaseCount('point_transactions', 0);
     }
 
     public function test_qris_checkout_stores_the_admin_fee_on_the_order(): void

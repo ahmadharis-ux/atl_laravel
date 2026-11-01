@@ -2,8 +2,10 @@
 
 namespace App\Jobs;
 
+use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Support\OrderFulfillment;
+use App\Support\TransactionLogger;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Throwable;
@@ -43,10 +45,21 @@ class SendDigiflazzTransaction implements ShouldQueue
     {
         $order = Order::query()->find($this->orderId);
 
-        if ($order === null) {
+        if ($order === null || $order->status !== OrderStatus::Processing) {
             return;
         }
 
-        OrderFulfillment::fail($order, 'Gagal menghubungi Digiflazz: '.($e?->getMessage() ?? 'unknown'));
+        TransactionLogger::warning(
+            'digiflazz.status_unknown',
+            'Status transaksi belum dapat dipastikan setelah percobaan ulang. Pesanan tetap diproses dan tidak direfund otomatis.',
+            [
+                'provider_ref' => $order->provider_ref,
+                'exception' => $e !== null ? $e::class : null,
+                'error' => $e?->getMessage(),
+                'next_action' => 'reconcile_with_same_provider_ref',
+            ],
+            $order,
+            $order->user,
+        );
     }
 }

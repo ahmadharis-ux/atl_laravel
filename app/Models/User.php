@@ -19,8 +19,8 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'phone', 'password', 'is_admin', 'points'])]
-#[Hidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'])]
+#[Fillable(['name', 'email', 'phone', 'password', 'is_admin', 'points', 'lifetime_points'])]
+#[Hidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes', 'reseller_webhook_secret'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
@@ -87,16 +87,11 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Tingkatan loyalitas berdasarkan akumulasi poin reward.
+     * Tingkatan loyalitas berdasarkan total poin reward yang pernah diperoleh.
      */
     public function tier(): UserTier
     {
-        return UserTier::fromPoints((int) $this->points);
-    }
-
-    public function addPoint(): void
-    {
-        $this->changePoints(1, PointTransactionType::OrderReward, 'Bonus poin pembelian');
+        return UserTier::fromPoints((int) $this->lifetime_points);
     }
 
     /**
@@ -107,7 +102,15 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         $after = (int) $this->points + $delta;
 
-        $this->forceFill(['points' => $after])->save();
+        $changes = ['points' => $after];
+
+        if ($type === PointTransactionType::OrderReward && $delta > 0) {
+            $changes['lifetime_points'] = (int) $this->lifetime_points + $delta;
+        } elseif ($type === PointTransactionType::OrderRewardReversed && $delta < 0) {
+            $changes['lifetime_points'] = max(0, (int) $this->lifetime_points + $delta);
+        }
+
+        $this->forceFill($changes)->save();
 
         $this->pointTransactions()->create([
             'type' => $type,
@@ -193,12 +196,15 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
             'is_admin' => 'boolean',
             'balance' => 'integer',
+            'lifetime_points' => 'integer',
             'is_reseller' => 'boolean',
             'reseller_since' => 'datetime',
             'reseller_allowed_ips' => 'array',
             'reseller_terms_accepted_at' => 'datetime',
             'reseller_last_api_at' => 'datetime',
             'reseller_reviewed_at' => 'datetime',
+            'reseller_webhook_secret' => 'encrypted',
+            'reseller_webhook_last_sent_at' => 'datetime',
             'two_factor_secret' => 'encrypted',
             'two_factor_recovery_codes' => 'encrypted:array',
             'two_factor_confirmed_at' => 'datetime',

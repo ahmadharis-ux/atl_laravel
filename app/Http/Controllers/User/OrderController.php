@@ -43,7 +43,7 @@ class OrderController extends Controller
         }
 
         return view('user.orders.show', [
-            'order' => $order->load(['product.brand', 'product.category']),
+            'order' => $order->load(['product.brand', 'product.category', 'pointTransactions']),
         ]);
     }
 
@@ -131,18 +131,22 @@ class OrderController extends Controller
 
             return redirect()
                 ->route('orders.show', $order)
-                ->with('status', 'Gagal mengambil status dari Midtrans.');
+                ->with('error', 'Belum berhasil mengambil status dari Midtrans. Coba cek kembali beberapa saat lagi.');
         }
 
         $message = match ($status) {
-            null => 'Status tidak dapat diambil dari Midtrans.',
+            null => 'Belum berhasil mengambil status dari Midtrans. Coba cek kembali beberapa saat lagi.',
             'settlement', 'capture' => 'Pembayaran '.$order->order_number.' terverifikasi. Pesanan sedang diproses.',
             'expire' => 'Kode QRIS pesanan '.$order->order_number.' sudah kedaluwarsa.',
             'deny', 'cancel', 'failure' => 'Pembayaran pesanan '.$order->order_number.' ditolak atau dibatalkan.',
             default => 'Status pembayaran '.$order->order_number.': '.$status.'.',
         };
 
-        return redirect()->route('orders.show', $order)->with('status', $message);
+        $redirect = redirect()->route('orders.show', $order);
+
+        return $status === null
+            ? $redirect->with('error', $message)
+            : $redirect->with('status', $message);
     }
 
     /**

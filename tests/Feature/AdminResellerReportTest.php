@@ -41,6 +41,7 @@ class AdminResellerReportTest extends TestCase
 
         $user = User::factory()->create(array_merge([
             'is_reseller' => true,
+            'reseller_status' => 'active',
             'reseller_api_key' => $key['hash'],
             'reseller_api_key_hint' => $key['hint'],
             'reseller_since' => now()->subDays(3),
@@ -67,7 +68,7 @@ class AdminResellerReportTest extends TestCase
     {
         $admin = $this->admin();
         $this->reseller(['email' => 'aktif@reseller.test']);
-        $this->reseller(['email' => 'nonaktif@reseller.test', 'is_reseller' => false, 'reseller_api_key' => null, 'reseller_api_key_hint' => null]);
+        $this->reseller(['email' => 'nonaktif@reseller.test', 'is_reseller' => false, 'reseller_status' => 'inactive', 'reseller_api_key' => null, 'reseller_api_key_hint' => null]);
         User::factory()->create(['email' => 'biasa@user.test']);
 
         $this->actingAs($admin)
@@ -83,12 +84,12 @@ class AdminResellerReportTest extends TestCase
     {
         $admin = $this->admin();
         $this->reseller();
-        $this->reseller(['is_reseller' => false, 'reseller_api_key' => null, 'reseller_api_key_hint' => null]);
+        $this->reseller(['is_reseller' => false, 'reseller_status' => 'inactive', 'reseller_api_key' => null, 'reseller_api_key_hint' => null]);
 
         $this->actingAs($admin)
             ->get(route('admin.resellers.index'))
             ->assertOk()
-            ->assertSee('Total Reseller')
+            ->assertSee('Total Pengajuan')
             ->assertSee('Reseller Aktif')
             ->assertSee('Transaksi via API')
             ->assertSee('Nominal via API');
@@ -135,5 +136,36 @@ class AdminResellerReportTest extends TestCase
 
         $this->assertStringContainsString($reseller->email, (string) $response->json('rows'));
         $this->assertStringContainsString('reseller', (string) $response->json('footer'));
+    }
+
+    public function test_admin_approval_activates_pending_reseller_without_exposing_an_api_key(): void
+    {
+        $admin = $this->admin(['dashboard.view', 'resellers.view', 'resellers.update']);
+        $reseller = User::factory()->create([
+            'is_reseller' => false,
+            'reseller_status' => 'pending',
+            'reseller_sales_channel' => 'api',
+            'reseller_terms_version' => '1.0',
+            'reseller_terms_accepted_at' => now(),
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.resellers.status.update', $reseller), ['action' => 'approve'])
+            ->assertRedirect()
+            ->assertSessionHas('status');
+
+        $reseller->refresh();
+
+        $this->assertTrue($reseller->is_reseller);
+        $this->assertSame('active', $reseller->reseller_status);
+        $this->assertNotNull($reseller->reseller_since);
+        $this->assertNull($reseller->reseller_api_key);
+        $this->assertNull($reseller->reseller_api_key_hint);
+        $this->assertDatabaseHas('reseller_status_histories', [
+            'user_id' => $reseller->getKey(),
+            'actor_id' => $admin->getKey(),
+            'from_status' => 'pending',
+            'to_status' => 'active',
+        ]);
     }
 }

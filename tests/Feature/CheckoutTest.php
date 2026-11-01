@@ -57,8 +57,21 @@ class CheckoutTest extends TestCase
             ->assertSee('Saldo cukup untuk membayar pesanan ini.')
             ->assertSee('Dipotong dari saldo saat pesanan dibuat.')
             ->assertSee('Scan QRIS dan selesaikan pembayaran dalam 3 jam.')
+            ->assertSee('Perkiraan poin reward')
+            ->assertSee('0 poin')
             ->assertSee('required', false)
             ->assertSee('data-min-loader="2000"', false);
+    }
+
+    public function test_checkout_estimates_reward_using_the_current_lifetime_tier(): void
+    {
+        $user = User::factory()->create(['lifetime_points' => 100]);
+        $product = $this->product(['markup_value' => 1_000]);
+
+        $this->actingAs($user)
+            ->get(route('checkout.show', $product))
+            ->assertSee('Tier Gold (1,25x)')
+            ->assertSee('37 poin');
     }
 
     public function test_checkout_shows_a_phone_number_example_for_pulsa_products(): void
@@ -147,7 +160,7 @@ class CheckoutTest extends TestCase
     public function test_balance_checkout_creates_a_successful_order_and_deducts_balance(): void
     {
         $user = User::factory()->create(['balance' => 1_000_000]);
-        $product = $this->product();
+        $product = $this->product(['markup_value' => 2_000]);
 
         $this->actingAs($user)
             ->post(route('checkout.store', $product), [
@@ -160,20 +173,30 @@ class CheckoutTest extends TestCase
 
         $this->assertSame($user->getKey(), $order->user_id);
         $this->assertSame($product->getKey(), $order->product_id);
-        $this->assertSame(10_000, $order->amount);
+        $this->assertSame(12_000, $order->amount);
+        $this->assertSame(10_000, $order->supplier_cost_snapshot);
+        $this->assertSame(0, $order->company_cost_snapshot);
+        $this->assertTrue($order->reward_eligible);
         $this->assertSame('123456789', $order->target);
         $this->assertSame(OrderStatus::Success, $order->status);
         $this->assertSame(PaymentMethod::Saldo, $order->payment_method);
         $this->assertNotNull($order->paid_at);
-        $this->assertSame(990_000, $user->fresh()->balance);
+        $this->assertSame(988_000, $user->fresh()->balance);
+        $this->assertSame(60, (int) $user->fresh()->points);
+        $this->assertSame(60, (int) $user->fresh()->lifetime_points);
+
+        $this->actingAs($user)
+            ->get(route('orders.show', $order))
+            ->assertSee('Poin reward')
+            ->assertSee('+60 poin');
 
         $this->assertDatabaseHas('wallet_transactions', [
             'user_id' => $user->getKey(),
             'type' => WalletTransactionType::Purchase->value,
             'direction' => WalletTransactionDirection::Debit->value,
-            'amount' => 10_000,
+            'amount' => 12_000,
             'balance_before' => 1_000_000,
-            'balance_after' => 990_000,
+            'balance_after' => 988_000,
             'reference_id' => $order->getKey(),
         ]);
     }
@@ -181,14 +204,17 @@ class CheckoutTest extends TestCase
     public function test_qris_checkout_creates_a_pending_order_without_deducting_balance(): void
     {
         $user = User::factory()->create(['balance' => 1_000_000]);
-        $product = $this->product();
+        $product = $this->product(['markup_value' => 2_000]);
 
         $this->actingAs($user)
+            ->followingRedirects()
             ->post(route('checkout.store', $product), [
                 'target' => '123456789',
                 'payment_method' => PaymentMethod::Qris->value,
             ])
-            ->assertRedirect();
+            ->assertOk()
+            ->assertSee('Pesanan tersimpan, tetapi QRIS belum dapat ditampilkan.')
+            ->assertSee('role="alert" aria-live="assertive"', false);
 
         $order = Order::query()->sole();
 
@@ -198,6 +224,30 @@ class CheckoutTest extends TestCase
         $this->assertNull($order->paid_at);
         $this->assertSame(1_000_000, $user->fresh()->balance);
         $this->assertDatabaseCount('wallet_transactions', 0);
+    }
+
+    public function test_qris_details_explain_when_no_code_is_available_and_show_the_due_total(): void
+    {
+        $user = User::factory()->create();
+        $order = Order::factory()->for($user)->create([
+            'payment_method' => PaymentMethod::Qris,
+            'status' => OrderStatus::Pending,
+            'amount' => 50_000,
+            'fee' => 350,
+            'payment_code' => 'QR-STRING-IS-NOT-A-SCANABLE-CODE',
+            'expires_at' => now()->addHours(3),
+            'metadata' => null,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('orders.show', $order))
+            ->assertOk()
+            ->assertSee('QRIS belum tersedia')
+            ->assertSee('Jangan lakukan pembayaran sebelum kode QR tampil.')
+            ->assertSee('Batas waktu pesanan Atlantic:')
+            ->assertSee('Rp 50.350')
+            ->assertDontSee('QR-STRING-IS-NOT-A-SCANABLE-CODE')
+            ->assertSee(route('orders.sync', $order), false);
     }
 
     public function test_virtual_account_requires_a_master_bank_and_rejects_a_mismatched_one(): void

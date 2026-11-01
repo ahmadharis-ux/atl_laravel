@@ -6,9 +6,12 @@ use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Http\Controllers\Admin\Concerns\HasPerPage;
 use App\Http\Controllers\Controller;
+use App\Jobs\SyncDigiflazzTransactionStatus;
 use App\Models\Order;
+use App\Models\Product;
 use App\Support\OrderFulfillment;
 use App\Support\OrderPaymentSettler;
+use App\Support\TransactionLogger;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
@@ -62,13 +65,36 @@ class TransactionController extends Controller
             'product.brand',
             'product.category',
             'logs.user',
+            'walletTransactions',
         ]);
 
         $logs = $order->logs->sortByDesc('id')->values();
+        $providerStatusConflict = $logs->firstWhere('event', 'digiflazz.late_result_ignored');
+        $timelineLogs = $logs->filter(fn ($log): bool => in_array($log->event, [
+            'order.created',
+            'order.paid',
+            'midtrans.payment_status',
+            'digiflazz.topup_failed',
+            'digiflazz.status_sync_requested',
+            'digiflazz.status_sync_started',
+            'digiflazz.status_sync_failed',
+            'digiflazz.status_unknown',
+            'digiflazz.response_pending',
+            'digiflazz.late_result_ignored',
+            'order.fulfilled',
+            'order.failed',
+            'order.refunded',
+            'order.refunded_manual',
+            'order.storefront_refunded',
+            'order.storefront_refund_manual',
+            'order.storefront_refund_failed',
+        ], true))->sortBy('id')->values();
 
         return view('admin.transaction.show', [
             'order' => $order,
             'logs' => $logs,
+            'providerStatusConflict' => $providerStatusConflict,
+            'timelineLogs' => $timelineLogs,
         ]);
     }
 
@@ -123,6 +149,29 @@ class TransactionController extends Controller
         }
 
         return back()->with('success', 'Pesanan '.$order->order_number.' ditandai lunas dan diproses.');
+    }
+
+    /**
+     * Minta status terkini menggunakan Ref ID transaksi Digiflazz yang sama.
+     */
+    public function syncDigiflazz(Order $order, Request $request): RedirectResponse
+    {
+        $isDigiflazzOrder = $order->provider === Product::PROVIDER_DIGIFLAZZ
+            || $order->product?->provider === Product::PROVIDER_DIGIFLAZZ;
+
+        if ($order->status !== OrderStatus::Processing
+            || ! $isDigiflazzOrder
+            || blank($order->provider_ref)) {
+            return back()->with('error', 'Cek status hanya tersedia untuk pesanan Digiflazz yang masih diproses dan memiliki Ref ID.');
+        }
+
+        TransactionLogger::info('digiflazz.status_sync_requested', 'Admin meminta pemeriksaan ulang status Digiflazz menggunakan Ref ID yang sama.', [
+            'provider_ref' => $order->provider_ref,
+        ], $order, $request->user());
+
+        SyncDigiflazzTransactionStatus::dispatch($order->getKey());
+
+        return back()->with('success', 'Permintaan cek status dikirim. Pesanan tetap diproses sampai Digiflazz memberikan status akhir.');
     }
 
     /**

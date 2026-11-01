@@ -3,13 +3,19 @@
 namespace Tests\Feature;
 
 use App\Jobs\SendDigiflazzTransaction;
+use App\Jobs\SendResellerWebhook;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
+use App\Support\OrderFulfillment;
 use App\Support\ResellerKey;
+use App\Support\ResellerWebhook;
+use App\Support\ResellerWebhookAddressResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request as ClientRequest;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
@@ -47,6 +53,7 @@ class ResellerApiTest extends TestCase
 
         return Product::factory()->create(array_merge([
             'status' => true,
+            'provider' => Product::PROVIDER_DIGIFLAZZ,
             'category_id' => $category->getKey(),
             'cost_price' => 10_000,
             'markup_value' => 1_000,
@@ -55,11 +62,24 @@ class ResellerApiTest extends TestCase
         ], $attributes));
     }
 
+    private function publicWebhookAddressResolver(): ResellerWebhookAddressResolver
+    {
+        $resolver = \Mockery::mock(ResellerWebhookAddressResolver::class);
+        $resolver->shouldReceive('resolvePublicAddresses')
+            ->with('callback.example.test')
+            ->andReturn(['93.184.216.34']);
+        $resolver->shouldReceive('curlResolveEntries')
+            ->with('callback.example.test', 443, ['93.184.216.34'])
+            ->andReturn(['callback.example.test:443:93.184.216.34']);
+
+        return $resolver;
+    }
+
     public function test_request_without_an_api_key_is_unauthorized(): void
     {
         $this->getJson('/api/v1/reseller/profile')
             ->assertUnauthorized()
-            ->assertJsonPath('message', 'API key tidak ditemukan. Sertakan header X-API-Key: <api key> atau Authorization: Bearer <api key>.');
+            ->assertJsonPath('message', 'API key tidak ditemukan. Sertakan header X-API-Key atau Authorization: Bearer.');
     }
 
     public function test_invalid_api_key_is_rejected(): void
@@ -89,6 +109,15 @@ class ResellerApiTest extends TestCase
         [, $plain] = $this->reseller();
         User::query()->where('reseller_api_key', ResellerKey::hash($plain))
             ->update(['is_reseller' => false]);
+
+        $this->withHeaders(['X-API-Key' => $plain])
+            ->getJson('/api/v1/reseller/profile')
+            ->assertUnauthorized();
+    }
+
+    public function test_suspended_resellers_key_is_rejected(): void
+    {
+        [, $plain] = $this->reseller(['reseller_status' => 'suspended']);
 
         $this->withHeaders(['X-API-Key' => $plain])
             ->getJson('/api/v1/reseller/profile')
@@ -285,6 +314,9 @@ class ResellerApiTest extends TestCase
 
         $this->assertSame('api', $order->source);
         $this->assertSame(10_450, (int) $order->amount);
+        $this->assertSame(10_000, $order->supplier_cost_snapshot);
+        $this->assertSame(0, $order->company_cost_snapshot);
+        $this->assertTrue($order->reward_eligible);
         $this->assertSame(89_550, $user->fresh()->balance);
         $this->assertSame(4, $product->stock);
         $this->assertSame(1, $product->sold_count);
@@ -292,6 +324,181 @@ class ResellerApiTest extends TestCase
             SendDigiflazzTransaction::class,
             fn (SendDigiflazzTransaction $job): bool => $job->orderId === $order->getKey(),
         );
+    }
+
+    public function test_create_order_replays_the_same_reff_id_without_debiting_twice(): void
+    {
+        Queue::fake();
+
+        [$user, $plain] = $this->reseller(['balance' => 100_000]);
+        $product = $this->product(['stock' => 5]);
+        $payload = [
+            'product_id' => $product->getKey(),
+            'target' => '081234567890',
+            'reff_id' => 'order-0001',
+        ];
+
+        $this->withHeaders(['X-API-Key' => $plain])
+            ->postJson('/api/v1/reseller/orders', $payload)
+            ->assertCreated()
+            ->assertJsonPath('data.reff_id', 'order-0001');
+
+        $firstOrderNumber = Order::sole()->order_number;
+
+        $this->withHeaders(['X-API-Key' => $plain])
+            ->postJson('/api/v1/reseller/orders', $payload)
+            ->assertOk()
+            ->assertJsonPath('data.order_number', $firstOrderNumber)
+            ->assertJsonPath('data.reff_id', 'order-0001');
+
+        $this->assertDatabaseCount('orders', 1);
+        $this->assertSame(89_550, $user->fresh()->balance);
+        $this->assertSame(4, $product->fresh()->stock);
+    }
+
+    public function test_create_order_accepts_legacy_product_code_and_combined_zone_target(): void
+    {
+        Queue::fake();
+
+        [, $plain] = $this->reseller();
+        $product = $this->product([
+            'brand_id' => Brand::factory()->create(['slug' => 'mobile-legends'])->getKey(),
+            'code' => 'ML-DIAMOND-86',
+        ]);
+
+        $this->withHeaders(['X-API-Key' => $plain])
+            ->postJson('/api/v1/reseller/orders', [
+                'code' => $product->code,
+                'target' => '12345678|1234',
+                'reff_id' => 'legacy-zone-01',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.product.code', 'ML-DIAMOND-86')
+            ->assertJsonPath('data.target', '12345678')
+            ->assertJsonPath('data.target_zone', '1234')
+            ->assertJsonPath('data.reff_id', 'legacy-zone-01');
+
+        $this->assertDatabaseHas('orders', [
+            'product_id' => $product->getKey(),
+            'target' => '12345678',
+            'target_zone' => '1234',
+            'idempotency_key' => 'legacy-zone-01',
+        ]);
+    }
+
+    public function test_create_order_rejects_a_price_above_limit_price_without_charging(): void
+    {
+        [$user, $plain] = $this->reseller(['balance' => 100_000]);
+        $product = $this->product();
+
+        $this->withHeaders(['X-API-Key' => $plain])
+            ->postJson('/api/v1/reseller/orders', [
+                'product_id' => $product->getKey(),
+                'target' => '081234567890',
+                'limit_price' => 10_449,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('limit_price');
+
+        $this->assertDatabaseCount('orders', 0);
+        $this->assertSame(100_000, $user->fresh()->balance);
+    }
+
+    public function test_products_and_orders_exclude_unsupported_provider_products(): void
+    {
+        [, $plain] = $this->reseller();
+        $product = $this->product(['provider' => null]);
+
+        $this->withHeaders(['X-API-Key' => $plain])
+            ->getJson('/api/v1/reseller/products')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 0);
+
+        $this->withHeaders(['X-API-Key' => $plain])
+            ->getJson('/api/v1/reseller/products/'.$product->getKey())
+            ->assertNotFound();
+
+        $this->withHeaders(['X-API-Key' => $plain])
+            ->postJson('/api/v1/reseller/orders', [
+                'product_id' => $product->getKey(),
+                'target' => '081234567890',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('product_id');
+
+        $this->assertDatabaseCount('orders', 0);
+    }
+
+    public function test_legacy_h2h_endpoints_support_price_list_create_and_status_polling(): void
+    {
+        Queue::fake();
+
+        [$user, $plain] = $this->reseller(['balance' => 100_000]);
+        $product = $this->product([
+            'brand_id' => Brand::factory()->create(['slug' => 'mobile-legends'])->getKey(),
+            'code' => 'ML-LEGACY-86',
+        ]);
+
+        $this->post('/layanan/price_list', [
+            'api_key' => $plain,
+            'type' => 'prabayar',
+        ])
+            ->assertOk()
+            ->assertJsonPath('status', true)
+            ->assertJsonPath('data.0.code', 'ML-LEGACY-86')
+            ->assertJsonPath('data.0.price', 10_450);
+
+        $created = $this->post('/transaksi/create', [
+            'api_key' => $plain,
+            'code' => 'ML-LEGACY-86',
+            'reff_id' => 'old-h2h-0001',
+            'target' => '12345678|1234',
+            'limit_price' => 10_500,
+        ])
+            ->assertOk()
+            ->assertJsonPath('status', true)
+            ->assertJsonPath('data.reff_id', 'old-h2h-0001')
+            ->assertJsonPath('data.code', 'ML-LEGACY-86')
+            ->assertJsonPath('data.target', '12345678|1234')
+            ->assertJsonPath('data.price', 10_450)
+            ->assertJsonPath('code', 200);
+
+        $orderNumber = $created->json('data.id');
+
+        $this->post('/transaksi/create', [
+            'api_key' => $plain,
+            'code' => 'ML-LEGACY-86',
+            'reff_id' => 'old-h2h-0001',
+            'target' => '12345678|1234',
+            'limit_price' => 10_500,
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.id', $orderNumber);
+
+        $this->post('/transaksi/status', [
+            'api_key' => $plain,
+            'id' => $orderNumber,
+            'type' => 'prabayar',
+        ])
+            ->assertOk()
+            ->assertJsonPath('status', true)
+            ->assertJsonPath('data.id', $orderNumber)
+            ->assertJsonPath('data.status', 'processing');
+
+        $this->assertSame(89_550, $user->fresh()->balance);
+        $this->assertDatabaseCount('orders', 1);
+    }
+
+    public function test_reseller_api_key_in_the_body_is_accepted_only_on_legacy_routes(): void
+    {
+        [, $plain] = $this->reseller();
+
+        $this->postJson('/api/v1/reseller/orders', [
+            'api_key' => $plain,
+            'product_id' => $this->product()->getKey(),
+            'target' => '081234567890',
+        ])
+            ->assertUnauthorized();
     }
 
     public function test_create_order_with_insufficient_balance_returns_422_and_creates_nothing(): void
@@ -425,5 +632,158 @@ class ResellerApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.order_number', $order->order_number)
             ->assertJsonPath('data.product.name', $product->name);
+    }
+
+    public function test_webhook_job_sends_a_signed_status_notification(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake([
+            'callback.example.test/*' => Http::response([], 204),
+        ]);
+
+        [$user] = $this->reseller([
+            'reseller_status' => 'active',
+            'reseller_webhook_url' => 'https://callback.example.test/orders',
+            'reseller_webhook_secret' => 'whsec_test-secret',
+        ]);
+        $product = $this->product();
+        $order = Order::factory()->for($user)->for($product)->create([
+            'source' => 'api',
+            'status' => 'success',
+        ]);
+        $job = new SendResellerWebhook($order->getKey(), ResellerWebhook::EVENT_SUCCESS);
+
+        $job->handle($this->publicWebhookAddressResolver());
+
+        Http::assertSent(fn (ClientRequest $request): bool => $request->url() === 'https://callback.example.test/orders'
+            && $request->hasHeader(ResellerWebhook::EVENT_HEADER, ResellerWebhook::EVENT_SUCCESS)
+            && $request->hasHeader(ResellerWebhook::DELIVERY_HEADER, $job->deliveryId)
+            && $request->hasHeader(
+                ResellerWebhook::SIGNATURE_HEADER,
+                ResellerWebhook::signature($request->body(), 'whsec_test-secret')
+            ));
+
+        $this->assertSame('sent', $user->fresh()->reseller_webhook_last_status);
+    }
+
+    public function test_completed_api_order_dispatches_a_reseller_webhook(): void
+    {
+        Queue::fake([SendResellerWebhook::class]);
+
+        [$user] = $this->reseller([
+            'reseller_status' => 'active',
+            'reseller_webhook_url' => 'https://callback.example.test/orders',
+            'reseller_webhook_secret' => 'whsec_test-secret',
+        ]);
+        $product = $this->product();
+        $order = Order::factory()->for($user)->for($product)->create([
+            'source' => 'api',
+            'status' => 'processing',
+        ]);
+
+        OrderFulfillment::applyResult($order, ['status' => 'Sukses']);
+
+        Queue::assertPushed(
+            SendResellerWebhook::class,
+            fn (SendResellerWebhook $job): bool => $job->orderId === $order->getKey()
+                && $job->event === ResellerWebhook::EVENT_SUCCESS
+        );
+        $this->assertSame('success', $order->fresh()->status->value);
+    }
+
+    public function test_webhook_is_rejected_when_dns_has_no_public_addresses(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake([
+            'callback.example.test/*' => Http::response([], 204),
+        ]);
+
+        [$user] = $this->reseller([
+            'reseller_status' => 'active',
+            'reseller_webhook_url' => 'https://callback.example.test/orders',
+            'reseller_webhook_secret' => 'whsec_test-secret',
+        ]);
+        $product = $this->product();
+        $order = Order::factory()->for($user)->for($product)->create([
+            'source' => 'api',
+            'status' => 'success',
+        ]);
+        $resolver = \Mockery::mock(ResellerWebhookAddressResolver::class);
+        $resolver->shouldReceive('resolvePublicAddresses')
+            ->with('callback.example.test')
+            ->once()
+            ->andReturn(null);
+
+        (new SendResellerWebhook($order->getKey(), ResellerWebhook::EVENT_SUCCESS))->handle($resolver);
+
+        Http::assertSentCount(0);
+        $this->assertSame('invalid_url', $user->fresh()->reseller_webhook_last_status);
+    }
+
+    public function test_webhook_address_resolver_rejects_private_ip_literals_and_formats_pinned_addresses(): void
+    {
+        $resolver = new ResellerWebhookAddressResolver;
+
+        $this->assertSame(['93.184.216.34'], $resolver->resolvePublicAddresses('93.184.216.34'));
+        $this->assertNull($resolver->resolvePublicAddresses('127.0.0.1'));
+        $this->assertSame(
+            ['callback.example.test:443:93.184.216.34', 'callback.example.test:443:[2606:4700:4700::1111]'],
+            $resolver->curlResolveEntries('callback.example.test', 443, [
+                '93.184.216.34',
+                '2606:4700:4700::1111',
+            ]),
+        );
+    }
+
+    public function test_webhook_address_resolver_rejects_private_dns_and_mixed_public_private_answers(): void
+    {
+        $resolver = new class extends ResellerWebhookAddressResolver
+        {
+            protected function lookupDnsRecords(string $host): array|false
+            {
+                return match ($host) {
+                    'private.example.test' => [
+                        ['type' => 'A', 'ip' => '10.0.0.5'],
+                    ],
+                    'mixed.example.test' => [
+                        ['type' => 'A', 'ip' => '93.184.216.34'],
+                        ['type' => 'AAAA', 'ipv6' => 'fd00::5'],
+                    ],
+                    'public.example.test' => [
+                        ['type' => 'A', 'ip' => '93.184.216.34'],
+                        ['type' => 'AAAA', 'ipv6' => '2606:4700:4700::1111'],
+                    ],
+                };
+            }
+        };
+
+        $this->assertNull($resolver->resolvePublicAddresses('private.example.test'));
+        $this->assertNull($resolver->resolvePublicAddresses('mixed.example.test'));
+        $this->assertSame(
+            ['93.184.216.34', '2606:4700:4700::1111'],
+            $resolver->resolvePublicAddresses('public.example.test'),
+        );
+    }
+
+    public function test_webhook_job_does_not_follow_redirects(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake([
+            'callback.example.test/*' => Http::response('', 302, ['Location' => 'http://127.0.0.1/admin']),
+        ]);
+
+        [$user] = $this->reseller([
+            'reseller_status' => 'active',
+            'reseller_webhook_url' => 'https://callback.example.test/orders',
+            'reseller_webhook_secret' => 'whsec_test-secret',
+        ]);
+        $product = $this->product();
+        $order = Order::factory()->for($user)->for($product)->create(['source' => 'api', 'status' => 'success']);
+
+        (new SendResellerWebhook($order->getKey(), ResellerWebhook::EVENT_SUCCESS))
+            ->handle($this->publicWebhookAddressResolver());
+
+        Http::assertSentCount(1);
+        $this->assertSame('rejected', $user->fresh()->reseller_webhook_last_status);
     }
 }

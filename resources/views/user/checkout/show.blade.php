@@ -158,6 +158,17 @@
                         </li>
                     </ul>
 
+                    <div class="card-ap r-sm p-3 bg-glass">
+                        <div class="d-flex align-items-center justify-content-between gap-2">
+                            <span class="fw-semibold fs-12">Perkiraan poin reward</span>
+                            <span class="num fw-bold tx-gold">{{ number_format($rewardEstimate, 0, ',', '.') }} poin</span>
+                        </div>
+                        <p class="fs-11 tx-mute mb-0 mt-2">
+                            Tier {{ $rewardTier->label() }} ({{ $rewardTier->rewardMultiplierLabel() }}). Poin masuk setelah pesanan berhasil; dihitung dari margin setelah biaya perusahaan. Biaya QRIS yang dibayar pelanggan tidak mengurangi poin. Top up tidak mendapat poin dan reward tidak kedaluwarsa.
+                        </p>
+                        <a href="{{ route('merchandise.index') }}" class="fs-11 d-inline-block mt-2">Aturan dan penukaran poin</a>
+                    </div>
+
                     <div data-checkout-saldo class="d-none flex-column gap-2">
                         <div class="d-flex align-items-center justify-content-between fs-12 tx-skyd border-top pt-2">
                             <span>Saldo kamu</span>

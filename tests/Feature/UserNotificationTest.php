@@ -2,12 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Enums\OrderStatus;
+use App\Enums\PaymentMethod;
 use App\Models\Deposit;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
 use App\Notifications\TransactionResult;
 use App\Support\DepositSettler;
+use App\Support\OrderFulfillment;
 use App\Support\OrderNotifier;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\DatabaseNotification;
@@ -45,6 +48,27 @@ class UserNotificationTest extends TestCase
         $titles = $user->notifications()->get()->map(fn ($n) => $n->data['title'])->all();
         $this->assertContains('Transaksi berhasil', $titles);
         $this->assertContains('Transaksi gagal', $titles);
+    }
+
+    public function test_expiring_an_order_sends_one_actionable_warning_notification(): void
+    {
+        $user = User::factory()->create();
+        $order = Order::factory()->for($user)->create([
+            'status' => OrderStatus::Pending,
+            'payment_method' => PaymentMethod::Qris,
+        ]);
+
+        OrderFulfillment::expire($order);
+        OrderFulfillment::expire($order->fresh());
+
+        $notification = $user->notifications()->sole();
+
+        $this->assertSame('Batas pembayaran berakhir', $notification->data['title']);
+        $this->assertSame('warning', $notification->data['level']);
+        $this->assertSame('timer_off', $notification->data['icon']);
+        $this->assertSame(route('orders.show', $order), $notification->data['url']);
+        $this->assertSame('order', $notification->data['context']['type']);
+        $this->assertStringContainsString('kode pembayarannya tidak dapat digunakan lagi', $notification->data['body']);
     }
 
     public function test_notification_dropdown_returns_json_with_unread_count(): void

@@ -1,6 +1,6 @@
 # Reseller API (v1)
 
-API untuk akun reseller Atlantic Pedia: ambil daftar produk & harga khusus reseller, buat pesanan dari saldo, dan pantau status transaksi — semua lewat API key (tanpa sesi browser / CSRF).
+API reseller Atlantic Pedia: ambil produk dan harga reseller, buat pesanan dari saldo, serta pantau status. Endpoint API v1 dan endpoint kompatibilitas H2H memakai API key tanpa sesi browser atau token CSRF. API key H2H dari sistem lama tidak otomatis berlaku; gunakan key reseller baru.
 
 Dokumentasi yang sama juga tersedia di aplikasi: **Pengaturan → Reseller → Dokumentasi API** (`/pengaturan/reseller/dokumentasi`).
 
@@ -12,7 +12,7 @@ https://<domain>/api/v1/reseller
 
 ## Autentikasi
 
-Kirim API key di setiap request memakai salah satu header:
+Untuk API v1, kirim API key di setiap request memakai salah satu header:
 
 ```
 X-API-Key: ap_XXXXXXXX...
@@ -25,6 +25,9 @@ Authorization: Bearer ap_XXXXXXXX...
 - Bila reseller dinonaktifkan atau ditangguhkan, semua API key dicabut (401) dan pesanan baru dari toko hosted dihentikan.
 - IP server dapat dibatasi melalui allowlist opsional pada pengajuan. Request dari IP yang tidak diizinkan mendapat balasan `403`.
 - Aktivitas dicatat sebagai waktu pemakaian API terakhir (pembaruan paling banyak sekali per menit), bukan indikator reseller sedang online.
+- Endpoint H2H kompatibilitas di root domain juga menerima `api_key` pada body form-urlencoded; cara ini hanya untuk ketiga endpoint lama yang didaftarkan.
+
+Gunakan bentuk Bearer yang valid `Authorization: Bearer ap_XXXXXXXX...` bila tidak memakai header `X-API-Key`.
 
 ### Rate limit
 
@@ -33,7 +36,7 @@ Authorization: Bearer ap_XXXXXXXX...
 ## Pricing
 
 - `selling_price` — harga jual publik.
-- `reseller_price` — yang dibayar reseller: diskon `config/reseller.discount_percent` (env `RESELLER_DISCOUNT_PERCENT`, default **5%**) dari `selling_price`, **dibatasi tidak di bawah `cost_price`**.
+- `reseller_price` — yang dibayar reseller: diskon sampai `config/reseller.discount_percent` (env `RESELLER_DISCOUNT_PERCENT`, default **5%**) dari `selling_price`, **dibatasi tidak di bawah `cost_price`**. Diskon aktual dapat lebih kecil atau nol.
 - `discount` — selisih nominal `selling_price - reseller_price`; margin kotor indikatif bila dijual dengan harga publik, bukan jaminan laba bersih.
 
 ## Alur pembayaran (saldo)
@@ -57,8 +60,8 @@ Semua endpoint membalas JSON. Pesanan selalu dibayar dari **saldo akun** (`payme
 |---|---|---|
 | GET | `/profile` | Profil, saldo, diskon berlaku |
 | GET | `/balance` | Saldo + 10 mutasi wallet terakhir |
-| GET | `/products` | Daftar produk aktif + harga reseller |
-| GET | `/products/{id}` | Detail satu produk (404 bila tidak aktif) |
+| GET | `/products` | Daftar produk prabayar Digiflazz yang didukung + harga reseller |
+| GET | `/products/{id}` | Detail produk yang didukung (404 bila tidak tersedia) |
 | POST | `/orders` | Buat pesanan (bayar dari saldo) |
 | GET | `/orders` | Riwayat pesanan milik sendiri |
 | GET | `/orders/{order_number}` | Detail pesanan (404 bila bukan milik sendiri) |
@@ -75,7 +78,7 @@ Query opsional:
 | `payment_type` | string | `prabayar` atau `pascabayar` | Filter jenis pembayaran produk |
 | `per_page` | integer | 1–100; default 50 | Jumlah item per halaman |
 
-Daftar hanya berisi produk aktif dan diurutkan berdasarkan nama. Response memakai `data` untuk item dan `meta` untuk paginasi; `total` adalah jumlah hasil yang cocok dengan filter.
+Daftar hanya berisi produk aktif prabayar dengan fulfillment Digiflazz dan diurutkan berdasarkan nama. Filter `payment_type` menerima `prabayar` atau `pascabayar`, tetapi daftar pascabayar akan kosong karena jenis tersebut belum didukung. Response memakai `data` untuk item dan `meta` untuk paginasi; `total` adalah jumlah hasil yang cocok dengan filter.
 
 ```bash
 curl -G "https://<domain>/api/v1/reseller/products" \
@@ -131,7 +134,7 @@ Harga dalam respons berupa bilangan bulat Rupiah. `reseller_price` adalah jumlah
 
 ### GET `/products/{id}`
 
-Mengambil detail produk aktif. Body response berisi objek `data` dengan kontrak field yang sama dengan setiap item pada endpoint list, tanpa `meta`.
+Mengambil detail produk aktif yang didukung untuk fulfillment API. Body response berisi objek `data` dengan kontrak field yang sama dengan setiap item pada endpoint list, tanpa `meta`.
 
 ```bash
 curl "https://<domain>/api/v1/reseller/products/12" \
@@ -160,7 +163,7 @@ curl "https://<domain>/api/v1/reseller/products/12" \
 }
 ```
 
-Produk yang tidak ditemukan atau tidak aktif menghasilkan `404`. `requires_zone: true` berarti kirim field `zone` ketika membuat pesanan.
+Produk yang tidak ditemukan, tidak aktif, atau belum didukung menghasilkan `404`. `requires_zone: true` berarti kirim field `zone` ketika membuat pesanan.
 
 Parameter query yang tidak valid (mis. `per_page=101`) menghasilkan `422` dengan format validasi:
 
@@ -177,14 +180,18 @@ Parameter query yang tidak valid (mis. `per_page=101`) menghasilkan `422` dengan
 
 | Field | Wajib | Keterangan |
 |---|---|---|
-| `product_id` | ya | Harus produk **aktif** |
-| `target` | ya | Nomor tujuan (3–64 karakter). Operator harus sesuai brand produk (kategori pulsa/paket data) |
-| `zone` | kondisional | Wajib bila produk `requires_zone` |
+| `product_id` atau `code` | salah satu | Produk aktif prabayar Digiflazz |
+| `target` | ya | Tujuan (3–150 karakter). Operator harus sesuai brand untuk pulsa/paket data |
+| `zone` | kondisional | Maksimal 20 karakter; wajib bila produk `requires_zone` |
+| `reff_id` | tidak | ID unik milik klien (maksimal 50 karakter; huruf/angka/titik/garis bawah/minus). Retry dengan ID yang sama mengembalikan pesanan sebelumnya tanpa debit ulang |
+| `limit_price` | tidak | Batas maksimal harga yang diterima; request ditolak bila `reseller_price` lebih tinggi |
+
+Untuk game yang memerlukan zona, kirim `zone` terpisah. Format H2H lama `target: "userId|zoneId"` juga diterima.
 
 ```bash
 curl -X POST "https://<domain>/api/v1/reseller/orders" \
   -H "X-API-Key: ap_XXXX" -H "Content-Type: application/json" \
-  -d '{"product_id": 12, "target": "081234567890"}'
+  -d '{"product_id": 12, "target": "081234567890", "reff_id": "order-0001", "limit_price": 7000}'
 ```
 
 Respons `201`:
@@ -193,8 +200,12 @@ Respons `201`:
 {
   "data": {
     "order_number": "TRX-20261020-AB12CD",
+    "reff_id": "order-0001",
     "status": "processing",
     "status_label": "Diproses",
+    "product": { "id": 12, "code": "XL5000", "name": "XL 5.000" },
+    "target": "081234567890",
+    "target_zone": null,
     "amount": 6175,
     "fee": 0,
     "total": 6175,
@@ -207,7 +218,7 @@ Respons `201`:
 
 Dalam satu transaksi database: kunci baris produk & saldo, cek status/stok, decrement stok + tambah `sold_count`, buat order dengan `source = "api"`, lalu debit saldo. Gagal (stok habis / saldo kurang / operator tidak cocok) → **rollback penuh** + `422`.
 
-Status pesanan: `pending` → `processing` → `success` / `failed` / `expired`. Pesanan dengan provider (Digiflazz) otomatis masuk antan fulfilment saat dibuat.
+Status pesanan: `pending` → `processing` → `success` / `failed` / `expired`. Pesanan API prabayar Digiflazz otomatis masuk antrean fulfillment.
 
 ### GET `/orders`, `/orders/{order_number}`
 
@@ -220,6 +231,7 @@ List dibatasi ke pesanan milik API key sendiri (`meta` berisi paginasi, 20 per h
 | `401` | API key tidak ditemukan / tidak valid / bukan reseller aktif |
 | `404` | Produk tidak aktif/tidak ada, atau pesanan bukan milik sendiri |
 | `422` | Validasi: field kurang, stok habis, saldo kurang (`errors.balance`), operator tidak cocok (`errors.target`), zone wajib (`errors.zone`) |
+| `503` | Endpoint kompatibilitas H2H: produk tidak tersedia/belum didukung, atau jenis pascabayar |
 | `429` | Rate limit 120 req/menit |
 
 ```json
@@ -228,6 +240,24 @@ List dibatasi ke pesanan milik API key sendiri (`meta` berisi paginasi, 20 per h
   "errors": { "product_id": ["Stok produk habis."] }
 }
 ```
+
+## Kompatibilitas H2H lama
+
+Endpoint berikut berada di root domain, bukan di bawah `/api/v1/reseller`. Gunakan POST form-urlencoded dengan API key reseller baru di field `api_key`:
+
+| Method | Endpoint | Field utama |
+|---|---|---|
+| POST | `/transaksi/create` | `api_key`, `code`, `reff_id`, `target`, opsional `limit_price` |
+| POST | `/transaksi/status` | `api_key`, `id` (ID transaksi dari respons create), `type=prabayar` |
+| POST | `/layanan/price_list` | `api_key`, `type=prabayar` |
+
+`target` dapat memakai format `userId|zoneId`. Bentuk respons transaksi lama mempertahankan field `id`, `reff_id`, `layanan`, `code`, `target`, `price`, `sn`, dan `status`. Pascabayar serta provider selain Digiflazz belum didukung; produk tersebut tidak ditampilkan atau dipesan.
+
+## Webhook status pesanan
+
+Atur URL webhook dan buat secret dari **Pengaturan → Reseller**. Perubahan status akhir pesanan API (sukses, gagal, kedaluwarsa) dikirim sebagai JSON dengan header `X-ATL-Event`, `X-ATL-Delivery`, dan `X-ATL-Signature: sha256=<hmac_hex>`. Signature adalah HMAC-SHA256 dari body mentah menggunakan secret webhook.
+
+Webhook memakai queue, timeout koneksi 5 detik, timeout respons 10 detik, maksimal 3 percobaan dengan jeda 30 dan 120 detik. DNS diverifikasi dan alamat IP publik yang lolos pemeriksaan dipin untuk mencegah DNS rebinding/SSRF; redirect tidak diikuti dan webhook harus memakai HTTPS port 443 di produksi. Server memerlukan ekstensi PHP cURL dan akses egress langsung ke IP publik tujuan. Jalankan queue worker pada lingkungan produksi. Beri respons HTTP 2xx setelah notifikasi diterima; gunakan `X-ATL-Delivery` untuk mencegah pemrosesan ganda saat retry.
 
 ## Terkait
 

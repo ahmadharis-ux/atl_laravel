@@ -275,24 +275,22 @@ Halaman reseller di [resources/views/user/settings/reseller.blade.php](../resour
 
 Peningkatan yang masih berguna adalah membantu pengguna baru memahami langkah berikutnya tanpa harus membaca seluruh dokumentasi sekaligus. Ini merupakan peningkatan discoverability, bukan kekurangan fungsional kritis.
 
-### Rekomendasi
+### Implementasi
 
-Tampilkan checklist ringkas dan kontekstual:
+Panel reseller aktif menampilkan checklist kontekstual sesuai kanal penjualan:
 
-1. `Aktifkan reseller` — tautkan ke aksi aktivasi bila belum aktif.
-2. `Simpan API key` — tampilkan peringatan rahasia dan status bahwa key asli hanya muncul sekali.
-3. `Baca dokumentasi dan ambil produk` — beri tautan ke bagian produk.
-4. `Isi saldo dan buat order percobaan` — jelaskan order API selalu didebit dari saldo reseller.
-5. `Pantau order` — tautkan ke riwayat/API endpoint yang sesuai.
+- **API**: status keberadaan API key, tautan langsung ke dokumentasi produk dan pesanan, serta tautan untuk mengisi saldo sebelum order.
+- **Toko hosted**: tautan untuk membuka toko pelanggan serta mengelola transaksi tunai dan komisi.
+- **Akun lama tanpa kanal tersimpan**: tampilkan kedua jalur agar pengguna tetap dapat menemukan alur yang tersedia.
 
-Checklist sebaiknya menyembunyikan atau menandai langkah yang sudah selesai berdasarkan data yang memang tersedia. Jangan melacak “key sudah disalin” jika aplikasi tidak menyimpan status tersebut.
+Checklist hanya menyatakan API key sudah dibuat jika hint key tersedia. Halaman tidak mengklaim bahwa dokumentasi sudah dibaca atau key sudah disalin karena status tersebut tidak disimpan aplikasi.
 
 ### Kriteria penerimaan
 
-- User baru memiliki satu langkah berikutnya yang jelas setelah aktivasi.
-- Setiap CTA menuju tujuan yang benar dan label tombol menjelaskan hasilnya.
-- Checklist tidak mengungkap API key dan tidak mengklaim bahwa key tersimpan di perangkat user.
-- Pengguna lama tidak dipaksa melewati onboarding berulang setiap membuka halaman.
+- [x] User reseller aktif mendapat langkah berikutnya yang relevan dengan kanal penjualannya.
+- [x] CTA menuju dokumentasi produk, isi saldo, toko, dan pengelolaan komisi yang sesuai.
+- [x] Checklist tidak mengungkap API key dan tidak mengklaim bahwa key tersimpan atau dokumentasi telah dibaca.
+- [x] Pengguna lama dengan kanal yang belum tercatat tetap melihat panduan API dan toko.
 
 ---
 
@@ -322,7 +320,7 @@ Masih terbuka: sinkronisasi expiry QRIS dengan provider, pemetaan event notifika
 | P1 | Status saldo dan CTA Isi Saldo | User tidak tahu apakah saldo cukup atau cara mengatasinya | ✅ Status cukup/kurang dan tautan Isi Saldo ditampilkan saat Saldo dipilih |
 | P2 | Dokumen kontrak response produk | Integrator harus menebak tipe/nullability/arti nilai | ✅ Field table, contoh list/detail/error, pagination, dan filter dicocokkan dengan output serta feature tests |
 | P2 | Pemetaan feedback transaksi ke notifikasi | User tidak tahu langkah berikutnya saat pending/gagal/expired | Event matrix menentukan inline/toast/notification center dan CTA |
-| P3 | Onboarding reseller kontekstual | User baru perlu mencari sendiri urutan mulai | Checklist langkah dan tautan relevan tanpa mengulang untuk user lama |
+| P3 | Onboarding reseller kontekstual | User baru perlu mencari sendiri urutan mulai | ✅ Checklist mengikuti kanal API/toko, memeriksa status key yang tersedia, dan menyediakan CTA kontekstual |
 | P3 | Aksesibilitas feedback | User screen reader/keyboard dapat kehilangan status atau error | Focus, label, live announcement, dan status tidak hanya dibedakan dengan warna |
 
 ### Rencana pengerjaan yang disarankan
@@ -337,7 +335,53 @@ Perbaikan copy terminologi pada alur Saldo/checkout sudah diterapkan. Istilah ma
 
 ---
 
-## 8. Checklist verifikasi implementasi
+## 8. Perbandingan H2H legacy di project CI vs reseller modern di atl_laravel
+
+Berdasarkan penelusuran di [../CI/atlantich2h.md](../CI/atlantich2h.md), [../CI/REBORN.md](../CI/REBORN.md), [../RESELLER.MD](../RESELLER.MD), dan implementasi saat ini di [../routes/api.php](../routes/api.php), dapat ditarik kesimpulan berikut:
+
+- Fitur H2H legacy dan fitur reseller saat ini bukan duplikasi 1:1, tetapi mengerjakan kebutuhan bisnis yang serupa di level yang berbeda.
+- H2H lama adalah sistem API + back-office khusus untuk akun dengan level `h2h`/`admin`; reseller baru menerima permohonan dari pengaturan, lalu admin menyetujui sebelum toko/API aktif dan user membuat API key.
+- Dari sisi UX dan bisnis, keduanya berusaha menyiapkan jalur jual-beli produk dengan harga lebih murah untuk mitra atau reseller, tetapi modernisasi di atl_laravel membuat pengajuan lebih mudah dipahami, sementara persetujuan admin tetap menjadi gerbang akses.
+
+### Perbedaan utama
+
+| Aspek | H2H legacy di project CI | Reseller di atl_laravel |
+|---|---|---|
+| Scope | API H2H + back-office internal | Fitur user self-service + admin report |
+| User type | `h2h`, `admin` | user umum yang mengajukan keanggotaan reseller |
+| Onboarding | upgrade manual via request/approval | ajukan dari pengaturan; admin menyetujui sebelum akses aktif |
+| Pricing | `markup_price.user_level = 'h2h'` hardcoded | `reseller_price` + diskon konfigurasi |
+| Auth | API key / IP whitelist / endpoint allowlist, plus SQL raw terhadap `users.level` | API key hash + reseller-only guard + throttle |
+| Order flow | transaksi API untuk mitra/reseller | order API + order web + saldo + QRIS |
+| Reporting | back-office internal dan panel admin | laporan admin Reseller dengan statistik dan pagination |
+| UX focus | kontrak API dan integrasi mitra | pengajuan mandiri, persetujuan admin, edukasi, dan maintainability |
+
+### Kesamaan fungsi yang perlu dipertahankan
+
+Dari sisi business requirement, keduanya perlu tetap menjaga beberapa prinsip yang sama:
+
+1. Produk yang dibeli reseller memiliki harga khusus lebih murah daripada harga publik.
+2. API key atau identitas reseller harus aman dan dipisahkan dari sesi user biasa.
+3. Order API harus punya validasi target/zone, saldo, stok, dan status yang jelas.
+4. Admin perlu melihat daftar reseller, transaksi, dan nominal API.
+5. User perlu memahami perbedaan antara `Saldo`, `Isi Saldo`, dan `harga reseller`, agar tidak salah mengira bahwa deposit adalah metode checkout.
+
+### Kesimpulan
+
+- Kalau tujuan adalah “menjaga kompatibilitas bisnis dengan user yang pernah memakai fitur H2H lama”, maka perlu ada parity pada kemampuan inti, bukan mutual exclusivity pada terminologi.
+- Kalau tujuan adalah “menjalankan satu platform modern yang aman dan mudah dipakai”, maka reseller di atl_laravel lebih cocok sebagai definisi final, sedangkan H2H legacy hanya relevan sebagai referensi kontrak bisnis dan edge case migrasi.
+- Artinya, tidak perlu meniru struktur CI 1:1. Yang perlu disamakan adalah alur bisnis dan UX yang dipahami pengguna lama: daftar produk reseller, harga khusus, API key, order, status, dan laporan.
+
+### Rekomendasi implementasi
+
+1. Gunakan reseller di atl_laravel sebagai source of truth untuk product/UX baru.
+2. Pertahankan kompatibilitas data dan kontrak order agar user lama yang migrasi tidak kehilangan alur kerja utama.
+3. Jika ada kebutuhan legacy dari CI, buat layer kompatibilitas yang memetakan endpoint/field lama ke model baru tanpa mengubah pengalaman modern.
+4. Hindari menambah istilah `H2H` ke UI baru bila sistem baru sudah beroperasi sebagai reseller self-serve; gunakan istilah yang langsung dipahami user dalam konteks bisnis saat ini.
+
+---
+
+## 9. Checklist verifikasi implementasi
 
 ### Form dan validasi
 
@@ -354,7 +398,7 @@ Perbaikan copy terminologi pada alur Saldo/checkout sudah diterapkan. Istilah ma
 - [x] Response detail produk aktif sesuai kontrak yang didokumentasikan.
 - [x] Harga, stok unlimited, zone, nullability, dan status error diuji.
 - [x] Rule aktivasi, diskon, penggunaan saldo, regenerate, dan deaktivasi dijelaskan sebelum aktivasi.
-- [ ] Key plaintext hanya ditampilkan saat dibuat dan tidak masuk notifikasi/log/UI yang tidak aman.
+- [x] Key plaintext hanya ditampilkan saat dibuat, halaman menggunakan `Cache-Control: private, no-store`, dan key tidak masuk notifikasi/log.
 
 ### Payment checkout
 
@@ -366,23 +410,26 @@ Perbaikan copy terminologi pada alur Saldo/checkout sudah diterapkan. Istilah ma
 - [x] Jika saldo tidak cukup saat submit, error tampil dekat metode pembayaran, menjelaskan bahwa order tidak dibuat, dan memberi CTA Isi Saldo.
 - [x] Konfirmasi menyertakan detail produk, tujuan/Zone ID, total, metode, dan dampak pembayaran.
 - [x] Status QRIS pending menampilkan instruksi pembayaran, batas waktu pesanan Atlantic, dan CTA "Cek Status Pembayaran".
+- [x] Jika QRIS belum berhasil diterbitkan, pengguna mendapat error yang jelas; halaman detail tidak menampilkan QR string sebagai kode bayar, menampilkan total termasuk fee, dan menyediakan aksi cek status/bantuan.
 - [ ] Batas waktu pesanan yang ditampilkan sudah diverifikasi selaras dengan expiry transaksi provider.
-- [ ] Pending, paid, failed, expired, stok habis, dan saldo berubah punya pesan/CTA yang benar.
+- Catatan: UI menggunakan `orders.expires_at` sebagai batas waktu aplikasi. Kecocokannya dengan expiry transaksi Midtrans perlu dikonfirmasi melalui transaksi staging dan tetap menjadi prasyarat.
+- [x] Pending, paid, failed, expired, stok habis, dan saldo berubah punya pesan/CTA yang benar; QRIS yang belum tersedia tidak menampilkan QR string sebagai kode bayar dan memberi arahan cek status/CS.
 - [x] Detail transaksi menjelaskan pembayaran pending, keberhasilan, kegagalan/refund sesuai state tercatat, serta pembayaran kedaluwarsa dan cara mencoba lagi.
 - [x] Detail isi saldo membedakan pending, berhasil, gagal, dan kedaluwarsa; menjelaskan kapan saldo bertambah, cara cek status, dan langkah bila pembayaran sudah dilakukan.
 
 ### Poin reward
 
-Kondisi saat ini: poin diberikan untuk top up dan transaksi produk sukses dengan nilai tetap 1 poin. Rekomendasi perubahan kebijakan: top up tidak memberi poin; poin hanya diberikan setelah transaksi produk benar-benar berhasil diproses.
+Kebijakan yang diterapkan: 30% margin dikonversi dengan nilai Rp10 per poin; multiplier Silver 1x, Gold 1,25x, Platinum 1,5x. Reward hanya dicatat setelah order berhasil, tidak ada reward top up, poin tidak kedaluwarsa, dan refund penuh membalik reward order terkait.
 
-- [ ] Ringkasan transaksi menjelaskan estimasi poin yang akan didapat, dan detail/riwayat transaksi mencatat poin aktual setelah transaksi sukses.
-- [ ] Rumus poin memakai margin transaksi: harga jual snapshot dikurangi modal supplier snapshot dan biaya/diskon yang benar-benar ditanggung perusahaan. Nilai Rupiah disimpan dan dihitung presisi sebagai integer rupiah; hindari floating-point.
-- [ ] Poin dihitung dari bagian margin yang dikembalikan (usulan awal 30%), dikalikan tier dan dibagi nilai Rupiah per poin (usulan awal Rp10 per poin); pembulatan ke bawah hanya dilakukan pada hasil poin.
-- [ ] Margin nol/negatif menghasilkan 0 poin. Transaksi gagal/refund serta transaksi yang menggunakan poin atau promo yang ditanggung perusahaan tidak menghasilkan poin atau membalik poin sesuai aturan yang diinformasikan.
-- [ ] Biaya QRIS hanya mengurangi margin bila benar-benar ditanggung perusahaan; fee yang dibayar pelanggan tidak dikurangkan dua kali.
-- [ ] Saldo poin, poin tertunda/kedaluwarsa, nilai minimum penukaran, dan kebutuhan poin merchandise dijelaskan sebelum user menukar.
-- [ ] Tingkatan tidak turun karena poin ditukar (rekomendasi: tier berdasarkan total poin yang pernah diperoleh); dasar tier masih perlu keputusan bisnis.
-- [ ] Sebelum kebijakan poin baru aktif, tampilkan aturan earn/redeem dan masa berlaku dengan jelas; migrasi saldo/riwayat poin lama harus direkonsiliasi dan dikomunikasikan.
+- [x] Checkout menampilkan estimasi reward dan tier; detail order serta riwayat poin mencatat hasil aktual setelah sukses.
+- [x] Margin memakai harga order dan snapshot modal supplier, dikurangi biaya yang ditanggung perusahaan. Perhitungan Rupiah menggunakan integer dan snapshot biaya tidak berubah saat harga produk diperbarui.
+- [x] Perhitungan memakai 30% margin, multiplier tier, Rp10 per poin, dan pembulatan ke bawah hanya pada jumlah poin final.
+- [x] Margin nol/negatif dan order yang tidak eligible mendapat 0 poin; order gagal tidak mendapat reward; refund penuh membalik reward satu kali. Reward order lama tanpa referensi ledger tidak dibalik otomatis.
+- [x] Fee QRIS yang dibayar pelanggan tidak mengurangi margin reward; biaya perusahaan lain dapat disimpan di snapshot biaya perusahaan.
+- [x] Halaman merchandise menjelaskan saldo yang dapat ditukar, tier/lifetime points, ketiadaan kedaluwarsa dan minimum global, serta biaya poin setiap item. Saldo minus akibat refund tidak dapat dipakai untuk redeem.
+- [x] Tier dihitung dari lifetime points sehingga penukaran merchandise tidak menurunkan tier; refund membatalkan poin reward yang terkait.
+- [x] Aturan earn/redeem ditampilkan; migrasi menjaga saldo dan history, lalu menginisialisasi lifetime points dari reward ledger historis atau saldo bila ledger lebih rendah.
+- [ ] Rekonsiliasi manual akun dengan ledger lama yang tidak lengkap sebelum rollout produksi; migrasi tidak membuat award retroaktif.
 
 ### Top up manual
 
@@ -393,14 +440,14 @@ Kondisi saat ini: poin diberikan untuk top up dan transaksi produk sukses dengan
 
 ### Notifikasi
 
-- [ ] Aksi memberi feedback langsung walaupun tidak menghasilkan notifikasi tersimpan.
-- [ ] Event transaksi penting memiliki notification center entry dan CTA bila diperlukan.
+- [x] Aksi memberi feedback langsung walaupun tidak menghasilkan notifikasi tersimpan; pesan sukses/error memiliki peran live region yang sesuai.
+- [x] Event transaksi penting memiliki notification center entry dan CTA bila diperlukan; order yang kedaluwarsa mengirim notifikasi warning yang menuju detail pesanan dan tidak terduplikasi saat diproses ulang.
 - [x] Pengiriman bukti memberi notifikasi admin; permintaan perbaikan/penolakan dan persetujuan memberi notifikasi pengguna.
 - [x] Ikon default notifikasi `warning` sudah dibedakan dari ikon sukses, gagal, dan umum.
 - [x] Notifikasi tetap tersimpan di pusat sebagai riwayat, sementara ID yang sama mencegah toast ganda dari polling dan FCM; saat halaman aktif hanya toast yang tampil, saat di latar belakang hanya notifikasi sistem yang tampil.
 - [x] Status/hasil disampaikan lewat judul dan isi notifikasi; ikon dan warna hanya menjadi penanda tambahan.
 
-## 9. Skenario uji UX yang direkomendasikan
+## 10. Skenario uji UX yang direkomendasikan
 
 ### Checkout produk
 
@@ -438,8 +485,7 @@ Dokumen ini merupakan review UX terarah, bukan audit seluruh aplikasi. Beberapa 
 
 - Apakah semua form selain checkout memiliki pola wajib/opsional dan error per-field yang sama.
 - Apakah expiry tiga jam yang disimpan aplikasi sama dengan expiry aktual dari Midtrans untuk semua transaksi QRIS.
-- Kebijakan poin yang berlaku: persentase margin kembali, nilai Rupiah per poin, multiplier tier, masa tunggu/kedaluwarsa, dan apakah tier memakai total poin seumur hidup atau saldo berjalan.
-- Perlakuan terhadap poin dan riwayat lama saat kebijakan poin berubah, termasuk saldo awal dan top up yang sebelumnya pernah menghasilkan poin.
+- Rekonsiliasi manual akun legacy dengan ledger poin yang tidak lengkap sebelum rollout produksi; lifetime points sementara memakai nilai terbesar dari saldo berjalan dan total reward positif yang tercatat.
 - Apakah order QRIS yang belum dibayar dapat dibatalkan/dibuat ulang dan bagaimana aturan stoknya.
 - Dampak deaktivasi reseller terhadap saldo, riwayat, order berjalan, dan order API baru.
 - Event transaksi apa saja yang mengirim `TransactionResult`, untuk status apa, dan kepada siapa.

@@ -94,6 +94,39 @@ final class Digiflazz
      */
     public function topup(string $skuCode, string $customerNo, string $refId, bool $testing = false): array
     {
+        $payload = $this->transactionPayload($skuCode, $customerNo, $refId);
+
+        if ($testing) {
+            $payload['testing'] = true;
+        }
+
+        return $this->post('transaction', $payload);
+    }
+
+    /**
+     * Re-check a submitted transaction using its original reference ID.
+     *
+     * Digiflazz exposes the transaction status through the transaction endpoint;
+     * using the same ref_id lets it return the existing transaction result.
+     *
+     * @return array<string, mixed>
+     */
+    public function checkTransactionStatus(string $skuCode, string $customerNo, string $refId, bool $testing = false): array
+    {
+        $payload = $this->transactionPayload($skuCode, $customerNo, $refId);
+
+        if ($testing) {
+            $payload['testing'] = true;
+        }
+
+        return $this->post('transaction', $payload);
+    }
+
+    /**
+     * @return array<string, string|bool>
+     */
+    private function transactionPayload(string $skuCode, string $customerNo, string $refId): array
+    {
         $payload = [
             'buyer_sku_code' => $skuCode,
             'customer_no' => $customerNo,
@@ -105,11 +138,7 @@ final class Digiflazz
             $payload['allow_dot'] = true;
         }
 
-        if ($testing) {
-            $payload['testing'] = true;
-        }
-
-        return $this->post('transaction', $payload);
+        return $payload;
     }
 
     /**
@@ -136,10 +165,15 @@ final class Digiflazz
             ->acceptJson()
             ->asJson()
             ->timeout(15)
-            ->post($endpoint, array_merge(['username' => $this->username], $payload));
+            ->post($endpoint, array_merge(['username' => $this->username], $payload))
+            ->throw();
 
         $data = $response->json('data');
 
-        return is_array($data) ? $data : [];
+        if (! is_array($data)) {
+            throw new DigiflazzException('Respons Digiflazz tidak memiliki data transaksi yang valid.');
+        }
+
+        return $data;
     }
 }

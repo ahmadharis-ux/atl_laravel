@@ -13,28 +13,28 @@ class UserTierTest extends TestCase
 
     public function test_tier_is_silver_below_gold_threshold(): void
     {
-        $user = User::factory()->create(['points' => 99]);
+        $user = User::factory()->create(['lifetime_points' => 99]);
 
         $this->assertSame(UserTier::Silver, $user->tier());
     }
 
     public function test_tier_is_gold_at_gold_threshold(): void
     {
-        $user = User::factory()->create(['points' => (int) config('loyalty.gold_points')]);
+        $user = User::factory()->create(['lifetime_points' => (int) config('loyalty.gold_points')]);
 
         $this->assertSame(UserTier::Gold, $user->tier());
     }
 
     public function test_tier_is_platinum_at_platinum_threshold(): void
     {
-        $user = User::factory()->create(['points' => (int) config('loyalty.platinum_points')]);
+        $user = User::factory()->create(['lifetime_points' => (int) config('loyalty.platinum_points')]);
 
         $this->assertSame(UserTier::Platinum, $user->tier());
     }
 
     public function test_tier_is_platinum_above_platinum_threshold(): void
     {
-        $user = User::factory()->create(['points' => (int) config('loyalty.platinum_points') + 250]);
+        $user = User::factory()->create(['lifetime_points' => (int) config('loyalty.platinum_points') + 250]);
 
         $this->assertSame(UserTier::Platinum, $user->tier());
     }

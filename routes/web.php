@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Api\Reseller\OrderController as ResellerOrderApiController;
+use App\Http\Controllers\Api\Reseller\ProductController as ResellerProductApiController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\SocialiteController;
@@ -32,10 +34,25 @@ use App\Http\Controllers\User\SettingsController as UserSettingsController;
 use App\Http\Controllers\User\TicketController as UserTicketController;
 use App\Http\Controllers\Webhook\DigiflazzWebhookController;
 use App\Http\Controllers\Webhook\MidtransWebhookController;
+use App\Http\Middleware\AuthenticateReseller;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/webhook/digiflazz', DigiflazzWebhookController::class)->name('webhook.digiflazz');
 Route::post('/webhook/midtrans', MidtransWebhookController::class)->name('webhook.midtrans');
+
+Route::post('/transaksi/create', [ResellerOrderApiController::class, 'legacyStore'])
+    ->middleware(['throttle:reseller-api', AuthenticateReseller::class])
+    ->withoutMiddleware(ValidateCsrfToken::class)
+    ->name('legacy.h2h.orders.store');
+Route::post('/transaksi/status', [ResellerOrderApiController::class, 'legacyStatus'])
+    ->middleware(['throttle:reseller-api', AuthenticateReseller::class])
+    ->withoutMiddleware(ValidateCsrfToken::class)
+    ->name('legacy.h2h.orders.status');
+Route::post('/layanan/price_list', [ResellerProductApiController::class, 'legacyIndex'])
+    ->middleware(['throttle:reseller-api', AuthenticateReseller::class])
+    ->withoutMiddleware(ValidateCsrfToken::class)
+    ->name('legacy.h2h.products.index');
 
 Route::get('/firebase-messaging-sw.js', FirebaseServiceWorkerController::class)->name('firebase.sw');
 
@@ -158,6 +175,10 @@ Route::middleware(['auth', 'non-admin', 'verified'])->group(function () {
     Route::post('/pengaturan/reseller/aktifkan', [UserResellerController::class, 'activate'])
         ->middleware('throttle:5,1')->name('settings.reseller.activate');
     Route::post('/pengaturan/reseller/buat-ulang', [UserResellerController::class, 'regenerate'])->name('settings.reseller.regenerate');
+    Route::put('/pengaturan/reseller/webhook', [UserResellerController::class, 'updateWebhook'])
+        ->name('settings.reseller.webhook.update');
+    Route::post('/pengaturan/reseller/webhook/secret', [UserResellerController::class, 'regenerateWebhookSecret'])
+        ->middleware('throttle:5,1')->name('settings.reseller.webhook.secret');
     Route::post('/pengaturan/reseller/nonaktifkan', [UserResellerController::class, 'deactivate'])->name('settings.reseller.deactivate');
     Route::get('/pengaturan/reseller/toko', [ResellerStorefrontController::class, 'index'])->name('settings.reseller.store');
     Route::post('/pengaturan/reseller/toko/pesanan/{order}/konfirmasi-tunai', [ResellerStorefrontController::class, 'confirmCash'])

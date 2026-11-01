@@ -12,7 +12,10 @@ use App\Models\User;
 use App\Support\DepositSettler;
 use App\Support\OrderFulfillment;
 use App\Support\OrderPaymentSettler;
+use App\Support\OrderRewardLedger;
+use App\Support\TransactionLogger;
 use Closure;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Midtrans\Config as MidtransConfig;
@@ -332,6 +335,23 @@ class MidtransService
 
         $order = Order::query()->where('order_number', $orderId)->first();
         if ($order !== null) {
+            $metadata = $order->metadata ?? [];
+            $metadata['midtrans'] = array_merge($metadata['midtrans'] ?? [], [
+                'status' => $status,
+                'fraud_status' => $fraud,
+                'transaction_id' => $transactionId,
+                'refund_amount' => $refundAmount,
+                'last_status_at' => now()->toIso8601String(),
+            ]);
+            $order->forceFill(['metadata' => $metadata])->save();
+
+            TransactionLogger::info('midtrans.payment_status', 'Status pembayaran dari Midtrans diterima.', [
+                'status' => $status,
+                'fraud_status' => $fraud,
+                'transaction_id' => $transactionId,
+                'refund_amount' => $refundAmount,
+            ], $order, $order->user);
+
             if ($settled && $order->status === OrderStatus::Pending) {
                 OrderPaymentSettler::settle($order);
 
@@ -352,20 +372,27 @@ class MidtransService
             }
 
             if (in_array($status, ['refund', 'partial_refund'], true) && $order->source === 'store_qris') {
-                $isFullRefund = $status === 'refund'
-                    || ($refundAmount !== null && (float) $refundAmount >= $order->totalDue());
-                $metadata = $order->metadata ?? [];
-                $metadata['midtrans_refund'] = [
-                    'status' => $isFullRefund ? 'completed' : 'manual_required',
-                    'transaction_id' => $transactionId,
-                ];
+                DB::transaction(function () use ($order, $status, $refundAmount, $transactionId): void {
+                    $lockedOrder = Order::query()->whereKey($order->getKey())->lockForUpdate()->firstOrFail();
+                    $isFullRefund = $status === 'refund'
+                        || ($refundAmount !== null && (float) $refundAmount >= $lockedOrder->totalDue());
+                    $metadata = $lockedOrder->metadata ?? [];
+                    $metadata['midtrans_refund'] = [
+                        'status' => $isFullRefund ? 'completed' : 'manual_required',
+                        'transaction_id' => $transactionId,
+                    ];
 
-                $order->forceFill([
-                    'refund_status' => $isFullRefund ? 'completed' : 'manual_required',
-                    'refund_transaction_id' => $transactionId,
-                    'refunded_at' => $isFullRefund ? ($order->refunded_at ?? now()) : $order->refunded_at,
-                    'metadata' => $metadata,
-                ])->save();
+                    $lockedOrder->forceFill([
+                        'refund_status' => $isFullRefund ? 'completed' : 'manual_required',
+                        'refund_transaction_id' => $transactionId,
+                        'refunded_at' => $isFullRefund ? ($lockedOrder->refunded_at ?? now()) : $lockedOrder->refunded_at,
+                        'metadata' => $metadata,
+                    ])->save();
+
+                    if ($isFullRefund) {
+                        OrderRewardLedger::reverseForRefund($lockedOrder);
+                    }
+                });
 
                 return $order->refresh();
             }

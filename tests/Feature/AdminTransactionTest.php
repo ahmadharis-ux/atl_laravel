@@ -5,12 +5,16 @@ namespace Tests\Feature;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\TransactionLogLevel;
+use App\Enums\WalletTransactionType;
+use App\Jobs\SyncDigiflazzTransactionStatus;
 use App\Models\Category;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\TransactionLog;
 use App\Models\User;
+use App\Support\WalletLedger;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
@@ -235,6 +239,140 @@ class AdminTransactionTest extends TestCase
             ->assertSee($order->order_number)
             ->assertSee('Gagal menghubungi provider.')
             ->assertSee('CheckoutController.php(88)');
+    }
+
+    public function test_admin_can_request_a_digiflazz_status_check_for_a_processing_order(): void
+    {
+        Queue::fake();
+
+        $admin = $this->admin(['dashboard.view', 'transactions.view', 'transactions.update']);
+        $order = Order::factory()->create([
+            'status' => OrderStatus::Processing,
+            'provider' => Product::PROVIDER_DIGIFLAZZ,
+            'provider_ref' => 'TRX-ADMIN-SYNC',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.transactions.show', $order))
+            ->assertOk()
+            ->assertSee('Cek Status Digiflazz');
+
+        $this->actingAs($admin)
+            ->post(route('admin.transactions.sync-digiflazz', $order))
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        Queue::assertPushed(
+            SyncDigiflazzTransactionStatus::class,
+            fn (SyncDigiflazzTransactionStatus $job): bool => $job->orderId === $order->getKey(),
+        );
+        $this->assertDatabaseHas('transaction_logs', [
+            'order_id' => $order->getKey(),
+            'event' => 'digiflazz.status_sync_requested',
+        ]);
+    }
+
+    public function test_only_processing_digiflazz_orders_can_be_synced(): void
+    {
+        Queue::fake();
+
+        $admin = $this->admin(['dashboard.view', 'transactions.view', 'transactions.update']);
+        $order = Order::factory()->create([
+            'status' => OrderStatus::Success,
+            'provider' => Product::PROVIDER_DIGIFLAZZ,
+            'provider_ref' => 'TRX-FINAL-SYNC',
+        ]);
+
+        $this->actingAs($admin)
+            ->from(route('admin.transactions.show', $order))
+            ->post(route('admin.transactions.sync-digiflazz', $order))
+            ->assertRedirect(route('admin.transactions.show', $order))
+            ->assertSessionHas('error');
+
+        Queue::assertNothingPushed();
+    }
+
+    public function test_a_user_without_update_permission_cannot_request_a_digiflazz_status_check(): void
+    {
+        $admin = $this->admin(['dashboard.view', 'transactions.view']);
+        $order = Order::factory()->create([
+            'status' => OrderStatus::Processing,
+            'provider' => Product::PROVIDER_DIGIFLAZZ,
+            'provider_ref' => 'TRX-FORBIDDEN-SYNC',
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.transactions.sync-digiflazz', $order))
+            ->assertForbidden();
+    }
+
+    public function test_transaction_detail_shows_wallet_movements_for_the_order(): void
+    {
+        $admin = $this->admin();
+        $customer = User::factory()->create(['balance' => 10_000]);
+        $order = Order::factory()->create(['user_id' => $customer->getKey()]);
+
+        WalletLedger::debit($customer, 1_000, WalletTransactionType::Purchase, $order, 'Pembelian order');
+
+        $this->actingAs($admin)
+            ->get(route('admin.transactions.show', $order))
+            ->assertOk()
+            ->assertSee('Mutasi Saldo Pelanggan')
+            ->assertSee('Saldo sebelum')
+            ->assertSee('Saldo sesudah')
+            ->assertSee('Rp 10.000')
+            ->assertSee('Rp 9.000')
+            ->assertSee('Pembelian order');
+    }
+
+    public function test_transaction_detail_flags_conflicting_late_provider_statuses(): void
+    {
+        $admin = $this->admin();
+        $order = Order::factory()->create([
+            'status' => OrderStatus::Failed,
+            'provider' => Product::PROVIDER_DIGIFLAZZ,
+        ]);
+
+        TransactionLog::factory()->create([
+            'order_id' => $order->getKey(),
+            'level' => TransactionLogLevel::Warning,
+            'event' => 'digiflazz.late_result_ignored',
+            'message' => 'Respons Digiflazz diabaikan.',
+            'context' => [
+                'local_status' => OrderStatus::Failed->value,
+                'incoming_status' => 'Sukses',
+            ],
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.transactions.show', $order))
+            ->assertOk()
+            ->assertSee('Status provider perlu direkonsiliasi')
+            ->assertSee('Status lokal transaksi sudah final')
+            ->assertSee('Sukses')
+            ->assertSee('Periksa Ref ID di dashboard Digiflazz');
+    }
+
+    public function test_transaction_detail_shows_midtrans_refund_amount_in_timeline(): void
+    {
+        $admin = $this->admin();
+        $order = Order::factory()->create([
+            'payment_method' => PaymentMethod::Qris,
+            'metadata' => ['midtrans' => ['status' => 'refund', 'refund_amount' => '10000']],
+        ]);
+
+        TransactionLog::factory()->create([
+            'order_id' => $order->getKey(),
+            'level' => TransactionLogLevel::Info,
+            'event' => 'midtrans.payment_status',
+            'message' => 'Status pembayaran dari Midtrans diterima.',
+            'context' => ['status' => 'refund', 'refund_amount' => '10000'],
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.transactions.show', $order))
+            ->assertOk()
+            ->assertSee('Nominal refund: Rp 10.000');
     }
 
     public function test_balance_checkout_records_transaction_logs(): void

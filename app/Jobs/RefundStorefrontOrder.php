@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Order;
 use App\Services\MidtransService;
+use App\Support\OrderRewardLedger;
 use App\Support\TransactionLogger;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -89,6 +90,8 @@ class RefundStorefrontOrder implements ShouldQueue
             ])->save();
 
             if ($isApproved) {
+                OrderRewardLedger::reverseForRefund($locked);
+
                 TransactionLogger::info('order.storefront_refunded', 'Refund QRIS toko reseller disetujui Midtrans.', [
                     'order_number' => $locked->order_number,
                     'amount' => $locked->totalDue(),

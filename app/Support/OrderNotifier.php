@@ -49,6 +49,24 @@ final class OrderNotifier
         ));
     }
 
+    public static function expired(Order $order): void
+    {
+        $user = $order->user()->first();
+
+        if ($user === null) {
+            return;
+        }
+
+        $user->notify(new TransactionResult(
+            title: 'Batas pembayaran berakhir',
+            body: 'Pesanan '.$order->order_number.' kedaluwarsa dan kode pembayarannya tidak dapat digunakan lagi. Jika sudah membayar, hubungi CS sebelum membuat pesanan baru.',
+            level: 'warning',
+            icon: 'timer_off',
+            url: route('orders.show', $order),
+            context: self::orderContext($order),
+        ));
+    }
+
     /**
      * Konteks notifikasi pesanan. Menyimpan data produk & tujuan asal supaya
      * pusat notifikasi bisa menawarkan tombol "Beli Lagi" (order produk sama).

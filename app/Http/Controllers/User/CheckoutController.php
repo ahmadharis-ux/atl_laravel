@@ -14,6 +14,7 @@ use App\Notifications\TransactionResult;
 use App\Services\MidtransService;
 use App\Support\OrderFulfillment;
 use App\Support\OrderNumber;
+use App\Support\OrderRewardLedger;
 use App\Support\OrderTarget;
 use App\Support\PaymentInstruction;
 use App\Support\Roles;
@@ -32,6 +33,8 @@ class CheckoutController extends Controller
     public function show(Request $request, Product $product, MidtransService $midtrans): View
     {
         $this->ensurePurchasable($product);
+        $user = $request->user();
+        $rewardTier = $user->tier();
 
         $targets = MasterBank::query()
             ->where('is_active', true)
@@ -47,7 +50,14 @@ class CheckoutController extends Controller
             'requiresZone' => OrderTarget::requiresZone($product->brand?->slug),
             'target' => (string) $request->query('target', ''),
             'zone' => (string) $request->query('zone', ''),
-            'balance' => (int) $request->user()->balance,
+            'balance' => (int) $user->balance,
+            'rewardEstimate' => OrderRewardLedger::estimate(
+                (int) $product->selling_price,
+                (int) $product->cost_price,
+                0,
+                $rewardTier,
+            ),
+            'rewardTier' => $rewardTier,
             'qrisFee' => $midtrans->qrisFee($product->selling_price),
             'paymentMethods' => PaymentMethod::cases(),
             'bankTargets' => $targets->where('type', MasterBank::TYPE_BANK)->values(),
@@ -88,14 +98,8 @@ class CheckoutController extends Controller
         $method = PaymentMethod::from($validated['payment_method']);
         $masterBank = $this->resolveMasterBank($method, $validated['master_bank_id'] ?? null);
         $amount = $product->selling_price;
-        $fee = match ($method) {
-            PaymentMethod::Qris => $midtrans->qrisFee($amount),
-            PaymentMethod::VirtualAccount, PaymentMethod::EWallet => $masterBank?->admin_fee ?? 0,
-            PaymentMethod::Saldo => 0,
-        };
-
         try {
-            $order = DB::transaction(function () use ($request, $product, $validated, $amount, $method, $masterBank, $fee): Order {
+            $order = DB::transaction(function () use ($request, $product, $validated, $amount, $method, $masterBank, $midtrans): Order {
                 $account = $request->user()->newQuery()
                     ->whereKey($request->user()->getKey())
                     ->lockForUpdate()
@@ -110,6 +114,13 @@ class CheckoutController extends Controller
                 if (! $item->unlimited_stock && $item->stock < 1) {
                     throw ValidationException::withMessages(['product' => 'Stok produk habis.']);
                 }
+
+                $amount = (int) $item->selling_price;
+                $fee = match ($method) {
+                    PaymentMethod::Qris => $midtrans->qrisFee($amount),
+                    PaymentMethod::VirtualAccount, PaymentMethod::EWallet => $masterBank?->admin_fee ?? 0,
+                    PaymentMethod::Saldo => 0,
+                };
 
                 $paid = $method->isInstant();
                 $provider = $item->provider;
@@ -135,6 +146,9 @@ class CheckoutController extends Controller
                     'target_zone' => $validated['zone'] ?? null,
                     'amount' => $amount,
                     'fee' => $fee,
+                    'supplier_cost_snapshot' => (int) $item->cost_price,
+                    'company_cost_snapshot' => 0,
+                    'reward_eligible' => true,
                     'status' => $status,
                     'provider' => $provider,
                     'provider_ref' => $provider !== null ? $orderNumber : null,
@@ -148,6 +162,10 @@ class CheckoutController extends Controller
 
                 if ($paid) {
                     WalletLedger::debit($account, $amount, WalletTransactionType::Purchase, $order, 'Pembelian '.$item->name);
+                }
+
+                if ($status === OrderStatus::Success) {
+                    OrderRewardLedger::award($order);
                 }
 
                 TransactionLogger::info('order.created', 'Pesanan dibuat.', [
@@ -196,10 +214,20 @@ class CheckoutController extends Controller
             OrderFulfillment::start($order);
         }
 
+        $qrisIssueFailed = false;
+
         if ($method === PaymentMethod::Qris) {
             try {
-                $midtrans->chargeOrderQris($order);
+                $qrisIssueFailed = $midtrans->chargeOrderQris($order) === null;
+
+                if ($qrisIssueFailed) {
+                    TransactionLogger::warning('order.payment_pending', 'QRIS belum berhasil ditampilkan untuk pesanan.', [
+                        'order_number' => $order->order_number,
+                        'amount' => $order->totalDue(),
+                    ], $order, $request->user());
+                }
             } catch (Throwable $e) {
+                $qrisIssueFailed = true;
                 TransactionLogger::error('order.failed', 'Gagal menginisiasi pembayaran QRIS untuk pesanan.', $e, [
                     'order_number' => $order->order_number,
                     'amount' => $order->amount,
@@ -219,9 +247,13 @@ class CheckoutController extends Controller
                 )));
         }
 
-        return redirect()
-            ->route('orders.show', $order)
-            ->with('status', $method->isInstant()
+        $redirect = redirect()->route('orders.show', $order);
+
+        if ($qrisIssueFailed) {
+            return $redirect->with('error', 'Pesanan tersimpan, tetapi QRIS belum dapat ditampilkan. Jangan membayar melalui kode lain. Tekan Cek Status pada detail pesanan atau hubungi CS sebelum mencoba lagi.');
+        }
+
+        return $redirect->with('status', $method->isInstant()
                 ? 'Pembayaran berhasil. Pesanan '.$order->order_number.' sedang diproses.'
                 : 'Pesanan '.$order->order_number.' dibuat. Selesaikan pembayaran untuk memproses pesanan.');
     }

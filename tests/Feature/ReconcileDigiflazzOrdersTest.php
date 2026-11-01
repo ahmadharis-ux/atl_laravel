@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
+use App\Enums\WalletTransactionType;
 use App\Models\Order;
 use App\Models\Product;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -30,7 +31,7 @@ class ReconcileDigiflazzOrdersTest extends TestCase
         ], $attributes));
     }
 
-    public function test_an_old_processing_order_is_resent_and_finalized(): void
+    public function test_an_old_processing_order_is_checked_and_finalized(): void
     {
         Http::fake([
             'api.digiflazz.com/*' => Http::response(['data' => [
@@ -48,6 +49,30 @@ class ReconcileDigiflazzOrdersTest extends TestCase
 
         $this->assertSame(OrderStatus::Success, $order->status);
         $this->assertSame('SN-REC-1', $order->provider_sn);
+    }
+
+    public function test_a_status_check_failure_is_reported_without_refunding_the_order(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake([
+            'api.digiflazz.com/*' => Http::response(['message' => 'Unavailable'], 503),
+        ]);
+
+        $order = $this->order();
+
+        $this->artisan('digiflazz:reconcile-orders')
+            ->expectsOutputToContain('gagal diperiksa')
+            ->assertFailed();
+
+        $this->assertSame(OrderStatus::Processing, $order->fresh()->status);
+        $this->assertDatabaseHas('transaction_logs', [
+            'order_id' => $order->getKey(),
+            'event' => 'digiflazz.status_sync_failed',
+        ]);
+        $this->assertDatabaseMissing('wallet_transactions', [
+            'order_id' => $order->getKey(),
+            'type' => WalletTransactionType::Refund->value,
+        ]);
     }
 
     public function test_an_order_still_pending_at_the_provider_stays_processing(): void

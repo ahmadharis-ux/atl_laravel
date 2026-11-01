@@ -5,8 +5,10 @@ namespace App\Http\Controllers\User;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Support\ResellerKey;
+use App\Support\ResellerWebhook;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -18,13 +20,18 @@ class ResellerController extends Controller
     /**
      * Panel reseller: status keanggotaan, API key, benefit, dan aksi.
      */
-    public function show(Request $request): View
+    public function show(Request $request): Response
     {
-        return view('user.settings.reseller', [
+        $salesChannel = $request->user()->reseller_sales_channel;
+        $salesChannel ??= 'both';
+
+        return response()->view('user.settings.reseller', [
             'user' => $request->user(),
             'discountPercent' => (float) config('reseller.discount_percent', 0),
             'termsVersion' => (string) config('reseller.terms_version'),
-        ]);
+            'usesApi' => in_array($salesChannel, ['api', 'both'], true),
+            'usesHostedStore' => in_array($salesChannel, ['hosted', 'both'], true),
+        ])->header('Cache-Control', 'private, no-store');
     }
 
     /**
@@ -161,7 +168,7 @@ class ResellerController extends Controller
         $key = DB::transaction(function () use ($user): array {
             $account = User::query()->whereKey($user->getKey())->lockForUpdate()->firstOrFail();
 
-            if (! $account->is_reseller || $account->reseller_status !== 'active') {
+            if (! $account->is_reseller || (! in_array($account->reseller_status, [null, 'active'], true))) {
                 throw ValidationException::withMessages([
                     'reseller' => 'Keanggotaan reseller tidak lagi aktif. Muat ulang halaman.',
                 ]);
@@ -181,6 +188,81 @@ class ResellerController extends Controller
             ->with('api_key', $key['plain']);
     }
 
+    public function updateWebhook(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        if (! $user->is_reseller || ! in_array($user->reseller_status, [null, 'active'], true)) {
+            return back()->with('error', 'Pengaturan webhook hanya tersedia untuk reseller aktif.');
+        }
+
+        $validated = $request->validate([
+            'webhook_url' => ['nullable', 'url:http,https', 'max:255'],
+        ], [
+            'webhook_url.url' => 'Masukkan URL webhook HTTP atau HTTPS yang valid.',
+        ]);
+
+        $webhookUrl = trim((string) ($validated['webhook_url'] ?? ''));
+
+        if ($webhookUrl !== '' && ! ResellerWebhook::isDeliverableUrl($webhookUrl)) {
+            throw ValidationException::withMessages([
+                'webhook_url' => 'Gunakan URL publik yang aman. Alamat lokal atau jaringan internal tidak diizinkan.',
+            ]);
+        }
+
+        DB::transaction(function () use ($user, $webhookUrl): void {
+            $account = User::query()->whereKey($user->getKey())->lockForUpdate()->firstOrFail();
+
+            if (! $account->is_reseller || ! in_array($account->reseller_status, [null, 'active'], true)) {
+                throw ValidationException::withMessages([
+                    'reseller' => 'Keanggotaan reseller tidak lagi aktif. Muat ulang halaman.',
+                ]);
+            }
+
+            $account->forceFill([
+                'reseller_webhook_url' => $webhookUrl !== '' ? $webhookUrl : null,
+            ])->save();
+        });
+
+        return back()->with(
+            'status',
+            $webhookUrl === ''
+                ? 'Webhook dinonaktifkan.'
+                : 'URL webhook berhasil disimpan.'
+        );
+    }
+
+    public function regenerateWebhookSecret(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        if (! $user->is_reseller || ! in_array($user->reseller_status, [null, 'active'], true)) {
+            return back()->with('error', 'Secret webhook hanya tersedia untuk reseller aktif.');
+        }
+
+        $secret = DB::transaction(function () use ($user): array {
+            $account = User::query()->whereKey($user->getKey())->lockForUpdate()->firstOrFail();
+
+            if (! $account->is_reseller || ! in_array($account->reseller_status, [null, 'active'], true)) {
+                throw ValidationException::withMessages([
+                    'reseller' => 'Keanggotaan reseller tidak lagi aktif. Muat ulang halaman.',
+                ]);
+            }
+
+            $secret = ResellerWebhook::generateSecret();
+            $account->forceFill([
+                'reseller_webhook_secret' => $secret['plain'],
+                'reseller_webhook_secret_hint' => $secret['hint'],
+            ])->save();
+
+            return $secret;
+        });
+
+        return back()
+            ->with('status', 'Secret webhook baru dibuat. Secret lama sudah tidak berlaku.')
+            ->with('webhook_secret', $secret['plain']);
+    }
+
     /**
      * Nonaktifkan keanggotaan reseller & cabut API key.
      */
@@ -195,7 +277,7 @@ class ResellerController extends Controller
         DB::transaction(function () use ($user): void {
             $account = User::query()->whereKey($user->getKey())->lockForUpdate()->firstOrFail();
 
-            if (! $account->is_reseller || $account->reseller_status !== 'active') {
+            if (! $account->is_reseller || (! in_array($account->reseller_status, [null, 'active'], true))) {
                 throw ValidationException::withMessages([
                     'reseller' => 'Keanggotaan reseller tidak lagi aktif. Muat ulang halaman.',
                 ]);

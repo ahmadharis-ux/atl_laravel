@@ -32,10 +32,10 @@ class DatabaseSeeder extends Seeder
 
         $accounts = [
             ['name' => 'Super Admin', 'email' => 'superadmin@atlantic.test', 'phone' => '081200000001', 'password' => 'super12345', 'role' => Roles::SUPERADMIN],
-            // ['name' => 'Admin Atlantic', 'email' => 'admin@atlantic.test', 'phone' => '081200000000', 'password' => 'admin123', 'role' => Roles::ADMIN],
-            // ['name' => 'Staff Atlantic', 'email' => 'staff@atlantic.test', 'phone' => '081200000002', 'password' => 'staff12345', 'role' => Roles::STAFF],
-            // ['name' => 'CS Atlantic', 'email' => 'cs@atlantic.test', 'phone' => '081200000003', 'password' => 'cs1234567', 'role' => Roles::CS],
-            // ['name' => 'User Demo', 'email' => 'user@atlantic.test', 'phone' => '081211111111', 'password' => 'user12345', 'role' => Roles::USER],
+            ['name' => 'Admin Atlantic', 'email' => 'admin@atlantic.test', 'phone' => '081200000000', 'password' => 'admin123', 'role' => Roles::ADMIN],
+            ['name' => 'Staff Atlantic', 'email' => 'staff@atlantic.test', 'phone' => '081200000002', 'password' => 'staff12345', 'role' => Roles::STAFF],
+            ['name' => 'CS Atlantic', 'email' => 'cs@atlantic.test', 'phone' => '081200000003', 'password' => 'cs1234567', 'role' => Roles::CS],
+            ['name' => 'User Demo', 'email' => 'user@atlantic.test', 'phone' => '081211111111', 'password' => 'user12345', 'role' => Roles::USER],
         ];
 
         foreach ($accounts as $account) {

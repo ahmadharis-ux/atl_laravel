@@ -81,8 +81,10 @@ class MidtransOrderTest extends TestCase
     public function test_failed_order_explains_completed_balance_refund(): void
     {
         $user = User::factory()->create();
+        $product = $this->product();
         $order = Order::factory()->create([
             'user_id' => $user->getKey(),
+            'product_id' => $product->getKey(),
             'status' => OrderStatus::Failed,
             'payment_method' => PaymentMethod::Saldo,
             'refunded_at' => now(),
@@ -174,12 +176,22 @@ class MidtransOrderTest extends TestCase
             'status' => OrderStatus::Pending,
         ]);
 
-        $this->postJson(route('webhook.midtrans'), $this->notification($order))
+        $notification = $this->notification($order);
+        $notification['transaction_id'] = 'MIDTRANS-ORDER-123';
+
+        $this->postJson(route('webhook.midtrans'), $notification)
             ->assertOk();
 
         $order->refresh();
         $this->assertSame(OrderStatus::Processing, $order->status);
         $this->assertNotNull($order->paid_at);
+        $this->assertSame('settlement', data_get($order->metadata, 'midtrans.status'));
+        $this->assertSame('accept', data_get($order->metadata, 'midtrans.fraud_status'));
+        $this->assertSame('MIDTRANS-ORDER-123', data_get($order->metadata, 'midtrans.transaction_id'));
+        $this->assertDatabaseHas('transaction_logs', [
+            'order_id' => $order->getKey(),
+            'event' => 'midtrans.payment_status',
+        ]);
         Queue::assertPushed(SendDigiflazzTransaction::class);
     }
 
@@ -219,7 +231,7 @@ class MidtransOrderTest extends TestCase
         $this->actingAs($order->user)
             ->post(route('orders.sync', $order))
             ->assertRedirect(route('orders.show', $order))
-            ->assertSessionHas('status', 'Status tidak dapat diambil dari Midtrans.');
+            ->assertSessionHas('error', 'Belum berhasil mengambil status dari Midtrans. Coba cek kembali beberapa saat lagi.');
     }
 
     public function test_order_show_offers_qris_download_and_status_buttons(): void
