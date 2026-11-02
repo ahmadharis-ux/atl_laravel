@@ -36,7 +36,6 @@
                     <div class="landing-trust d-flex flex-wrap gap-4 mt-4">
                         <span><span class="ms ms-sm">bolt</span>Proses instan</span>
                         <span><span class="ms ms-sm">shield_lock</span>Pembayaran aman</span>
-                        <span><span class="ms ms-sm">support_agent</span>CS 24/7</span>
                     </div>
                 </div>
 
