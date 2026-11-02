@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Masuk - Atlantic Pedia Tab</title>
-<link rel="icon" href="{{ asset('assets/images/logo_with_right_text.png') }}">
+<link rel="icon" href="{{ asset('assets/images/logo.png') }}">
 <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('assets/images/logo_with_right_text.png') }}">
 <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('assets/images/logo_with_right_text.png') }}">
 <link rel="apple-touch-icon" href="{{ asset('assets/images/apple-touch-icon.png') }}">
