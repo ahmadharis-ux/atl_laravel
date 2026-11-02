@@ -4,9 +4,18 @@ on:
   push:
     branches: [ prod ]
 
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
+    # cloudflared membaca service token dari environment variable ini
+    env:
+      TUNNEL_SERVICE_TOKEN_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+      TUNNEL_SERVICE_TOKEN_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
 
     steps:
       - name: Checkout Repository
@@ -14,37 +23,52 @@ jobs:
 
       - name: Install cloudflared
         run: |
-          curl -L --output /tmp/cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+          curl -L --fail --output /tmp/cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
           sudo dpkg -i /tmp/cloudflared.deb
           cloudflared --version
 
-            - name: Setup SSH & Deploy via Rsync
+      - name: Debug tunnel (cek Cloudflare Access)
+        continue-on-error: true
+        run: |
+          curl -sI "https://${{ secrets.HOSTNAMEPROD }}" \
+            -H "CF-Access-Client-Id: ${{ secrets.CF_ACCESS_CLIENT_ID }}" \
+            -H "CF-Access-Client-Secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}" | head -n 5
+
+      - name: Setup SSH
         env:
           SSH_PRIVATE_KEY: ${{ secrets.PRIVATE_KEYPROD }}
           SSH_HOST: ${{ secrets.HOSTNAMEPROD }}
           SSH_USER: ${{ secrets.USERNAMEPROD }}
-          CF_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
-          CF_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: |
+          set -euo pipefail
           mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 700 ~/.ssh
+
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
 
-          # Put the proxy config in ssh config so both steps share it
           cat > ~/.ssh/config <<EOF
           Host deploy-target
             HostName $SSH_HOST
             User $SSH_USER
             IdentityFile ~/.ssh/id_ed25519
+            IdentitiesOnly yes
+            BatchMode yes
             StrictHostKeyChecking no
             UserKnownHostsFile /dev/null
-            ProxyCommand cloudflared access ssh --hostname %h --service-token-id $CF_ID --service-token-secret $CF_SECRET
+            ProxyCommand cloudflared access ssh --hostname %h
           EOF
           chmod 600 ~/.ssh/config
 
-          rsync -avz --delete \
+      - name: Deploy via Rsync
+        run: |
+          set -euo pipefail
+          echo "Starting deployment to /opt/project/atl_laravel..."
+
+          rsync -avz --delete --no-owner --no-group \
             --exclude='.env' \
             --exclude='.git' \
+            --exclude='.github' \
             --exclude='/vendor' \
             --exclude='/node_modules' \
             --exclude='database/*.sqlite*' \
@@ -54,23 +78,30 @@ jobs:
             --exclude='/storage/framework/sessions' \
             --exclude='/storage/framework/views' \
             --exclude='/storage/app/firebase' \
+            --exclude='/storage/app/public' \
+            --exclude='/public/storage' \
             -e ssh \
             ./ deploy-target:/opt/project/atl_laravel/
 
+          echo "Files synced successfully!"
+
       - name: Execute Remote Post-Deployment Commands
         run: |
-          ssh deploy-target << 'EOF'
+          ssh deploy-target 'bash -s' << 'EOF'
+          set -e
           cd /opt/project/atl_laravel
-          php8.4 /usr/local/bin/composer install --no-interaction --prefer-dist --optimize-autoloader
+
+          echo "Installing composer dependencies on server..."
+          php8.4 /usr/local/bin/composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
+
+          echo "Running database migrations..."
           php8.4 artisan migrate --force
+
+          echo "Optimizing Laravel Cache..."
           php8.4 artisan optimize:clear
           php8.4 artisan config:cache
           php8.4 artisan route:cache
           php8.4 artisan view:cache
+
+          echo "All post-deploy steps completed!"
           EOF
-          
-      - name: Debug tunnel
-        run: |
-          curl -sI https://${{ secrets.HOSTNAMEPROD }} \
-            -H "CF-Access-Client-Id: ${{ secrets.CF_ACCESS_CLIENT_ID }}" \
-            -H "CF-Access-Client-Secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}" | head -n 5
