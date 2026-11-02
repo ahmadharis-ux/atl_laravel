@@ -12,33 +12,28 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
-    # cloudflared membaca service token dari environment variable ini
-    env:
-      TUNNEL_SERVICE_TOKEN_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
-      TUNNEL_SERVICE_TOKEN_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install cloudflared
+      - name: Verify secrets
+        env:
+          PRIVATE_KEYPROD: ${{ secrets.PRIVATE_KEYPROD }}
+          HOSTNAMEPROD: ${{ secrets.HOSTNAMEPROD }}
+          USERNAMEPROD: ${{ secrets.USERNAMEPROD }}
         run: |
-          curl -L --fail --output /tmp/cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
-          sudo dpkg -i /tmp/cloudflared.deb
-          cloudflared --version
-
-      - name: Debug tunnel (cek Cloudflare Access)
-        continue-on-error: true
-        run: |
-          curl -sI "https://${{ secrets.HOSTNAMEPROD }}" \
-            -H "CF-Access-Client-Id: ${{ secrets.CF_ACCESS_CLIENT_ID }}" \
-            -H "CF-Access-Client-Secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}" | head -n 5
+          missing=0
+          for v in PRIVATE_KEYPROD HOSTNAMEPROD USERNAMEPROD; do
+            if [ -z "${!v}" ]; then echo "::error::Secret $v kosong"; missing=1; fi
+          done
+          exit $missing
 
       - name: Setup SSH
         env:
           SSH_PRIVATE_KEY: ${{ secrets.PRIVATE_KEYPROD }}
           SSH_HOST: ${{ secrets.HOSTNAMEPROD }}
           SSH_USER: ${{ secrets.USERNAMEPROD }}
+          SSH_PORT: ${{ secrets.PORTPROD || '22' }}
         run: |
           set -euo pipefail
           mkdir -p ~/.ssh
@@ -51,14 +46,18 @@ jobs:
           Host deploy-target
             HostName $SSH_HOST
             User $SSH_USER
+            Port $SSH_PORT
             IdentityFile ~/.ssh/id_ed25519
             IdentitiesOnly yes
             BatchMode yes
+            ConnectTimeout 20
             StrictHostKeyChecking no
             UserKnownHostsFile /dev/null
-            ProxyCommand cloudflared access ssh --hostname %h
           EOF
           chmod 600 ~/.ssh/config
+
+      - name: Test SSH connection
+        run: ssh -v deploy-target 'echo "SSH OK: $(whoami)@$(hostname)"'
 
       - name: Deploy via Rsync
         run: |
@@ -99,9 +98,4 @@ jobs:
 
           echo "Optimizing Laravel Cache..."
           php8.4 artisan optimize:clear
-          php8.4 artisan config:cache
-          php8.4 artisan route:cache
-          php8.4 artisan view:cache
-
-          echo "All post-deploy steps completed!"
-          EOF
+          php8.4 artisan
