@@ -54,7 +54,7 @@ class LandingSetting extends Model
             'stat_customers' => '25.000+',
             'stat_transactions' => '1,2 Jt+',
             'stat_products' => '500+',
-            'stat_support' => '24/7',
+            'stat_support' => '',
             'meta_description' => 'Atlantic Pedia — layanan PPOB, pulsa, paket data, token listrik, dan produk digital dengan proses instan.',
         ];
     }
