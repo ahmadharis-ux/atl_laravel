@@ -58,7 +58,7 @@ jobs:
 
       - name: Test SSH connection
         run: |
-          ssh -v deploy-target 'echo "SSH OK" && whoami && hostname'
+          ssh deploy-target 'echo "SSH OK" && whoami && hostname'
 
       - name: Deploy via Rsync
         run: |
@@ -85,7 +85,7 @@ jobs:
 
           echo "Files synced successfully!"
 
-            - name: Execute Remote Post-Deployment Commands
+      - name: Execute Remote Post-Deployment Commands
         run: |
           ssh deploy-target 'bash -s' << 'EOF'
           set -e
