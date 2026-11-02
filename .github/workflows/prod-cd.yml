@@ -57,7 +57,8 @@ jobs:
           chmod 600 ~/.ssh/config
 
       - name: Test SSH connection
-        run: ssh -v deploy-target 'echo "SSH OK: $(whoami)@$(hostname)"'
+        run: |
+          ssh -v deploy-target 'echo "SSH OK" && whoami && hostname'
 
       - name: Deploy via Rsync
         run: |
