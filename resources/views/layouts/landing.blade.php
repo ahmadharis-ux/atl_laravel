@@ -23,7 +23,7 @@
     <header class="landing-nav">
         <div class="container d-flex align-items-center justify-content-between gap-3">
             <a href="{{ route('landing') }}" class="d-flex align-items-center gap-2" aria-label="Atlantic Pedia">
-                <img src="{{ asset('assets/images/logo_with_right_text.png') }}" alt="Atlantic Pedia" style="height:2.75rem;width:auto;border-radius:.6rem">
+                <img src="{{ asset('assets/images/logo.png') }}" alt="Atlantic Pedia" style="height:3rem;width:auto;border-radius:.6rem">
             </a>
 
             <nav class="landing-nav-links d-none d-md-flex align-items-center gap-4" aria-label="Navigasi landing page">
