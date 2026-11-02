@@ -98,4 +98,9 @@ jobs:
 
           echo "Optimizing Laravel Cache..."
           php8.4 artisan optimize:clear
-          php8.4 artisan
+          php8.4 artisan config:cache
+          php8.4 artisan route:cache
+          php8.4 artisan view:cache
+
+          echo "All post-deploy steps completed!"
+          EOF
