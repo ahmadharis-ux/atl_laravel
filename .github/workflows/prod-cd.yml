@@ -90,12 +90,16 @@ jobs:
           ssh deploy-target 'bash -s' << 'EOF'
           set -e
           export PATH="$PATH:/usr/local/bin:/usr/bin"
+          export COMPOSER_ALLOW_SUPERUSER=1
           cd /opt/project/atl_laravel
 
-          php -v | head -n 1
+          git config --global --add safe.directory /opt/project/atl_laravel
 
           echo "Installing composer dependencies on server..."
-          composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
+          php -d disable_functions= /usr/local/bin/composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
+
+          rm -f bootstrap/cache/packages.php bootstrap/cache/services.php
+          php -d disable_functions= artisan package:discover --ansi
 
           echo "Running database migrations..."
           php artisan migrate --force
@@ -105,6 +109,9 @@ jobs:
           php artisan config:cache
           php artisan route:cache
           php artisan view:cache
+
+          echo "Fixing ownership..."
+          chown -R www:www vendor storage bootstrap/cache
 
           echo "All post-deploy steps completed!"
           EOF
