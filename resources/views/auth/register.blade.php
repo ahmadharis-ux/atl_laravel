@@ -164,7 +164,7 @@ body{min-height:100vh}
   <!-- Panel brand (desktop) -->
   <aside class="col-lg-6 d-none d-lg-flex brand-panel flex-column justify-content-between">
     <div style="max-width:28rem">
-      <img src="{{ asset('assets/images/logo.png') }}" alt="Atlantic Pedia Tab" style="width: 80%">
+      <img src="{{ asset('assets/images/logo_with_right_text.png') }}" alt="Atlantic Pedia Tab" style="width: 80%">
       <h2 class="fw-bold mb-3" style="font-size:2.25rem;line-height:1.2;letter-spacing:-.02em">Mulai jualan PPOB lebih cepat dan hemat.</h2>
       <div class="d-flex flex-column gap-3 tx-skyd">
         <div class="feat"><span class="ms">check_circle</span><span>Pulsa, paket data, token PLN, voucher game, dan e-wallet dalam satu dashboard.</span></div>
