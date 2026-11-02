@@ -85,23 +85,26 @@ jobs:
 
           echo "Files synced successfully!"
 
-      - name: Execute Remote Post-Deployment Commands
+            - name: Execute Remote Post-Deployment Commands
         run: |
           ssh deploy-target 'bash -s' << 'EOF'
           set -e
+          export PATH="$PATH:/usr/local/bin:/usr/bin"
           cd /opt/project/atl_laravel
 
+          php -v | head -n 1
+
           echo "Installing composer dependencies on server..."
-          php8.4 /usr/local/bin/composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
+          composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
 
           echo "Running database migrations..."
-          php8.4 artisan migrate --force
+          php artisan migrate --force
 
           echo "Optimizing Laravel Cache..."
-          php8.4 artisan optimize:clear
-          php8.4 artisan config:cache
-          php8.4 artisan route:cache
-          php8.4 artisan view:cache
+          php artisan optimize:clear
+          php artisan config:cache
+          php artisan route:cache
+          php artisan view:cache
 
           echo "All post-deploy steps completed!"
           EOF
