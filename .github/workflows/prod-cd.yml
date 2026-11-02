@@ -18,17 +18,29 @@ jobs:
           sudo dpkg -i /tmp/cloudflared.deb
           cloudflared --version
 
-      - name: Setup SSH & Deploy via Rsync
+            - name: Setup SSH & Deploy via Rsync
         env:
           SSH_PRIVATE_KEY: ${{ secrets.PRIVATE_KEYPROD }}
           SSH_HOST: ${{ secrets.HOSTNAMEPROD }}
           SSH_USER: ${{ secrets.USERNAMEPROD }}
+          CF_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: |
           mkdir -p ~/.ssh
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
 
-          echo "Starting deployment to /opt/project/atl_laravel..."
+          # Put the proxy config in ssh config so both steps share it
+          cat > ~/.ssh/config <<EOF
+          Host deploy-target
+            HostName $SSH_HOST
+            User $SSH_USER
+            IdentityFile ~/.ssh/id_ed25519
+            StrictHostKeyChecking no
+            UserKnownHostsFile /dev/null
+            ProxyCommand cloudflared access ssh --hostname %h --service-token-id $CF_ID --service-token-secret $CF_SECRET
+          EOF
+          chmod 600 ~/.ssh/config
 
           rsync -avz --delete \
             --exclude='.env' \
@@ -42,30 +54,23 @@ jobs:
             --exclude='/storage/framework/sessions' \
             --exclude='/storage/framework/views' \
             --exclude='/storage/app/firebase' \
-            -e "ssh -i ~/.ssh/id_ed25519 -o ProxyCommand='cloudflared access ssh --hostname $SSH_HOST' -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
-            ./ $SSH_USER@$SSH_HOST:/opt/project/atl_laravel/
-
-          echo "Files synced successfully!"
+            -e ssh \
+            ./ deploy-target:/opt/project/atl_laravel/
 
       - name: Execute Remote Post-Deployment Commands
-        env:
-          SSH_HOST: ${{ secrets.HOSTNAMEPROD }}
-          SSH_USER: ${{ secrets.USERNAMEPROD }}
         run: |
-          ssh -i ~/.ssh/id_ed25519 -o ProxyCommand="cloudflared access ssh --hostname $SSH_HOST" -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << 'EOF'
-            cd /opt/project/atl_laravel
-
-            echo "Installing composer dependencies on server..."
-            php8.4 /usr/local/bin/composer install --no-interaction --prefer-dist --optimize-autoloader
-
-            echo "Running database migrations..."
-            php8.4 artisan migrate --force
-
-            echo "Optimizing Laravel Cache..."
-            php8.4 artisan optimize:clear
-            php8.4 artisan config:cache
-            php8.4 artisan route:cache
-            php8.4 artisan view:cache
-
-            echo "All post-deploy steps completed!"
+          ssh deploy-target << 'EOF'
+          cd /opt/project/atl_laravel
+          php8.4 /usr/local/bin/composer install --no-interaction --prefer-dist --optimize-autoloader
+          php8.4 artisan migrate --force
+          php8.4 artisan optimize:clear
+          php8.4 artisan config:cache
+          php8.4 artisan route:cache
+          php8.4 artisan view:cache
           EOF
+          
+      - name: Debug tunnel
+        run: |
+          curl -sI https://${{ secrets.HOSTNAMEPROD }} \
+            -H "CF-Access-Client-Id: ${{ secrets.CF_ACCESS_CLIENT_ID }}" \
+            -H "CF-Access-Client-Secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}" | head -n 5

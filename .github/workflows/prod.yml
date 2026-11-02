@@ -1,4 +1,4 @@
-name: Laravel CI (atl_laravel)
+name: Laravel CI (atl_laravel_production)
 
 on:
   pull_request:
