@@ -17,10 +17,10 @@ class EnsureComingSoonMode
         );
 
         if (now()->lt($launchDate)) {
-            $clientIp = $request->server->get('REMOTE_ADDR');
+            $clientIp = $request->ip();
             $allowedIps = config('landing.coming_soon_allowed_ips', []);
 
-            if (is_string($clientIp) && in_array($clientIp, $allowedIps, true)) {
+            if ($clientIp !== null && in_array($clientIp, $allowedIps, true)) {
                 return $next($request);
             }
 

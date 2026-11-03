@@ -98,6 +98,67 @@ class LandingPageTest extends TestCase
         }
     }
 
+    public function test_allowed_ip_can_access_through_cloudflare(): void
+    {
+        config([
+            'landing.coming_soon_until' => '2026-11-06 00:00:00',
+            'landing.coming_soon_allowed_ips' => ['103.147.8.176'],
+        ]);
+        $this->travelTo(Carbon::parse('2026-11-05 23:59:59', 'Asia/Jakarta'));
+
+        $this->withServerVariables(['REMOTE_ADDR' => '172.71.152.53'])
+            ->withHeader('CF-Connecting-IP', '103.147.8.176')
+            ->get('/login')
+            ->assertOk();
+    }
+
+    public function test_non_allowed_ip_is_blocked_through_cloudflare(): void
+    {
+        config([
+            'landing.coming_soon_until' => '2026-11-06 00:00:00',
+            'landing.coming_soon_allowed_ips' => ['103.147.8.176'],
+        ]);
+        $this->travelTo(Carbon::parse('2026-11-05 23:59:59', 'Asia/Jakarta'));
+
+        $this->withServerVariables(['REMOTE_ADDR' => '172.71.152.53'])
+            ->withHeader('CF-Connecting-IP', '198.51.100.20')
+            ->get('/login')
+            ->assertStatus(503)
+            ->assertSeeText('Segera Hadir');
+    }
+
+    public function test_cloudflare_connection_without_valid_client_ip_is_blocked(): void
+    {
+        config([
+            'landing.coming_soon_until' => '2026-11-06 00:00:00',
+            'landing.coming_soon_allowed_ips' => ['103.147.8.176'],
+        ]);
+        $this->travelTo(Carbon::parse('2026-11-05 23:59:59', 'Asia/Jakarta'));
+
+        $this->withServerVariables(['REMOTE_ADDR' => '172.71.152.53'])
+            ->withHeader('CF-Connecting-IP', 'not-an-ip')
+            ->withHeader('X-Forwarded-For', '103.147.8.176')
+            ->get('/login')
+            ->assertStatus(503)
+            ->assertSeeText('Segera Hadir');
+    }
+
+    public function test_untrusted_connection_cannot_spoof_cloudflare_client_ip(): void
+    {
+        config([
+            'landing.coming_soon_until' => '2026-11-06 00:00:00',
+            'landing.coming_soon_allowed_ips' => ['103.147.8.176'],
+        ]);
+        $this->travelTo(Carbon::parse('2026-11-05 23:59:59', 'Asia/Jakarta'));
+
+        $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.20'])
+            ->withHeader('CF-Connecting-IP', '103.147.8.176')
+            ->withHeader('X-Forwarded-For', '103.147.8.176')
+            ->get('/login')
+            ->assertStatus(503)
+            ->assertSeeText('Segera Hadir');
+    }
+
     public function test_forwarded_ip_header_cannot_bypass_coming_soon(): void
     {
         config([

@@ -4,9 +4,11 @@ use App\Http\Middleware\EnsureComingSoonMode;
 use App\Http\Middleware\EnsureFeatureEnabled;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\RedirectAdminToAdminPanel;
+use App\Http\Middleware\TrustCloudflareProxies;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Spatie\Permission\Middleware\PermissionMiddleware;
@@ -27,6 +29,14 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->replace(TrustProxies::class, TrustCloudflareProxies::class);
+        $middleware->trustProxies(
+            headers: Request::HEADER_X_FORWARDED_FOR |
+                Request::HEADER_X_FORWARDED_HOST |
+                Request::HEADER_X_FORWARDED_PORT |
+                Request::HEADER_X_FORWARDED_PROTO,
+        );
+
         $middleware->web(prepend: [
             EnsureComingSoonMode::class,
         ]);
@@ -50,7 +60,6 @@ return Application::configure(basePath: dirname(__DIR__))
             fn (Request $request) => $request->user()?->canAccessAdmin() ? route('admin.dashboard') : route('dashboard'),
         );
 
-        $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
