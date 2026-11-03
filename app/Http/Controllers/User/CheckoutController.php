@@ -6,6 +6,7 @@ use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\WalletTransactionType;
 use App\Http\Controllers\Controller;
+use App\Models\FeatureSetting;
 use App\Models\MasterBank;
 use App\Models\Order;
 use App\Models\Product;
@@ -35,6 +36,13 @@ class CheckoutController extends Controller
         $this->ensurePurchasable($product);
         $user = $request->user();
         $rewardTier = $user->tier();
+        $paymentMethods = FeatureSetting::availablePaymentMethods('transaction');
+        $paymentMethodValues = $this->paymentMethodValues($paymentMethods);
+        $selectedMethod = old('payment_method', PaymentMethod::Saldo->value);
+
+        if (! in_array($selectedMethod, $paymentMethodValues, true)) {
+            $selectedMethod = $paymentMethodValues[0] ?? null;
+        }
 
         $targets = MasterBank::query()
             ->where('is_active', true)
@@ -59,22 +67,25 @@ class CheckoutController extends Controller
             ),
             'rewardTier' => $rewardTier,
             'qrisFee' => $midtrans->qrisFee($product->selling_price),
-            'paymentMethods' => PaymentMethod::cases(),
+            'paymentMethods' => $paymentMethods,
             'bankTargets' => $targets->where('type', MasterBank::TYPE_BANK)->values(),
             'ewalletTargets' => $targets->where('type', MasterBank::TYPE_EWALLET)->values(),
-            'selectedMethod' => old('payment_method', PaymentMethod::Saldo->value),
+            'selectedMethod' => $selectedMethod,
         ]);
     }
 
     public function store(Request $request, Product $product, MidtransService $midtrans): RedirectResponse
     {
         $this->ensurePurchasable($product);
+        $paymentMethods = FeatureSetting::availablePaymentMethods('transaction');
 
         $validated = $request->validate([
             'target' => ['required', 'string', 'min:3', 'max:64'],
             'zone' => [OrderTarget::requiresZone($product->brand?->slug) ? 'required' : 'nullable', 'string', 'max:20'],
-            'payment_method' => ['required', Rule::enum(PaymentMethod::class)],
+            'payment_method' => ['required', Rule::in($this->paymentMethodValues($paymentMethods))],
             'master_bank_id' => ['nullable', 'integer'],
+        ], [
+            'payment_method.in' => 'Metode pembayaran ini sedang tidak tersedia.',
         ]);
 
         $user = $request->user();
@@ -265,6 +276,15 @@ class CheckoutController extends Controller
     private function ensurePurchasable(Product $product): void
     {
         abort_unless($product->status, 404);
+    }
+
+    /**
+     * @param  list<PaymentMethod>  $methods
+     * @return list<string>
+     */
+    private function paymentMethodValues(array $methods): array
+    {
+        return array_map(fn (PaymentMethod $method): string => $method->value, $methods);
     }
 
     /**

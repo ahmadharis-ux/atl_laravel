@@ -34,9 +34,9 @@ final class Rbac
                 'users.delete' => 'Menghapus pengguna',
                 'users.assign-role' => 'Menetapkan peran pengguna',
             ],
-            'Manajemen Halaman' => [
+            'Halaman & Pembayaran' => [
                 'features.view' => 'Melihat pengaturan halaman pengguna',
-                'features.update' => 'Mengaktifkan / menonaktifkan halaman pengguna',
+                'features.update' => 'Mengatur status halaman dan metode pembayaran',
             ],
             'Role & Permission' => [
                 'roles.view' => 'Melihat daftar peran',

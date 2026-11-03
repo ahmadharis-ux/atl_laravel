@@ -2,10 +2,11 @@
 
 namespace App\Models;
 
+use App\Enums\PaymentMethod;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Pengaturan fitur halaman pengguna (singleton).
+ * Pengaturan fitur halaman pengguna dan metode pembayaran (singleton).
  *
  * Baris pertama dipakai sebagai konfigurasi aktif; dibuat otomatis dengan
  * nilai default bila belum ada. Bila sebuah fitur dinonaktifkan, halaman
@@ -18,6 +19,11 @@ class FeatureSetting extends Model
         'ticket_enabled',
         'merchandise_enabled',
         'dashboard_promo_enabled',
+        'deposit_qris_enabled',
+        'deposit_transfer_enabled',
+        'deposit_ewallet_enabled',
+        'transaction_saldo_enabled',
+        'transaction_qris_enabled',
     ];
 
     /**
@@ -28,6 +34,11 @@ class FeatureSetting extends Model
         'ticket_enabled' => true,
         'merchandise_enabled' => true,
         'dashboard_promo_enabled' => true,
+        'deposit_qris_enabled' => true,
+        'deposit_transfer_enabled' => true,
+        'deposit_ewallet_enabled' => true,
+        'transaction_saldo_enabled' => true,
+        'transaction_qris_enabled' => true,
     ];
 
     public static function current(): self
@@ -46,7 +57,41 @@ class FeatureSetting extends Model
             'ticket_enabled' => true,
             'merchandise_enabled' => true,
             'dashboard_promo_enabled' => true,
+            'deposit_qris_enabled' => true,
+            'deposit_transfer_enabled' => true,
+            'deposit_ewallet_enabled' => true,
+            'transaction_saldo_enabled' => true,
+            'transaction_qris_enabled' => true,
         ];
+    }
+
+    /**
+     * @return list<PaymentMethod>
+     */
+    public static function availablePaymentMethods(string $flow): array
+    {
+        $columns = match ($flow) {
+            'deposit' => [
+                PaymentMethod::Qris->value => 'deposit_qris_enabled',
+                PaymentMethod::VirtualAccount->value => 'deposit_transfer_enabled',
+                PaymentMethod::EWallet->value => 'deposit_ewallet_enabled',
+            ],
+            'transaction' => [
+                PaymentMethod::Saldo->value => 'transaction_saldo_enabled',
+                PaymentMethod::Qris->value => 'transaction_qris_enabled',
+            ],
+            default => [],
+        };
+
+        $setting = static::current();
+
+        return array_values(array_map(
+            PaymentMethod::from(...),
+            array_keys(array_filter(
+                $columns,
+                fn (string $column): bool => (bool) $setting->getAttribute($column),
+            )),
+        ));
     }
 
     /**
@@ -73,6 +118,11 @@ class FeatureSetting extends Model
             'ticket_enabled' => 'boolean',
             'merchandise_enabled' => 'boolean',
             'dashboard_promo_enabled' => 'boolean',
+            'deposit_qris_enabled' => 'boolean',
+            'deposit_transfer_enabled' => 'boolean',
+            'deposit_ewallet_enabled' => 'boolean',
+            'transaction_saldo_enabled' => 'boolean',
+            'transaction_qris_enabled' => 'boolean',
         ];
     }
 }

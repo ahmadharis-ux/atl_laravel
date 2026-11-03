@@ -49,14 +49,18 @@
 
                 <x-ui.card title="Metode Pembayaran">
                     <div class="d-flex flex-column gap-2" data-payment-methods>
-                        @foreach ($paymentMethods as $method)
+                        @forelse ($paymentMethods as $method)
                             <x-ui.radio-card
                                 name="payment_method"
                                 :value="$method->value"
                                 :label="$method->value === \App\Enums\PaymentMethod::Qris->value ? $method->label().' — '.$method->description().' (Biaya admin 0,7%)' : $method->label().' — '.$method->description()"
                                 :checked="$selectedMethod === $method->value"
                             />
-                        @endforeach
+                        @empty
+                            <div class="alert-ap r-sm bg-errc-l tx-err fs-12 px-3 py-2">
+                                Belum ada metode isi saldo yang aktif. Silakan hubungi admin.
+                            </div>
+                        @endforelse
 
                         <div data-payment-channel="va" class="mt-1">
                             @if ($bankTargets->isEmpty())

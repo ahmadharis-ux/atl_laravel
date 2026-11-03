@@ -83,19 +83,19 @@
 
                 <x-ui.card title="Metode Pembayaran">
                     <div class="d-flex flex-column gap-2" data-payment-methods>
-                        @php($allowed = ['saldo', 'qris'])
-                        @foreach ($paymentMethods as $method)
+                        @forelse ($paymentMethods as $method)
                             @php($val = $method->value)
-                            @if (! in_array($val, $allowed, true))
-                                @continue
-                            @endif
                             <x-ui.radio-card
                                 name="payment_method"
                                 :value="$method->value"
                                 :label="$method->label().' — '.($val === 'saldo' ? 'Dipotong dari saldo saat pesanan dibuat.' : 'Scan QRIS dan selesaikan pembayaran dalam 3 jam.')"
                                 :checked="$selectedMethod === $method->value"
                             />
-                        @endforeach
+                        @empty
+                            <div class="alert-ap r-sm bg-errc-l tx-err fs-12 px-3 py-2">
+                                Belum ada metode pembayaran transaksi yang aktif. Silakan hubungi admin.
+                            </div>
+                        @endforelse
 
                         <div data-payment-channel="va" class="mt-1 d-none">
                         </div>

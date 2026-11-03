@@ -7,6 +7,7 @@ use App\Enums\PaymentMethod;
 use App\Http\Controllers\Controller;
 use App\Models\Deposit;
 use App\Models\DepositProof;
+use App\Models\FeatureSetting;
 use App\Models\MasterBank;
 use App\Models\User;
 use App\Notifications\TransactionResult;
@@ -58,6 +59,14 @@ class DepositController extends Controller
 
     public function create(Request $request): View
     {
+        $paymentMethods = $this->topUpMethods();
+        $paymentMethodValues = $this->topUpMethodValues($paymentMethods);
+        $selectedMethod = old('payment_method', PaymentMethod::Qris->value);
+
+        if (! in_array($selectedMethod, $paymentMethodValues, true)) {
+            $selectedMethod = $paymentMethodValues[0] ?? null;
+        }
+
         $targets = MasterBank::query()
             ->where('is_active', true)
             ->orderBy('sort_order')
@@ -65,10 +74,10 @@ class DepositController extends Controller
             ->get();
 
         return view('user.deposit.create', [
-            'paymentMethods' => $this->topUpMethods(),
+            'paymentMethods' => $paymentMethods,
             'bankTargets' => $targets->where('type', MasterBank::TYPE_BANK)->values(),
             'ewalletTargets' => $targets->where('type', MasterBank::TYPE_EWALLET)->values(),
-            'selectedMethod' => old('payment_method', PaymentMethod::Qris->value),
+            'selectedMethod' => $selectedMethod,
             'presets' => [20_000, 50_000, 100_000, 200_000, 500_000, 1_000_000],
             'minAmount' => self::MIN_AMOUNT,
             'maxAmount' => self::MAX_AMOUNT,
@@ -77,10 +86,14 @@ class DepositController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $paymentMethods = $this->topUpMethods();
+
         $validated = $request->validate([
             'amount' => ['required', 'integer', 'min:'.self::MIN_AMOUNT, 'max:'.self::MAX_AMOUNT],
-            'payment_method' => ['required', Rule::in($this->topUpMethodValues())],
+            'payment_method' => ['required', Rule::in($this->topUpMethodValues($paymentMethods))],
             'master_bank_id' => ['nullable', 'integer'],
+        ], [
+            'payment_method.in' => 'Metode pembayaran ini sedang tidak tersedia.',
         ]);
 
         $method = PaymentMethod::from($validated['payment_method']);
@@ -427,24 +440,21 @@ class DepositController extends Controller
     }
 
     /**
-     * Metode pembayaran untuk top up (semua kecuali saldo).
+     * Metode isi saldo yang sedang diaktifkan admin.
      *
      * @return list<PaymentMethod>
      */
     private function topUpMethods(): array
     {
-        return array_values(array_filter(
-            PaymentMethod::cases(),
-            fn (PaymentMethod $method): bool => $method !== PaymentMethod::Saldo,
-        ));
+        return FeatureSetting::availablePaymentMethods('deposit');
     }
 
     /**
      * @return list<string>
      */
-    private function topUpMethodValues(): array
+    private function topUpMethodValues(array $methods): array
     {
-        return array_map(fn (PaymentMethod $method): string => $method->value, $this->topUpMethods());
+        return array_map(fn (PaymentMethod $method): string => $method->value, $methods);
     }
 
     private function generateReference(): string

@@ -43,7 +43,7 @@
                 ['label' => 'Master Bank',       'icon' => 'account_balance',     'url' => route('admin.master-banks.index'), 'active' => request()->routeIs('admin.master-banks.*'), 'show' => $auth?->can('master-banks.view') ?? false],
                 ['label' => 'Banner Dashboard',  'icon' => 'view_carousel',       'url' => route('admin.dashboard-banners.index'), 'active' => request()->routeIs('admin.dashboard-banners.*'), 'show' => $auth?->can('dashboard-banners.view') ?? false],
                 ['label' => 'Banner Login',      'icon' => 'campaign',            'url' => route('admin.login-banners.index'), 'active' => request()->routeIs('admin.login-banners.*'), 'show' => $auth?->can('login-banners.view') ?? false],
-                ['label' => 'Manajemen Halaman', 'icon' => 'toggle_on',          'url' => route('admin.features.index'), 'active' => request()->routeIs('admin.features.*'), 'show' => $auth?->can('features.view') ?? false],
+                ['label' => 'Halaman & Pembayaran', 'icon' => 'toggle_on',       'url' => route('admin.features.index'), 'active' => request()->routeIs('admin.features.*'), 'show' => $auth?->can('features.view') ?? false],
             ],
             'class' => 'menu-group--scroll',
         ],
