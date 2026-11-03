@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureComingSoonMode;
 use App\Http\Middleware\EnsureFeatureEnabled;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\RedirectAdminToAdminPanel;
@@ -26,6 +27,10 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->web(prepend: [
+            EnsureComingSoonMode::class,
+        ]);
+
         $middleware->alias([
             'admin' => EnsureUserIsAdmin::class,
             'non-admin' => RedirectAdminToAdminPanel::class,
