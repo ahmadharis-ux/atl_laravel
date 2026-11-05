@@ -158,6 +158,18 @@ class CheckoutTest extends TestCase
             ->assertSee('Isi Saldo');
     }
 
+    public function test_checkout_defers_saldo_pin_entry_to_the_confirmation_modal(): void
+    {
+        $user = User::factory()->create(['balance' => 1_000_000]);
+        $product = $this->product();
+
+        $this->actingAs($user)
+            ->get(route('checkout.show', $product))
+            ->assertOk()
+            ->assertSee('name="pin" data-checkout-pin', false)
+            ->assertDontSee('PIN transaksi *');
+    }
+
     public function test_balance_checkout_creates_a_successful_order_and_deducts_balance(): void
     {
         $user = User::factory()->create(['balance' => 1_000_000]);

@@ -97,20 +97,7 @@
                             </div>
                         @endforelse
 
-                        <div data-payment-channel="saldo" @class(['mt-1' => true, 'd-none' => $selectedMethod !== 'saldo'])>
-                            <x-ui.input
-                                name="pin"
-                                type="password"
-                                label="PIN transaksi *"
-                                inputmode="numeric"
-                                maxlength="6"
-                                pattern="[0-9]{6}"
-                                autocomplete="current-password"
-                                hint="6 digit. Atur atau ubah PIN di Pengaturan > PIN."
-                                :disabled="$selectedMethod !== 'saldo'"
-                                required
-                            />
-                        </div>
+                        <input type="hidden" name="pin" data-checkout-pin>
 
                         <div data-payment-channel="va" class="mt-1 d-none">
                         </div>
@@ -120,6 +107,7 @@
 
                         @error('payment_method')<div class="err show" id="payment_method-error">{{ $message }}</div>@enderror
                         @error('master_bank_id')<div class="err show" id="master_bank_id-error">{{ $message }}</div>@enderror
+                        @error('pin')<div class="err show" id="pin-error">{{ $message }}</div>@enderror
                         @error('balance')
                             <div class="card-ap r-sm p-3 bg-errc-l" id="balance-error" role="alert">
                                 <div class="fw-semibold fs-12">Saldo belum mencukupi</div>

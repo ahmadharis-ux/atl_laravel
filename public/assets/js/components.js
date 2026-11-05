@@ -837,10 +837,15 @@
       '</div>';
     document.body.appendChild(confirmEl);
     confirmEl.querySelector('.ap-confirm-ok').addEventListener('click', function () {
+      var pinInput = confirmEl.querySelector('[data-confirm-pin]');
+      if (pinInput && !pinInput.reportValidity()) {
+        pinInput.focus();
+        return;
+      }
       var cb = confirmCb;
-      closeModal(confirmEl);
+      var shouldClose = typeof cb !== 'function' || cb(true, pinInput ? pinInput.value : null) !== false;
       confirmCb = null;
-      if (typeof cb === 'function') cb(true);
+      if (shouldClose) closeModal(confirmEl);
     });
     confirmEl.addEventListener('click', function (e) {
       if (e.target.closest('[data-modal-close]')) {
@@ -870,6 +875,22 @@
     ok.style.background = o.danger ? 'var(--err)' : '';
     confirmCb = typeof cb === 'function' ? cb : function(){};
     showModal(el);
+  }
+
+  function showCheckoutConfirmError(message) {
+    var el = document.querySelector('.ap-checkout-confirm-dialog');
+    var summary = el ? el.querySelector('.ap-checkout-confirm') : null;
+    if (!summary || !message) return;
+
+    var error = summary.querySelector('[data-checkout-confirm-error]');
+    if (!error) {
+      error = document.createElement('div');
+      error.dataset.checkoutConfirmError = '';
+      error.className = 'alert-ap r-sm bg-errc-l tx-err fs-12 px-3 py-2 mt-3';
+      error.setAttribute('role', 'alert');
+      summary.appendChild(error);
+    }
+    error.textContent = message;
   }
 
   function renderCheckoutConfirmation(container, summary) {
@@ -942,6 +963,35 @@
     impactText.textContent = summary.impact;
     impact.append(impactIcon, impactText);
     container.appendChild(impact);
+
+    if (!summary.requiresPin) return;
+
+    var pinField = document.createElement('div');
+    pinField.className = 'mt-3';
+    var pinLabel = document.createElement('label');
+    pinLabel.className = 'ui-label';
+    pinLabel.htmlFor = 'checkout-confirm-pin';
+    pinLabel.textContent = 'PIN transaksi';
+    var pinWrap = document.createElement('div');
+    pinWrap.className = 'ui-input-wrap';
+    var pinInput = document.createElement('input');
+    pinInput.className = 'ui-input';
+    pinInput.id = 'checkout-confirm-pin';
+    pinInput.type = 'password';
+    pinInput.inputMode = 'numeric';
+    pinInput.maxLength = 6;
+    pinInput.pattern = '[0-9]{6}';
+    pinInput.autocomplete = 'current-password';
+    pinInput.required = true;
+    pinInput.dataset.confirmPin = '';
+    pinInput.setAttribute('aria-describedby', 'checkout-confirm-pin-hint');
+    var pinHint = document.createElement('div');
+    pinHint.className = 'ui-hint';
+    pinHint.id = 'checkout-confirm-pin-hint';
+    pinHint.textContent = 'Masukkan 6 digit PIN untuk memotong saldo.';
+    pinWrap.appendChild(pinInput);
+    pinField.append(pinLabel, pinWrap, pinHint);
+    container.appendChild(pinField);
   }
 
   function initModals() {
@@ -1586,6 +1636,7 @@
   window.AP = {
     openModal: openModal,
     closeModal: function (id) { closeModal(typeof id === 'string' ? document.getElementById(id) : id); },
+    closeConfirm: function () { if (confirmEl) closeModal(confirmEl); },
     confirm: confirmAction,
     showToast: showToast,
     claimNotificationToast: claimNotificationToast,
@@ -1689,8 +1740,58 @@
 
           if (window.AP && AP.showLoader) AP.showLoader();
 
-          form.dataset.nativeSubmit = '1';
-          form.requestSubmit();
+          var started = Date.now();
+          var data = new FormData(form);
+
+          fetch(form.action, {
+            method: (form.getAttribute('method') || 'post').toUpperCase(),
+            body: data,
+            credentials: 'same-origin',
+            headers: {
+              'Accept': 'application/json, text/html;q=0.9',
+              'X-Requested-With': 'XMLHttpRequest',
+            },
+          }).then(function (response) {
+            if (!response.ok && response.status >= 400 && response.status < 500) {
+              return response.text().then(function (body) {
+                var message = 'Pesanan tidak dapat diproses.';
+
+                try {
+                  var payload = JSON.parse(body);
+                  if (payload.errors && payload.errors.pin) {
+                    message = Array.isArray(payload.errors.pin) ? payload.errors.pin[0] : payload.errors.pin;
+                  } else if (payload.message) {
+                    message = payload.message;
+                  }
+                } catch (error) {
+                  var doc = new DOMParser().parseFromString(body, 'text/html');
+                  var serverError = doc.querySelector('.err.show, .alert-ap, .text-danger, .tx-err, .invalid-feedback, .alert-danger');
+                  if (serverError && serverError.textContent.trim()) message = serverError.textContent.trim();
+                }
+
+                if (window.AP && AP.hideLoader) AP.hideLoader();
+                form.dataset.submitting = '';
+                buttons.forEach(function (button) { button.disabled = false; });
+                showCheckoutConfirmError(message);
+              });
+            }
+
+            var wait = Math.max(0, 2000 - (Date.now() - started));
+            setTimeout(function () {
+              if (window.AP && AP.hideLoader) AP.hideLoader();
+              if (window.AP && AP.closeConfirm) AP.closeConfirm();
+              if (response.redirected && response.url) {
+                window.location.assign(response.url);
+              } else {
+                window.location.reload();
+              }
+            }, wait);
+          }).catch(function () {
+            if (window.AP && AP.hideLoader) AP.hideLoader();
+            form.dataset.submitting = '';
+            buttons.forEach(function (button) { button.disabled = false; });
+            showCheckoutConfirmError('Koneksi gagal. Silakan coba lagi.');
+          });
         };
         if (isCheckout) {
           var targetInput = form.querySelector('input[name="target"]');
@@ -1797,6 +1898,9 @@
           var zoneValue = zoneInput ? (zoneInput.value || '').trim() : '';
           var totalElement = document.querySelector('[data-checkout-total]');
 
+          var checkoutPin = form.querySelector('[data-checkout-pin]');
+          if (checkoutPin) checkoutPin.value = '';
+
           checkoutSummary = {
             product: form.dataset.checkoutProduct || '',
             targetLabel: form.dataset.checkoutTargetLabel || 'Tujuan',
@@ -1804,19 +1908,22 @@
             zone: zoneValue,
             total: totalElement ? totalElement.textContent.trim() : '',
             method: methodVal === 'saldo' ? 'Saldo' : 'QRIS',
+            requiresPin: methodVal === 'saldo',
             impact: methodVal === 'saldo'
               ? 'Saldo akun langsung dipotong saat pesanan dibuat.'
               : 'Instruksi QRIS tersedia setelah pesanan dibuat. Selesaikan pembayaran sebelum tagihan kedaluwarsa.',
           };
         }
         if (window.AP && typeof window.AP.confirm === 'function') {
-          window.AP.confirm({ message: msg, title: title, okLabel: 'Lanjutkan', checkoutSummary: checkoutSummary }, function (ok) {
+          window.AP.confirm({ message: msg, title: title, okLabel: 'Lanjutkan', checkoutSummary: checkoutSummary }, function (ok, pin) {
             if (!ok) {
               form.dataset.submitting = '';
               var buttons = form.querySelectorAll('button[type="submit"], input[type="submit"]');
               buttons.forEach(function (b) { b.disabled = false; });
               return;
             }
+            var checkoutPin = form.querySelector('[data-checkout-pin]');
+            if (checkoutPin) checkoutPin.value = pin || '';
             // Re-check saldo saat benar-benar mau lanjut
             var methodChk2 = form.querySelector('input[name="payment_method"]:checked');
             var methodChkVal2 = methodChk2 ? methodChk2.value : '';
@@ -1839,7 +1946,7 @@
             }
             if (isCheckout) {
               submitCheckoutNormally();
-              return;
+              return false;
             }
             var min = parseInt(form.dataset.minLoader, 10);
             if (isNaN(min) || min < 0) min = 2000;
