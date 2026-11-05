@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\WalletTransactionDirection;
 use App\Enums\WalletTransactionType;
 use App\Models\User;
+use App\Support\PinVerificationResult;
 use App\Support\WalletLedger;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
@@ -38,7 +39,7 @@ class WalletLedgerTest extends TestCase
     {
         $user = User::factory()->create(['balance' => 50_000]);
 
-        $entry = WalletLedger::debit($user, 20_000, WalletTransactionType::Purchase, null, 'Beli.');
+        $entry = WalletLedger::debit($user, 20_000, WalletTransactionType::Purchase, null, 'Beli.', [], PinVerificationResult::valid($user));
 
         $this->assertSame(30_000, $user->fresh()->balance);
         $this->assertSame(WalletTransactionDirection::Debit, $entry->direction);
@@ -50,7 +51,7 @@ class WalletLedgerTest extends TestCase
         $user = User::factory()->create(['balance' => 5_000]);
 
         try {
-            WalletLedger::debit($user, 10_000, WalletTransactionType::Purchase);
+            WalletLedger::debit($user, 10_000, WalletTransactionType::Purchase, pinVerification: PinVerificationResult::valid($user));
 
             $this->fail('ValidationException tidak dilempar.');
         } catch (ValidationException $e) {
@@ -58,6 +59,22 @@ class WalletLedgerTest extends TestCase
         }
 
         $this->assertSame(5_000, $user->fresh()->balance);
+        $this->assertSame(0, $user->walletTransactions()->count());
+    }
+
+    public function test_debit_without_pin_verification_is_rejected_and_changes_nothing(): void
+    {
+        $user = User::factory()->create(['balance' => 50_000]);
+
+        try {
+            WalletLedger::debit($user, 10_000, WalletTransactionType::Purchase);
+
+            $this->fail('ValidationException tidak dilempar.');
+        } catch (ValidationException $e) {
+            $this->assertArrayHasKey('pin', $e->errors());
+        }
+
+        $this->assertSame(50_000, $user->fresh()->balance);
         $this->assertSame(0, $user->walletTransactions()->count());
     }
 

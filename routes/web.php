@@ -24,6 +24,7 @@ use App\Http\Controllers\User\MerchandiseController as UserMerchandiseController
 use App\Http\Controllers\User\NicknameController as UserNicknameController;
 use App\Http\Controllers\User\OrderController as UserOrderController;
 use App\Http\Controllers\User\PhoneOperatorController as UserPhoneOperatorController;
+use App\Http\Controllers\User\PinController as UserPinController;
 use App\Http\Controllers\User\ProductController as UserProductController;
 use App\Http\Controllers\User\PulsaController as UserPulsaController;
 use App\Http\Controllers\User\ResellerController as UserResellerController;
@@ -99,7 +100,7 @@ Route::middleware('auth')->group(function () {
         ->middleware('throttle:6,1')->name('verification.send');
 });
 
-Route::middleware(['auth', 'non-admin', 'verified'])->group(function () {
+Route::middleware(['auth', 'non-admin', 'verified', 'pin.set'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
@@ -169,6 +170,20 @@ Route::middleware(['auth', 'non-admin', 'verified'])->group(function () {
     Route::delete('/notifikasi/token', [UserDeviceTokenController::class, 'destroy'])->name('notifications.token.destroy');
 
     Route::get('/pengaturan', [UserSettingsController::class, 'index'])->name('settings.index');
+
+    Route::get('/pengaturan/pin', [UserPinController::class, 'show'])->name('settings.pin');
+    Route::post('/pengaturan/pin', [UserPinController::class, 'store'])->name('settings.pin.store');
+    Route::get('/pengaturan/pin/ubah', [UserPinController::class, 'change'])->name('settings.pin.change');
+    Route::post('/pengaturan/pin/ubah/kirim-otp', [UserPinController::class, 'sendChangeOtp'])
+        ->middleware('throttle:5,1')->name('settings.pin.change.send');
+    Route::get('/pengaturan/pin/ubah/verifikasi', [UserPinController::class, 'verify'])
+        ->name('settings.pin.change.verify');
+    Route::post('/pengaturan/pin/ubah/verifikasi', [UserPinController::class, 'verifyStore'])
+        ->middleware('throttle:10,1')->name('settings.pin.change.verify.store');
+    Route::get('/pengaturan/pin/ubah/reset', [UserPinController::class, 'reset'])
+        ->name('settings.pin.change.reset');
+    Route::post('/pengaturan/pin/ubah/reset', [UserPinController::class, 'resetStore'])
+        ->name('settings.pin.change.reset.store');
 
     Route::get('/pengaturan/reseller', [UserResellerController::class, 'show'])->name('settings.reseller');
     Route::get('/pengaturan/reseller/dokumentasi', [UserResellerController::class, 'docs'])->name('settings.reseller.docs');

@@ -75,6 +75,11 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span
             Klien H2H lama dapat memakai endpoint kompatibilitas di bawah dengan field <code>api_key</code> pada body.
             Ganti API key lama dengan key reseller baru dari halaman pengaturan; key lama tidak dapat digunakan.
         </p>
+        <p class="fs-12 mb-0 mt-2">
+            Setiap <code>POST /orders</code> dan <code>POST /transaksi/create</code> juga wajib mengirim header
+            <code>X-Transaction-PIN</code> berisi PIN transaksi 6 digit. Atur PIN dari
+            <a href="{{ route('settings.pin') }}">Pengaturan PIN</a>; jangan kirim PIN pada body, query string, atau webhook.
+        </p>
     </x-ui.card>
 
     <x-ui.card id="doc-endpoint" title="Base URL dan Daftar Endpoint">
@@ -326,14 +331,21 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span
             Untuk kompatibilitas, zona juga boleh dikirim sebagai <code>target: "userId|zoneId"</code>.
             Pembayaran selalu lewat saldo; pastikan saldo cukup.
         </p>
+        <p class="fs-12">
+            Header <code>X-Transaction-PIN</code> wajib untuk membuat pesanan, termasuk saat mengulang <code>reff_id</code>
+            yang sama. Lima PIN salah mengunci transaksi selama 15 menit. Pesanan di atas Rp 500.000 ditunda selama 24 jam
+            setelah PIN diubah atau direset.
+        </p>
         <div class="position-relative mb-2">
             <pre class="ap-log-pre pe-5 mb-0">curl -X POST "{{ $apiBase }}/orders" \
   -H "X-API-Key: ap_XXXXXXXX..." \
+  -H "X-Transaction-PIN: 482916" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -d '{"product_id": 12, "target": "081234567890", "reff_id": "order-0001", "limit_price": 7000}'</pre>
             <button type="button" class="ap-icon-btn position-absolute top-0 end-0 m-2" data-copy-text="curl -X POST &quot;{{ $apiBase }}/orders&quot; \
   -H &quot;X-API-Key: ap_XXXXXXXX...&quot; \
+  -H &quot;X-Transaction-PIN: 482916&quot; \
   -H &quot;Content-Type: application/json&quot; \
   -H &quot;Accept: application/json&quot; \
   -d '{&quot;product_id&quot;: 12, &quot;target&quot;: &quot;081234567890&quot;, &quot;reff_id&quot;: &quot;order-0001&quot;, &quot;limit_price&quot;: 7000}'" data-copy-label="cURL Buat Pesanan" data-tip="Salin"><span class="ms ms-sm">content_copy</span></button>
@@ -341,6 +353,7 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span
         <div class="d-flex justify-content-end mb-3">
             <button type="button" class="btn-soft" data-copy-text="curl -X POST &quot;{{ $apiBase }}/orders&quot; \
   -H &quot;X-API-Key: ap_XXXXXXXX...&quot; \
+  -H &quot;X-Transaction-PIN: 482916&quot; \
   -H &quot;Content-Type: application/json&quot; \
   -H &quot;Accept: application/json&quot; \
   -d '{&quot;product_id&quot;: 12, &quot;target&quot;: &quot;081234567890&quot;, &quot;reff_id&quot;: &quot;order-0001&quot;, &quot;limit_price&quot;: 7000}'" data-copy-label="cURL Buat Pesanan"><span class="ms ms-sm">content_copy</span> Salin Contoh cURL</button>
@@ -366,7 +379,7 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span
             <span class="fw-semibold">Stok di-decrement dan saldo didebit dalam satu transaksi.</span>
             Jika stok habis, saldo kurang, atau harga melebihi <code>limit_price</code>, request dibalas <code>422</code>
             dan tidak ada perubahan apa pun. Request ulang dengan <code>reff_id</code> yang sama mengembalikan pesanan
-            yang sudah dibuat tanpa mendebit saldo atau stok lagi.
+            yang sudah dibuat tanpa mendebit saldo atau stok lagi, tetapi tetap memerlukan PIN yang valid.
         </p>
     </x-ui.card>
 
@@ -423,9 +436,11 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span
         <p class="fs-12">
             Endpoint ini mempertahankan field dan bentuk respons transaksi utama untuk integrasi H2H lama.
             Gunakan API key reseller baru sebagai <code>api_key</code> form-urlencoded; request GET untuk membuat transaksi
-            tidak didukung. Produk pascabayar dan provider selain Digiflazz belum tersedia pada API reseller.
+            tidak didukung. Header <code>X-Transaction-PIN</code> wajib untuk membuat transaksi. Produk pascabayar dan provider
+            selain Digiflazz belum tersedia pada API reseller.
         </p>
         <pre class="ap-log-pre mb-2">POST {{ url('/transaksi/create') }}
+X-Transaction-PIN: 482916
 api_key={{ 'ap_XXXXXXXX' }}
 code=ML86
 reff_id=order-0001
@@ -494,12 +509,20 @@ limit_price=7000</pre>
                         <td>API key tidak ditemukan/tidak valid, atau akun bukan reseller aktif. Cek header <code>X-API-Key</code> atau buat ulang key.</td>
                     </tr>
                     <tr>
+                        <td class="text-center"><span class="pill bg-errc-l tx-err">403</span></td>
+                        <td>PIN transaksi belum dikirim atau belum diatur. Atur PIN di aplikasi lalu kirim header <code>X-Transaction-PIN</code>.</td>
+                    </tr>
+                    <tr>
                         <td class="text-center"><span class="pill bg-errc-l tx-err">404</span></td>
                         <td>Produk tidak ditemukan/tidak aktif, atau pesanan bukan milik kamu.</td>
                     </tr>
                     <tr>
                         <td class="text-center"><span class="pill bg-gold tx-gold">422</span></td>
-                        <td>Validasi gagal: field kurang, stok habis, saldo kurang, operator tidak cocok, atau zone wajib diisi. Cek objek <code>errors</code>.</td>
+                        <td>Validasi gagal: field kurang, stok habis, saldo kurang, operator tidak cocok, zone wajib diisi, atau PIN salah. Respons PIN salah memuat <code>errors.pin</code> dan <code>remaining_attempts</code>.</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center"><span class="pill bg-gold tx-gold">423</span></td>
+                        <td>PIN terkunci setelah 5 percobaan salah, atau pesanan bernilai tinggi masih dalam masa tunggu 24 jam setelah reset PIN. Gunakan header <code>Retry-After</code> atau field <code>retry_after_seconds</code>.</td>
                     </tr>
                     <tr>
                         <td class="text-center"><span class="pill bg-errc-l tx-err">503</span></td>

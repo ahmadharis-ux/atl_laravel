@@ -12,7 +12,9 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\TransactionLog;
 use App\Models\User;
+use App\Support\PinVerificationResult;
 use App\Support\WalletLedger;
+use Database\Factories\UserFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Spatie\Permission\Models\Permission;
@@ -312,7 +314,7 @@ class AdminTransactionTest extends TestCase
         $customer = User::factory()->create(['balance' => 10_000]);
         $order = Order::factory()->create(['user_id' => $customer->getKey()]);
 
-        WalletLedger::debit($customer, 1_000, WalletTransactionType::Purchase, $order, 'Pembelian order');
+        WalletLedger::debit($customer, 1_000, WalletTransactionType::Purchase, $order, 'Pembelian order', [], PinVerificationResult::valid($customer));
 
         $this->actingAs($admin)
             ->get(route('admin.transactions.show', $order))
@@ -384,6 +386,7 @@ class AdminTransactionTest extends TestCase
             ->post(route('checkout.store', $product), [
                 'target' => '123456789',
                 'payment_method' => PaymentMethod::Saldo->value,
+                'pin' => UserFactory::DEFAULT_PIN,
             ])
             ->assertRedirect();
 
@@ -410,6 +413,7 @@ class AdminTransactionTest extends TestCase
             ->post(route('checkout.store', $product), [
                 'target' => '123456789',
                 'payment_method' => PaymentMethod::Saldo->value,
+                'pin' => UserFactory::DEFAULT_PIN,
             ])
             ->assertSessionHasErrors('balance');
 

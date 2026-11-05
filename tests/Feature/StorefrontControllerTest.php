@@ -12,6 +12,7 @@ use App\Models\Product;
 use App\Models\User;
 use App\Services\MidtransService;
 use App\Support\OrderFulfillment;
+use Database\Factories\UserFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -99,7 +100,9 @@ class StorefrontControllerTest extends TestCase
 
         $this->actingAs($reseller)
             ->from(route('settings.reseller.store'))
-            ->post(route('settings.reseller.store.cash.confirm', $order))
+            ->post(route('settings.reseller.store.cash.confirm', $order), [
+                'pin' => UserFactory::DEFAULT_PIN,
+            ])
             ->assertRedirect(route('settings.reseller.store'))
             ->assertSessionHas('status');
 
@@ -130,7 +133,9 @@ class StorefrontControllerTest extends TestCase
 
         $this->actingAs($reseller)
             ->from(route('settings.reseller.store'))
-            ->post(route('settings.reseller.store.cash.confirm', $order))
+            ->post(route('settings.reseller.store.cash.confirm', $order), [
+                'pin' => UserFactory::DEFAULT_PIN,
+            ])
             ->assertRedirect(route('settings.reseller.store'))
             ->assertSessionHasErrors('balance');
 
@@ -154,13 +159,17 @@ class StorefrontControllerTest extends TestCase
         $order = Order::query()->sole();
 
         $this->actingAs($reseller)
-            ->post(route('settings.reseller.store.cash.confirm', $order))
+            ->post(route('settings.reseller.store.cash.confirm', $order), [
+                'pin' => UserFactory::DEFAULT_PIN,
+            ])
             ->assertRedirect()
             ->assertSessionHas('status');
 
         $this->actingAs($reseller)
             ->from(route('settings.reseller.store'))
-            ->post(route('settings.reseller.store.cash.confirm', $order))
+            ->post(route('settings.reseller.store.cash.confirm', $order), [
+                'pin' => UserFactory::DEFAULT_PIN,
+            ])
             ->assertRedirect(route('settings.reseller.store'))
             ->assertSessionHasErrors('order');
 

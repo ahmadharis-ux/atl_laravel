@@ -14,6 +14,7 @@ use App\Models\Product;
 use App\Models\User;
 use App\Models\WalletTransaction;
 use App\Support\OrderFulfillment;
+use Database\Factories\UserFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
@@ -67,6 +68,7 @@ class DigiflazzFulfillmentTest extends TestCase
             ->post(route('checkout.store', $product), [
                 'target' => '123456789',
                 'payment_method' => PaymentMethod::Saldo->value,
+                'pin' => UserFactory::DEFAULT_PIN,
             ])
             ->assertRedirect();
 

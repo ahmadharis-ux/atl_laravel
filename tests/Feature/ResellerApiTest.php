@@ -13,6 +13,7 @@ use App\Support\OrderFulfillment;
 use App\Support\ResellerKey;
 use App\Support\ResellerWebhook;
 use App\Support\ResellerWebhookAddressResolver;
+use Database\Factories\UserFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as ClientRequest;
 use Illuminate\Support\Facades\Http;
@@ -22,6 +23,13 @@ use Tests\TestCase;
 class ResellerApiTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->withHeader('X-Transaction-PIN', UserFactory::DEFAULT_PIN);
+    }
 
     /**
      * @return array{0: User, 1: string} user & plain API key
@@ -763,6 +771,162 @@ class ResellerApiTest extends TestCase
             ['93.184.216.34', '2606:4700:4700::1111'],
             $resolver->resolvePublicAddresses('public.example.test'),
         );
+    }
+
+    public function test_create_order_requires_a_transaction_pin_header(): void
+    {
+        Queue::fake();
+
+        [, $plain] = $this->reseller();
+        $product = $this->product();
+
+        $this->withHeader('X-Transaction-PIN', '')
+            ->withHeaders(['X-API-Key' => $plain])
+            ->postJson('/api/v1/reseller/orders', [
+                'product_id' => $product->getKey(),
+                'target' => '081234567890',
+            ])
+            ->assertForbidden()
+            ->assertJsonPath('message', 'PIN transaksi diperlukan untuk membuat pesanan.');
+
+        $this->assertDatabaseCount('orders', 0);
+    }
+
+    public function test_create_order_rejects_an_invalid_pin_and_reports_remaining_attempts(): void
+    {
+        Queue::fake();
+
+        [$user, $plain] = $this->reseller();
+        $product = $this->product();
+
+        $this->withHeader('X-Transaction-PIN', '111111')
+            ->withHeaders(['X-API-Key' => $plain])
+            ->postJson('/api/v1/reseller/orders', [
+                'product_id' => $product->getKey(),
+                'target' => '081234567890',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonPath('remaining_attempts', 4)
+            ->assertJsonValidationErrors('pin');
+
+        $this->assertSame(1, $user->fresh()->pin_attempts);
+        $this->assertDatabaseCount('orders', 0);
+    }
+
+    public function test_create_order_returns_locked_response_after_too_many_failed_attempts(): void
+    {
+        Queue::fake();
+
+        [$user, $plain] = $this->reseller(['pin_attempts' => 4]);
+        $product = $this->product();
+
+        $response = $this->withHeader('X-Transaction-PIN', '111111')
+            ->withHeaders(['X-API-Key' => $plain])
+            ->postJson('/api/v1/reseller/orders', [
+                'product_id' => $product->getKey(),
+                'target' => '081234567890',
+            ])
+            ->assertStatus(423)
+            ->assertJsonStructure(['message', 'retry_after_seconds'])
+            ->assertHeader('Retry-After');
+
+        $this->assertGreaterThan(0, $response->json('retry_after_seconds'));
+        $this->assertDatabaseCount('orders', 0);
+    }
+
+    public function test_create_order_requires_a_valid_pin_even_when_replaying_an_idempotency_key(): void
+    {
+        Queue::fake();
+
+        [, $plain] = $this->reseller(['balance' => 100_000]);
+        $product = $this->product();
+        $payload = [
+            'product_id' => $product->getKey(),
+            'target' => '081234567890',
+            'reff_id' => 'pin-replay-01',
+        ];
+
+        $this->withHeaders(['X-API-Key' => $plain])
+            ->postJson('/api/v1/reseller/orders', $payload)
+            ->assertCreated();
+
+        $this->withHeader('X-Transaction-PIN', '')
+            ->withHeaders(['X-API-Key' => $plain])
+            ->postJson('/api/v1/reseller/orders', $payload)
+            ->assertForbidden();
+
+        $this->assertDatabaseCount('orders', 1);
+    }
+
+    public function test_create_order_blocks_high_value_orders_after_a_pin_reset(): void
+    {
+        Queue::fake();
+
+        [$user, $plain] = $this->reseller([
+            'balance' => 1_000_000,
+            'pin_reset_at' => now()->subMinute(),
+        ]);
+        $product = $this->product(['cost_price' => 600_000, 'markup_value' => 0]);
+
+        $response = $this->withHeaders(['X-API-Key' => $plain])
+            ->postJson('/api/v1/reseller/orders', [
+                'product_id' => $product->getKey(),
+                'target' => '081234567890',
+            ])
+            ->assertStatus(423)
+            ->assertJsonStructure(['message', 'retry_after_seconds'])
+            ->assertHeader('Retry-After');
+
+        $this->assertGreaterThan(0, $response->json('retry_after_seconds'));
+        $this->assertDatabaseCount('orders', 0);
+        $this->assertSame(1_000_000, $user->fresh()->balance);
+    }
+
+    public function test_legacy_h2h_create_requires_a_transaction_pin_header(): void
+    {
+        Queue::fake();
+
+        [, $plain] = $this->reseller();
+        $product = $this->product();
+
+        $this->withHeader('X-Transaction-PIN', '')
+            ->withHeaders(['X-API-Key' => $plain])
+            ->post('/transaksi/create', [
+                'code' => $product->code,
+                'reff_id' => 'legacy-pin-01',
+                'target' => '081234567890',
+            ])
+            ->assertStatus(403)
+            ->assertJsonPath('status', false)
+            ->assertJsonPath('code', 403);
+
+        $this->assertDatabaseCount('orders', 0);
+    }
+
+    public function test_legacy_h2h_replay_requires_a_valid_transaction_pin(): void
+    {
+        Queue::fake();
+
+        [, $plain] = $this->reseller(['balance' => 100_000]);
+        $product = $this->product();
+        $payload = [
+            'code' => $product->code,
+            'reff_id' => 'legacy-pin-replay-01',
+            'target' => '081234567890',
+        ];
+
+        $this->withHeaders(['X-API-Key' => $plain])
+            ->post('/transaksi/create', $payload)
+            ->assertOk();
+
+        $this->withHeader('X-Transaction-PIN', '')
+            ->withHeaders(['X-API-Key' => $plain])
+            ->post('/transaksi/create', $payload)
+            ->assertStatus(403)
+            ->assertJsonPath('status', false)
+            ->assertJsonPath('code', 403);
+
+        $this->assertDatabaseCount('orders', 1);
     }
 
     public function test_webhook_job_does_not_follow_redirects(): void

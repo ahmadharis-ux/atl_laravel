@@ -20,7 +20,7 @@ use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 
 #[Fillable(['name', 'email', 'phone', 'password', 'is_admin', 'points', 'lifetime_points'])]
-#[Hidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes', 'reseller_webhook_secret'])]
+#[Hidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes', 'reseller_webhook_secret', 'pin_hash'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
@@ -146,6 +146,26 @@ class User extends Authenticatable implements MustVerifyEmail
         $this->notify(new ResetPasswordNotification((string) $token));
     }
 
+    public function hasPin(): bool
+    {
+        return filled($this->pin_hash);
+    }
+
+    public function pinResetOtps(): HasMany
+    {
+        return $this->hasMany(PinResetOtp::class);
+    }
+
+    public function pinResetTokens(): HasMany
+    {
+        return $this->hasMany(PinResetToken::class);
+    }
+
+    public function pinAuditLogs(): HasMany
+    {
+        return $this->hasMany(PinAuditLog::class);
+    }
+
     public function bankAccounts(): HasMany
     {
         return $this->hasMany(BankAccount::class);
@@ -196,6 +216,10 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
             'is_admin' => 'boolean',
             'balance' => 'integer',
+            'pin_set_at' => 'datetime',
+            'pin_attempts' => 'integer',
+            'pin_locked_until' => 'datetime',
+            'pin_reset_at' => 'datetime',
             'lifetime_points' => 'integer',
             'is_reseller' => 'boolean',
             'reseller_since' => 'datetime',

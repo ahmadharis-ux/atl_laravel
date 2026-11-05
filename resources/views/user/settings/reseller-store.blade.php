@@ -92,9 +92,21 @@
                             <div class="fs-11 mt-1">Harga pelanggan: <span class="num fw-semibold">Rp {{ number_format($salePrice, 0, ',', '.') }}</span> · Potong saldo: <span class="num fw-semibold">Rp {{ number_format($order->amount, 0, ',', '.') }}</span></div>
                         </div>
                         <form method="POST" action="{{ route('settings.reseller.store.cash.confirm', $order) }}"
+                              class="d-flex flex-column gap-2"
                               data-confirm="Pastikan kamu sudah menerima tunai dari pelanggan. Saldo operasional akan dipotong Rp {{ number_format($order->amount, 0, ',', '.') }}. Lanjutkan?"
                               data-confirm-title="Konfirmasi tunai" data-confirm-ok="Tunai diterima">
                             @csrf
+                            <x-ui.input
+                                name="pin"
+                                type="password"
+                                label="PIN transaksi *"
+                                inputmode="numeric"
+                                maxlength="6"
+                                pattern="[0-9]{6}"
+                                autocomplete="current-password"
+                                placeholder="6 digit"
+                                required
+                            />
                             <button type="submit" class="btn-ap btn-mint justify-content-center">
                                 <span class="ms ms-sm">payments</span> Tunai diterima
                             </button>

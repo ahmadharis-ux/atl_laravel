@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Reseller;
 
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
+use App\Enums\PinVerificationStatus;
 use App\Enums\ProductPaymentType;
 use App\Enums\WalletTransactionType;
 use App\Http\Controllers\Controller;
@@ -12,6 +13,8 @@ use App\Models\Product;
 use App\Support\OrderFulfillment;
 use App\Support\OrderNumber;
 use App\Support\OrderTarget;
+use App\Support\PinService;
+use App\Support\PinVerificationResult;
 use App\Support\TransactionLogger;
 use App\Support\WalletLedger;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -24,6 +27,8 @@ use Throwable;
 
 class OrderController extends Controller
 {
+    public function __construct(private readonly PinService $pinService) {}
+
     /**
      * Riwayat pesanan milik reseller (web + API).
      */
@@ -73,6 +78,17 @@ class OrderController extends Controller
      * ValidationException sehingga otomatis di-rollback & dibalas 422.
      */
     public function store(Request $request): JsonResponse
+    {
+        $pinResult = $this->verifyTransactionPin($request);
+
+        if (! $pinResult->isValidFor($request->user())) {
+            return $this->pinErrorResponse($pinResult);
+        }
+
+        return $this->createOrder($request, $pinResult);
+    }
+
+    private function createOrder(Request $request, PinVerificationResult $pinResult): JsonResponse
     {
         $idempotencyKey = $request->input('reff_id');
 
@@ -160,8 +176,14 @@ class OrderController extends Controller
             ]);
         }
 
+        $retryAfter = $this->pinService->highValueRetryAfterSeconds($request->user(), $amount);
+
+        if ($retryAfter !== null) {
+            return $this->highValueResponse($retryAfter);
+        }
+
         try {
-            $order = DB::transaction(function () use ($request, $product, $validated): Order {
+            $order = DB::transaction(function () use ($request, $product, $validated, $pinResult): Order {
                 $account = $request->user()->newQuery()
                     ->whereKey($request->user()->getKey())
                     ->lockForUpdate()
@@ -213,7 +235,7 @@ class OrderController extends Controller
                     'source' => 'api',
                 ]);
 
-                WalletLedger::debit($account, $orderAmount, WalletTransactionType::Purchase, $order, 'Pembelian (reseller) '.$item->name);
+                WalletLedger::debit($account, $orderAmount, WalletTransactionType::Purchase, $order, 'Pembelian (reseller) '.$item->name, [], $pinResult);
 
                 TransactionLogger::info('order.created', 'Pesanan API reseller dibuat.', [
                     'order_number' => $order->order_number,
@@ -267,6 +289,67 @@ class OrderController extends Controller
         ], 201);
     }
 
+    private function pinErrorResponse(PinVerificationResult $result): JsonResponse
+    {
+        $payload = ['message' => $this->pinErrorMessage($result)];
+
+        if ($result->status === PinVerificationStatus::Invalid) {
+            $payload['remaining_attempts'] = $result->remainingAttempts;
+            $payload['errors'] = ['pin' => [$result->message()]];
+        }
+
+        if ($result->status === PinVerificationStatus::Locked) {
+            $payload['retry_after_seconds'] = $result->retryAfterSeconds;
+        }
+
+        $response = response()->json($payload, $this->pinErrorStatus($result));
+
+        if ($result->status === PinVerificationStatus::Locked && $result->retryAfterSeconds !== null) {
+            $response->header('Retry-After', (string) $result->retryAfterSeconds);
+        }
+
+        return $response;
+    }
+
+    private function highValueResponse(int $retryAfterSeconds): JsonResponse
+    {
+        return response()
+            ->json([
+                'message' => $this->pinService->highValueMessage($retryAfterSeconds),
+                'retry_after_seconds' => $retryAfterSeconds,
+            ], 423)
+            ->header('Retry-After', (string) $retryAfterSeconds);
+    }
+
+    private function verifyTransactionPin(Request $request): PinVerificationResult
+    {
+        return $this->pinService->verify(
+            $request->user(),
+            $request->header('X-Transaction-PIN'),
+            'reseller_api',
+            $request,
+        );
+    }
+
+    private function pinErrorStatus(PinVerificationResult $result): int
+    {
+        return match ($result->status) {
+            PinVerificationStatus::Missing => 403,
+            PinVerificationStatus::Invalid => 422,
+            PinVerificationStatus::Locked => 423,
+            default => 403,
+        };
+    }
+
+    private function pinErrorMessage(PinVerificationResult $result): string
+    {
+        if ($result->status === PinVerificationStatus::Missing) {
+            return 'PIN transaksi diperlukan untuk membuat pesanan.';
+        }
+
+        return $result->message();
+    }
+
     /**
      * Adapter untuk endpoint transaksi H2H lama.
      */
@@ -275,6 +358,15 @@ class OrderController extends Controller
         $request->headers->set('Accept', 'application/json');
 
         try {
+            $pinResult = $this->verifyTransactionPin($request);
+
+            if (! $pinResult->isValidFor($request->user())) {
+                return $this->legacyError(
+                    $this->pinErrorMessage($pinResult),
+                    $this->pinErrorStatus($pinResult),
+                );
+            }
+
             $validated = $request->validate([
                 'code' => ['required', 'string', 'max:100'],
                 'reff_id' => ['required', 'string', 'max:50', 'regex:/^[A-Za-z0-9._-]+$/'],
@@ -306,7 +398,17 @@ class OrderController extends Controller
             }
 
             $request->merge(['product_id' => $product->getKey()]);
-            $response = $this->store($request);
+            $response = $this->createOrder($request, $pinResult);
+
+            if ($response->getStatusCode() >= 400) {
+                $body = $response->getData(true);
+
+                return $this->legacyError(
+                    (string) ($body['message'] ?? 'Transaksi tidak dapat diproses.'),
+                    $response->getStatusCode(),
+                );
+            }
+
             $data = $response->getData(true)['data'];
 
             return response()->json([

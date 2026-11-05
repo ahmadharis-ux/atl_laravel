@@ -18,6 +18,7 @@ use App\Support\OrderNumber;
 use App\Support\OrderRewardLedger;
 use App\Support\OrderTarget;
 use App\Support\PaymentInstruction;
+use App\Support\PinService;
 use App\Support\Roles;
 use App\Support\TransactionLogger;
 use App\Support\WalletLedger;
@@ -74,7 +75,7 @@ class CheckoutController extends Controller
         ]);
     }
 
-    public function store(Request $request, Product $product, MidtransService $midtrans): RedirectResponse
+    public function store(Request $request, Product $product, MidtransService $midtrans, PinService $pinService): RedirectResponse
     {
         $this->ensurePurchasable($product);
         $paymentMethods = FeatureSetting::availablePaymentMethods('transaction');
@@ -84,8 +85,11 @@ class CheckoutController extends Controller
             'zone' => [OrderTarget::requiresZone($product->brand?->slug) ? 'required' : 'nullable', 'string', 'max:20'],
             'payment_method' => ['required', Rule::in($this->paymentMethodValues($paymentMethods))],
             'master_bank_id' => ['nullable', 'integer'],
+            'pin' => [Rule::requiredIf($request->input('payment_method') === PaymentMethod::Saldo->value), 'nullable', 'digits:6'],
         ], [
             'payment_method.in' => 'Metode pembayaran ini sedang tidak tersedia.',
+            'pin.required' => 'PIN transaksi wajib diisi untuk pembayaran dengan saldo.',
+            'pin.digits' => 'PIN transaksi harus terdiri dari 6 angka.',
         ]);
 
         $user = $request->user();
@@ -109,8 +113,24 @@ class CheckoutController extends Controller
         $method = PaymentMethod::from($validated['payment_method']);
         $masterBank = $this->resolveMasterBank($method, $validated['master_bank_id'] ?? null);
         $amount = $product->selling_price;
+        $pinResult = null;
+
+        if ($method->isInstant()) {
+            $pinResult = $pinService->verify($user, $validated['pin'] ?? null, 'checkout', $request);
+
+            if (! $pinResult->isValidFor($user)) {
+                throw ValidationException::withMessages(['pin' => $pinResult->message()]);
+            }
+
+            $retryAfter = $pinService->highValueRetryAfterSeconds($user, (int) $amount);
+
+            if ($retryAfter !== null) {
+                throw ValidationException::withMessages(['pin' => $pinService->highValueMessage($retryAfter)]);
+            }
+        }
+
         try {
-            $order = DB::transaction(function () use ($request, $product, $validated, $amount, $method, $masterBank, $midtrans): Order {
+            $order = DB::transaction(function () use ($request, $product, $validated, $amount, $method, $masterBank, $midtrans, $pinResult): Order {
                 $account = $request->user()->newQuery()
                     ->whereKey($request->user()->getKey())
                     ->lockForUpdate()
@@ -172,7 +192,7 @@ class CheckoutController extends Controller
                 ]);
 
                 if ($paid) {
-                    WalletLedger::debit($account, $amount, WalletTransactionType::Purchase, $order, 'Pembelian '.$item->name);
+                    WalletLedger::debit($account, $amount, WalletTransactionType::Purchase, $order, 'Pembelian '.$item->name, [], $pinResult);
                 }
 
                 if ($status === OrderStatus::Success) {

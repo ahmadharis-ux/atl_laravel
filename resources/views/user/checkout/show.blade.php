@@ -97,6 +97,21 @@
                             </div>
                         @endforelse
 
+                        <div data-payment-channel="saldo" @class(['mt-1' => true, 'd-none' => $selectedMethod !== 'saldo'])>
+                            <x-ui.input
+                                name="pin"
+                                type="password"
+                                label="PIN transaksi *"
+                                inputmode="numeric"
+                                maxlength="6"
+                                pattern="[0-9]{6}"
+                                autocomplete="current-password"
+                                hint="6 digit. Atur atau ubah PIN di Pengaturan > PIN."
+                                :disabled="$selectedMethod !== 'saldo'"
+                                required
+                            />
+                        </div>
+
                         <div data-payment-channel="va" class="mt-1 d-none">
                         </div>
 

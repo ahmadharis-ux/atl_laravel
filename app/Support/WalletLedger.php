@@ -48,7 +48,14 @@ final class WalletLedger
         ?Model $reference = null,
         ?string $description = null,
         array $metadata = [],
+        ?PinVerificationResult $pinVerification = null,
     ): WalletTransaction {
+        if ($pinVerification === null || ! $pinVerification->isValidFor($user)) {
+            throw ValidationException::withMessages([
+                'pin' => 'PIN transaksi wajib diverifikasi sebelum saldo dipotong.',
+            ]);
+        }
+
         return self::apply($user, WalletTransactionDirection::Debit, $amount, $type, $reference, $description, $metadata);
     }
 

@@ -11,6 +11,7 @@ use App\Models\ResellerPayout;
 use App\Models\User;
 use App\Support\OrderFulfillment;
 use App\Support\OrderPaymentSettler;
+use App\Support\PinService;
 use App\Support\WalletLedger;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -51,13 +52,32 @@ class ResellerStorefrontController extends Controller
         ]);
     }
 
-    public function confirmCash(Request $request, Order $order): RedirectResponse
+    public function confirmCash(Request $request, Order $order, PinService $pinService): RedirectResponse
     {
         $user = $request->user();
         abort_unless($user !== null && $user->reseller_since !== null, 403);
 
+        $validated = $request->validate([
+            'pin' => ['required', 'digits:6'],
+        ], [
+            'pin.required' => 'PIN transaksi wajib diisi untuk konfirmasi tunai.',
+            'pin.digits' => 'PIN transaksi harus terdiri dari 6 angka.',
+        ]);
+
+        $pinResult = $pinService->verify($user, $validated['pin'], 'reseller_cash', $request);
+
+        if (! $pinResult->isValidFor($user)) {
+            throw ValidationException::withMessages(['pin' => $pinResult->message()]);
+        }
+
+        $retryAfter = $pinService->highValueRetryAfterSeconds($user, (int) $order->amount);
+
+        if ($retryAfter !== null) {
+            throw ValidationException::withMessages(['pin' => $pinService->highValueMessage($retryAfter)]);
+        }
+
         $expired = false;
-        $lockedOrder = DB::transaction(function () use ($user, $order, &$expired): Order {
+        $lockedOrder = DB::transaction(function () use ($user, $order, &$expired, $pinResult): Order {
             $account = User::query()->whereKey($user->getKey())->lockForUpdate()->firstOrFail();
             $locked = Order::query()
                 ->whereKey($order->getKey())
@@ -93,6 +113,7 @@ class ResellerStorefrontController extends Controller
                 $locked,
                 'Pembelian tunai toko reseller '.$locked->product?->name,
                 ['source' => 'store_cash'],
+                $pinResult,
             );
 
             $metadata = $locked->metadata ?? [];

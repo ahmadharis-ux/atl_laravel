@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\FeatureSetting;
 use App\Models\Product;
 use App\Models\User;
+use Database\Factories\UserFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
@@ -126,6 +127,7 @@ class PaymentMethodSettingsTest extends TestCase
             ->post(route('checkout.store', $product), [
                 'target' => '081234567890',
                 'payment_method' => 'saldo',
+                'pin' => UserFactory::DEFAULT_PIN,
             ])
             ->assertSessionHasErrors([
                 'payment_method' => 'Metode pembayaran ini sedang tidak tersedia.',

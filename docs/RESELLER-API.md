@@ -29,6 +29,20 @@ Authorization: Bearer ap_XXXXXXXX...
 
 Gunakan bentuk Bearer yang valid `Authorization: Bearer ap_XXXXXXXX...` bila tidak memakai header `X-API-Key`.
 
+### PIN transaksi untuk debit saldo
+
+Setiap pembuatan pesanan yang memotong saldo wajib mengirim header berikut:
+
+```
+X-Transaction-PIN: 482916
+```
+
+- Header ini wajib untuk `POST /orders` dan `POST /transaksi/create`; endpoint baca tidak memerlukannya.
+- PIN terdiri dari 6 angka dan diatur dari **Pengaturan -> PIN Transaksi** pada aplikasi web.
+- PIN tidak boleh dikirim dalam body, query string, webhook, atau dicatat pada log aplikasi. Kirim hanya melalui header HTTPS.
+- PIN tetap wajib pada request ulang dengan `reff_id` yang sama. Idempotensi mencegah debit ganda, bukan menggantikan verifikasi PIN.
+- Lima PIN salah mengunci PIN selama 15 menit. Setelah PIN diubah/reset, pesanan di atas Rp 500.000 ditunda hingga 24 jam. Nilai ini dapat dikonfigurasi oleh operator.
+
 ### Rate limit
 
 **120 request per menit** per API key (balas `429` bila terlampaui).
@@ -190,7 +204,9 @@ Untuk game yang memerlukan zona, kirim `zone` terpisah. Format H2H lama `target:
 
 ```bash
 curl -X POST "https://<domain>/api/v1/reseller/orders" \
-  -H "X-API-Key: ap_XXXX" -H "Content-Type: application/json" \
+  -H "X-API-Key: ap_XXXX" \
+  -H "X-Transaction-PIN: 482916" \
+  -H "Content-Type: application/json" \
   -d '{"product_id": 12, "target": "081234567890", "reff_id": "order-0001", "limit_price": 7000}'
 ```
 
@@ -229,8 +245,10 @@ List dibatasi ke pesanan milik API key sendiri (`meta` berisi paginasi, 20 per h
 | Kode | Arti |
 |---|---|
 | `401` | API key tidak ditemukan / tidak valid / bukan reseller aktif |
+| `403` | PIN transaksi tidak dikirim atau belum diatur. Atur PIN di aplikasi lalu kirim `X-Transaction-PIN`. |
 | `404` | Produk tidak aktif/tidak ada, atau pesanan bukan milik sendiri |
-| `422` | Validasi: field kurang, stok habis, saldo kurang (`errors.balance`), operator tidak cocok (`errors.target`), zone wajib (`errors.zone`) |
+| `422` | Validasi: field kurang, stok habis, saldo kurang (`errors.balance`), operator tidak cocok (`errors.target`), zone wajib (`errors.zone`), atau PIN salah (`errors.pin`, `remaining_attempts`) |
+| `423` | PIN terkunci atau pesanan bernilai tinggi masih dalam masa tunggu setelah reset PIN. Respons menyertakan `Retry-After` dan `retry_after_seconds`. |
 | `503` | Endpoint kompatibilitas H2H: produk tidak tersedia/belum didukung, atau jenis pascabayar |
 | `429` | Rate limit 120 req/menit |
 
@@ -243,11 +261,11 @@ List dibatasi ke pesanan milik API key sendiri (`meta` berisi paginasi, 20 per h
 
 ## Kompatibilitas H2H lama
 
-Endpoint berikut berada di root domain, bukan di bawah `/api/v1/reseller`. Gunakan POST form-urlencoded dengan API key reseller baru di field `api_key`:
+Endpoint berikut berada di root domain, bukan di bawah `/api/v1/reseller`. Gunakan POST form-urlencoded dengan API key reseller baru di field `api_key`. Khusus `POST /transaksi/create`, kirim juga `X-Transaction-PIN` sebagai header HTTPS:
 
 | Method | Endpoint | Field utama |
 |---|---|---|
-| POST | `/transaksi/create` | `api_key`, `code`, `reff_id`, `target`, opsional `limit_price` |
+| POST | `/transaksi/create` | Header `X-Transaction-PIN`; body `api_key`, `code`, `reff_id`, `target`, opsional `limit_price` |
 | POST | `/transaksi/status` | `api_key`, `id` (ID transaksi dari respons create), `type=prabayar` |
 | POST | `/layanan/price_list` | `api_key`, `type=prabayar` |
 

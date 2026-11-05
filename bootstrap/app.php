@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureComingSoonMode;
 use App\Http\Middleware\EnsureFeatureEnabled;
+use App\Http\Middleware\EnsurePinIsSet;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\RedirectAdminToAdminPanel;
 use App\Http\Middleware\TrustCloudflareProxies;
@@ -48,6 +49,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'feature' => EnsureFeatureEnabled::class,
+            'pin.set' => EnsurePinIsSet::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [

@@ -12,6 +12,7 @@ use App\Models\MasterBank;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
+use Database\Factories\UserFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -166,6 +167,7 @@ class CheckoutTest extends TestCase
             ->post(route('checkout.store', $product), [
                 'target' => '123456789',
                 'payment_method' => PaymentMethod::Saldo->value,
+                'pin' => UserFactory::DEFAULT_PIN,
             ])
             ->assertRedirect();
 
@@ -335,6 +337,7 @@ class CheckoutTest extends TestCase
             ->post(route('checkout.store', $product), [
                 'target' => '',
                 'payment_method' => PaymentMethod::Saldo->value,
+                'pin' => UserFactory::DEFAULT_PIN,
             ])
             ->assertSessionHasErrors('target');
 
@@ -353,6 +356,7 @@ class CheckoutTest extends TestCase
             ->post(route('checkout.store', $product), [
                 'target' => '123456789',
                 'payment_method' => PaymentMethod::Saldo->value,
+                'pin' => UserFactory::DEFAULT_PIN,
             ])
             ->assertOk()
             ->assertSee('The zone field is required.')
@@ -369,6 +373,7 @@ class CheckoutTest extends TestCase
             ->post(route('checkout.store', $product), [
                 'target' => '123456789',
                 'payment_method' => PaymentMethod::Saldo->value,
+                'pin' => UserFactory::DEFAULT_PIN,
             ])
             ->assertSessionHasErrors('zone');
 
@@ -377,6 +382,7 @@ class CheckoutTest extends TestCase
                 'target' => '123456789',
                 'zone' => '1234',
                 'payment_method' => PaymentMethod::Saldo->value,
+                'pin' => UserFactory::DEFAULT_PIN,
             ])
             ->assertRedirect();
 
@@ -392,6 +398,7 @@ class CheckoutTest extends TestCase
             ->post(route('checkout.store', $product), [
                 'target' => '123456789',
                 'payment_method' => PaymentMethod::Saldo->value,
+                'pin' => UserFactory::DEFAULT_PIN,
             ])
             ->assertSessionHasErrors('balance');
 
@@ -518,6 +525,7 @@ class CheckoutTest extends TestCase
             ->post(route('checkout.store', $product), [
                 'target' => '123456789',
                 'payment_method' => PaymentMethod::Saldo->value,
+                'pin' => UserFactory::DEFAULT_PIN,
             ])
             ->assertRedirect();
 

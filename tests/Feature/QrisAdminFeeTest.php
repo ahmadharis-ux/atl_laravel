@@ -11,6 +11,7 @@ use App\Models\Product;
 use App\Models\User;
 use App\Services\MidtransService;
 use App\Support\DepositSettler;
+use Database\Factories\UserFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -109,6 +110,7 @@ class QrisAdminFeeTest extends TestCase
             ->post(route('checkout.store', $product), [
                 'target' => '123456789',
                 'payment_method' => PaymentMethod::Saldo->value,
+                'pin' => UserFactory::DEFAULT_PIN,
             ])
             ->assertRedirect();
 

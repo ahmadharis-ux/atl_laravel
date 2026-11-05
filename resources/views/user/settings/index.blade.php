@@ -18,6 +18,7 @@
             ['label' => 'Profil', 'desc' => 'Nama, email & nomor HP', 'icon' => 'person', 'tone' => 'bg-sky-l tx-navy', 'url' => route('settings.profile')],
             ['label' => 'Rekening Bank', 'desc' => 'Tujuan pencairan saldo', 'icon' => 'account_balance', 'tone' => 'bg-mint-l tx-mintt', 'url' => route('settings.banks.index')],
             ['label' => 'Ubah Kata Sandi', 'desc' => 'Perbarui kata sandi akun', 'icon' => 'lock', 'tone' => 'bg-tealc-m tx-tealt', 'url' => route('settings.password')],
+            ['label' => 'PIN Transaksi', 'desc' => 'Keamanan pembayaran saldo', 'icon' => 'pin', 'tone' => 'bg-sky-l tx-navy', 'url' => route('settings.pin')],
             ['label' => 'Autentikasi Dua Faktor', 'desc' => 'Keamanan tambahan akun', 'icon' => 'verified_user', 'tone' => 'bg-gold tx-gold', 'url' => route('settings.two-factor')],
             ['label' => 'Perangkat Aktif', 'desc' => 'Kelola sesi login', 'icon' => 'devices', 'tone' => 'bg-errc-l tx-err', 'url' => route('settings.sessions')],
             ['label' => 'Notifikasi', 'desc' => 'Push notifikasi perangkat', 'icon' => 'notifications', 'tone' => 'bg-sky-l tx-navy', 'url' => route('settings.notifications')],
