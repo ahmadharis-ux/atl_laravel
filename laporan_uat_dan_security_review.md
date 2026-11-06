@@ -60,9 +60,9 @@ LOW                         | - Off X-Powered-By  | - SRI Bootstrap   | - Restru
 *Perbaikan yang membutuhkan penyesuaian logika aplikasi, konfigurasi web server/Cloudflare, atau pengkodean ringan (Estimasi: 1 - 3 jam per item).*
 
 ### 1. Urgensi Medium
-* **HTTPS Tidak Dipaksa & Cookie Sesi Tanpa Flag Secure** `http → https`
+* **✅ Selesai sebagian — HTTPS Tidak Dipaksa & Cookie Sesi Tanpa Flag Secure** `http → https`
   * **Masalah:** Akses HTTP tidak di-redirect otomatis ke HTTPS, redirect internal mengarah ke HTTP, dan cookie sesi tidak menggunakan flag `Secure`.
-  * **Solusi:** Set `SESSION_SECURE_COOKIE=true`, `APP_URL=https://...`, aktifkan `URL::forceScheme('https')`, serta aktifkan fitur *"Always Use HTTPS"* pada Cloudflare.
+  * **Solusi:** Opsi `FORCE_HTTPS=true` sekarang mengarahkan HTTP ke HTTPS. `SESSION_SECURE_COOKIE=true`, `APP_URL=https://...`, dan fitur *"Always Use HTTPS"* Cloudflare tetap perlu diaktifkan pada environment deployment.
 * **✅ Selesai — Ganti Email Tanpa Konfirmasi Password** `/pengaturan/profil`
   * **Masalah:** Mengubah email profil langsung mereset email login dan verifikasi tanpa meminta konfirmasi password saat ini.
   * **Solusi:** Konfirmasi kata sandi saat ini diwajibkan sebelum email diganti. Email baru tetap harus diverifikasi sebelum akses terverifikasi dipulihkan.
@@ -88,9 +88,9 @@ LOW                         | - Off X-Powered-By  | - SRI Bootstrap   | - Restru
 *Perbaikan yang membutuhkan arsitektur ulang, proteksi akses staging, atau refactoring kode.*
 
 ### 1. Urgensi Medium
-* **Staging Terbuka Publik & Bisa Diindeks Search Engine** `robots.txt`
+* **✅ Selesai sebagian — Staging Terbuka Publik & Bisa Diindeks Search Engine** `robots.txt`
   * **Masalah:** `robots.txt` diset `Allow: /` tanpa otentikasi pintu masuk staging.
-  * **Solusi:** Kunci akses staging menggunakan **Cloudflare Access** atau **Basic Authentication** (`htpasswd`), dan tambahkan header HTTP `X-Robots-Tag: noindex`.
+   * **Solusi:** Opsi `STAGING_NOINDEX=true` menambahkan `X-Robots-Tag: noindex, nofollow, noarchive`. Akses staging tetap perlu dikunci menggunakan **Cloudflare Access** atau **Basic Authentication** (`htpasswd`).
 
 ### 2. Urgensi Low
 * **Bocor Keberadaan ID Data (403 vs 404)** `IDOR-info`
@@ -106,7 +106,7 @@ LOW                         | - Off X-Powered-By  | - SRI Bootstrap   | - Restru
 
 ## 📊 Progres Penanganan
 
-**58%** berdasarkan 13 item utama: 5 selesai penuh, 5 selesai sebagian (dihitung 50%), dan 3 masih tertunda. Persentase ini akan diperbarui setiap kali item berikutnya ditangani. Poin akses katalog publik sengaja tetap tertunda sesuai arahan.
+**65%** berdasarkan 13 item utama: 5 selesai penuh, 7 selesai sebagian (dihitung 50%), dan 1 masih tertunda. Persentase ini akan diperbarui setiap kali item berikutnya ditangani. Poin akses katalog publik sengaja tetap tertunda sesuai arahan.
 
 ---
 

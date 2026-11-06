@@ -41,6 +41,10 @@ return [
 
     'debug' => (bool) env('APP_DEBUG', false),
 
+    'force_https' => (bool) env('FORCE_HTTPS', false),
+
+    'staging_noindex' => (bool) env('STAGING_NOINDEX', false),
+
     /*
     |--------------------------------------------------------------------------
     | Application URL

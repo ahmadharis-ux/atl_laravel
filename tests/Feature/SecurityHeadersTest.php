@@ -19,4 +19,20 @@ class SecurityHeadersTest extends TestCase
         $this->get('https://localhost/login')
             ->assertHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     }
+
+    public function test_staging_responses_can_be_marked_noindex(): void
+    {
+        config(['app.staging_noindex' => true]);
+
+        $this->get('/login')
+            ->assertHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
+    }
+
+    public function test_http_requests_are_redirected_when_force_https_is_enabled(): void
+    {
+        config(['app.force_https' => true]);
+
+        $this->get('/login')
+            ->assertRedirect('https://localhost:8000/login');
+    }
 }

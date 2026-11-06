@@ -4,6 +4,7 @@ use App\Http\Middleware\EnsureComingSoonMode;
 use App\Http\Middleware\EnsureFeatureEnabled;
 use App\Http\Middleware\EnsurePinIsSet;
 use App\Http\Middleware\EnsureUserIsAdmin;
+use App\Http\Middleware\ForceHttps;
 use App\Http\Middleware\RedirectAdminToAdminPanel;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\TrustCloudflareProxies;
@@ -41,6 +42,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->web(prepend: [
             EnsureComingSoonMode::class,
+            ForceHttps::class,
         ]);
         $middleware->append(SecurityHeaders::class);
 
