@@ -193,6 +193,9 @@ body{min-height:100vh}
   </div>
   <button type="submit" class="btn-main">Masuk</button>
 </form>
+<div class="text-center mt-3 fs-12">
+  <a href="{{ route('legacy-migration.login') }}" class="lnk">User lama? Klik di sini</a>
+</div>
 @if (config('services.google.client_id'))
 <div class="divider">atau</div>
 <a href="{{ route('auth.google.redirect') }}" class="btn-alt">@include('partials.google-logo')Masuk dengan Google</a>

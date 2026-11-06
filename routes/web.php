@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\Reseller\OrderController as ResellerOrderApiController;
 use App\Http\Controllers\Api\Reseller\ProductController as ResellerProductApiController;
 use App\Http\Controllers\Auth\EmailVerificationController;
+use App\Http\Controllers\Auth\LegacyMigrationController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\SocialiteController;
 use App\Http\Controllers\Auth\TwoFactorController;
@@ -75,6 +76,10 @@ Route::post('/toko/pesanan/{order}/{token}/cek-status', [StorefrontController::c
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
+    Route::get('/login/user-lama', [LegacyMigrationController::class, 'showLogin'])->name('legacy-migration.login');
+    Route::post('/login/user-lama', [LegacyMigrationController::class, 'verify'])->middleware('throttle:5,1')->name('legacy-migration.verify');
+    Route::get('/login/user-lama/konfirmasi', [LegacyMigrationController::class, 'confirm'])->name('legacy-migration.confirm');
+    Route::post('/login/user-lama/konfirmasi', [LegacyMigrationController::class, 'complete'])->middleware('throttle:5,1')->name('legacy-migration.complete');
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
     Route::post('/register', [AuthController::class, 'register']);
 
