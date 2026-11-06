@@ -93,9 +93,9 @@ LOW                         | - Off X-Powered-By  | - SRI Bootstrap   | - Restru
    * **Solusi:** Opsi `STAGING_NOINDEX=true` menambahkan `X-Robots-Tag: noindex, nofollow, noarchive`. Akses staging tetap perlu dikunci menggunakan **Cloudflare Access** atau **Basic Authentication** (`htpasswd`).
 
 ### 2. Urgensi Low
-* **Bocor Keberadaan ID Data (403 vs 404)** `IDOR-info`
+* **✅ Selesai — Bocor Keberadaan ID Data (403 vs 404)** `IDOR-info`
   * **Masalah:** Data milik user lain mengembalikan status `403` sedangkan ID tidak ada mengembalikan `404`, memungkinkan penyerang mendeteksi rentang ID valid.
-  * **Solusi:** Seragamkan respon menjadi `404 Not Found` untuk otorisasi gagal, atau migrasikan ID incremental (1, 2, 3) menggunakan **UUID** untuk transaksi & topup.
+   * **Solusi:** Endpoint data milik pengguna lain pada area web kini mengembalikan `404 Not Found`, sehingga status 403 tidak lagi membocorkan keberadaan ID. Migrasi ID ke UUID belum diperlukan.
 
 ### 3. Urgensi UX / Performa Frontend
 * **✅ Selesai sebagian — Optimasi Asset & CSS Inlining**
@@ -106,7 +106,7 @@ LOW                         | - Off X-Powered-By  | - SRI Bootstrap   | - Restru
 
 ## 📊 Progres Penanganan
 
-**65%** berdasarkan 13 item utama: 5 selesai penuh, 7 selesai sebagian (dihitung 50%), dan 1 masih tertunda. Persentase ini akan diperbarui setiap kali item berikutnya ditangani. Poin akses katalog publik sengaja tetap tertunda sesuai arahan.
+**69%** berdasarkan 13 item utama: 6 selesai penuh, 6 selesai sebagian (dihitung 50%), dan 1 masih tertunda. Persentase ini akan diperbarui setiap kali item berikutnya ditangani. Poin akses katalog publik sengaja tetap tertunda sesuai arahan.
 
 ---
 

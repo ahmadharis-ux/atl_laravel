@@ -230,7 +230,7 @@ class DepositTest extends TestCase
 
         $this->actingAs(User::factory()->create())
             ->get(route('deposits.qris', $deposit))
-            ->assertForbidden();
+            ->assertNotFound();
     }
 
     public function test_deposit_sync_redirects_with_status_message(): void
@@ -258,7 +258,7 @@ class DepositTest extends TestCase
 
         $this->actingAs(User::factory()->create())
             ->post(route('deposits.sync', $deposit))
-            ->assertForbidden();
+            ->assertNotFound();
     }
 
     public function test_top_up_history_lists_all_deposits_for_the_user(): void
@@ -569,8 +569,8 @@ class DepositTest extends TestCase
         $user = User::factory()->create();
         $deposit = Deposit::factory()->create();
 
-        $this->actingAs($user)->get(route('deposits.show', $deposit))->assertForbidden();
-        $this->actingAs($user)->post(route('deposits.pay', $deposit))->assertForbidden();
+        $this->actingAs($user)->get(route('deposits.show', $deposit))->assertNotFound();
+        $this->actingAs($user)->post(route('deposits.pay', $deposit))->assertNotFound();
     }
 
     public function test_show_returns_json_status_for_polling(): void

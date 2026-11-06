@@ -128,7 +128,7 @@ class ManualDepositProofTest extends TestCase
             ->post(route('deposits.proof.store', $deposit), [
                 'proof' => UploadedFile::fake()->image('transfer.png'),
             ])
-            ->assertForbidden();
+            ->assertNotFound();
 
         $this->assertSame(0, $deposit->proofs()->count());
     }
@@ -341,7 +341,7 @@ class ManualDepositProofTest extends TestCase
 
         $this->actingAs(User::factory()->create())
             ->get(route('deposits.proof.download', [$deposit, $proof]))
-            ->assertForbidden();
+            ->assertNotFound();
 
         $this->actingAs($admin)
             ->get(route('admin.topup.proof.download', [$deposit, $proof]))

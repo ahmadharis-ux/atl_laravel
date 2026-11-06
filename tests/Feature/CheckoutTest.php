@@ -468,8 +468,8 @@ class CheckoutTest extends TestCase
             'payment_method' => PaymentMethod::Qris,
         ]);
 
-        $this->actingAs($user)->get(route('orders.show', $order))->assertForbidden();
-        $this->actingAs($user)->post(route('orders.pay', $order))->assertForbidden();
+        $this->actingAs($user)->get(route('orders.show', $order))->assertNotFound();
+        $this->actingAs($user)->post(route('orders.pay', $order))->assertNotFound();
     }
 
     public function test_a_user_can_view_the_invoice_of_their_own_order(): void
@@ -498,7 +498,7 @@ class CheckoutTest extends TestCase
         $user = User::factory()->create();
         $order = Order::factory()->create();
 
-        $this->actingAs($user)->get(route('orders.invoice', $order))->assertForbidden();
+        $this->actingAs($user)->get(route('orders.invoice', $order))->assertNotFound();
     }
 
     public function test_product_page_submits_target_and_zone_to_checkout(): void

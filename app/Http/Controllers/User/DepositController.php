@@ -182,7 +182,7 @@ class DepositController extends Controller
 
     public function show(Request $request, Deposit $deposit): View|JsonResponse
     {
-        abort_unless($deposit->user_id === $request->user()->getKey(), 403);
+        abort_unless($deposit->user_id === $request->user()->getKey(), 404);
 
         if ($request->ajax()) {
             return response()->json([
@@ -200,7 +200,7 @@ class DepositController extends Controller
 
     public function uploadProof(Request $request, Deposit $deposit): RedirectResponse
     {
-        abort_unless($deposit->user_id === $request->user()->getKey(), 403);
+        abort_unless($deposit->user_id === $request->user()->getKey(), 404);
         abort_unless(in_array($deposit->payment_method, [PaymentMethod::VirtualAccount, PaymentMethod::EWallet], true), 404);
 
         $validated = $request->validate([
@@ -295,7 +295,7 @@ class DepositController extends Controller
 
     public function downloadProof(Request $request, Deposit $deposit, DepositProof $proof): StreamedResponse
     {
-        abort_unless($deposit->user_id === $request->user()->getKey(), 403);
+        abort_unless($deposit->user_id === $request->user()->getKey(), 404);
         abort_unless($proof->deposit_id === $deposit->getKey(), 404);
 
         return $this->proofDownload($deposit, $proof);
@@ -351,7 +351,7 @@ class DepositController extends Controller
      */
     public function pay(Request $request, Deposit $deposit): RedirectResponse
     {
-        abort_unless($deposit->user_id === $request->user()->getKey(), 403);
+        abort_unless($deposit->user_id === $request->user()->getKey(), 404);
         abort_unless($deposit->payment_method === PaymentMethod::Qris, 404);
 
         if (! $deposit->isPending()) {
@@ -392,7 +392,7 @@ class DepositController extends Controller
      */
     public function sync(Request $request, Deposit $deposit): RedirectResponse
     {
-        abort_unless($deposit->user_id === $request->user()->getKey(), 403);
+        abort_unless($deposit->user_id === $request->user()->getKey(), 404);
 
         if ($deposit->payment_method !== PaymentMethod::Qris) {
             return redirect()->route('deposits.show', $deposit);
@@ -426,7 +426,7 @@ class DepositController extends Controller
      */
     public function downloadQris(Request $request, Deposit $deposit): Response
     {
-        abort_unless($deposit->user_id === $request->user()->getKey(), 403);
+        abort_unless($deposit->user_id === $request->user()->getKey(), 404);
 
         $url = data_get($deposit->metadata, 'midtrans.qr_url');
         $image = $this->midtrans->fetchQrImage(is_string($url) ? $url : null);

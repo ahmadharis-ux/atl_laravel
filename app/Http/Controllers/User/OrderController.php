@@ -33,7 +33,7 @@ class OrderController extends Controller
 
     public function show(Request $request, Order $order): View|JsonResponse
     {
-        abort_unless($order->user_id === $request->user()->getKey(), 403);
+        abort_unless($order->user_id === $request->user()->getKey(), 404);
 
         if ($request->ajax()) {
             return response()->json([
@@ -52,7 +52,7 @@ class OrderController extends Controller
      */
     public function invoice(Request $request, Order $order): View
     {
-        abort_unless($order->user_id === $request->user()->getKey(), 403);
+        abort_unless($order->user_id === $request->user()->getKey(), 404);
 
         return view('orders.invoice', [
             'order' => $order->load(['user', 'product.brand', 'product.category']),
@@ -66,7 +66,7 @@ class OrderController extends Controller
      */
     public function invoicePdf(Request $request, Order $order): Response
     {
-        abort_unless($order->user_id === $request->user()->getKey(), 403);
+        abort_unless($order->user_id === $request->user()->getKey(), 404);
 
         $order->load(['user', 'product.brand', 'product.category']);
 
@@ -81,7 +81,7 @@ class OrderController extends Controller
      */
     public function pay(Request $request, Order $order): RedirectResponse
     {
-        abort_unless($order->user_id === $request->user()->getKey(), 403);
+        abort_unless($order->user_id === $request->user()->getKey(), 404);
 
         if ($order->status !== OrderStatus::Pending) {
             return redirect()->route('orders.show', $order);
@@ -116,7 +116,7 @@ class OrderController extends Controller
      */
     public function sync(Request $request, Order $order, MidtransService $midtrans): RedirectResponse
     {
-        abort_unless($order->user_id === $request->user()->getKey(), 403);
+        abort_unless($order->user_id === $request->user()->getKey(), 404);
 
         if ($order->payment_method !== PaymentMethod::Qris) {
             return redirect()->route('orders.show', $order);
@@ -154,7 +154,7 @@ class OrderController extends Controller
      */
     public function downloadQris(Request $request, Order $order, MidtransService $midtrans): Response
     {
-        abort_unless($order->user_id === $request->user()->getKey(), 403);
+        abort_unless($order->user_id === $request->user()->getKey(), 404);
 
         $url = data_get($order->metadata, 'midtrans.qr_url');
         $image = $midtrans->fetchQrImage(is_string($url) ? $url : null);

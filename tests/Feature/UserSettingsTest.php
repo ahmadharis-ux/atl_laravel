@@ -211,7 +211,7 @@ class UserSettingsTest extends TestCase
 
         $this->actingAs($user)
             ->delete(route('settings.banks.destroy', $bank))
-            ->assertForbidden();
+            ->assertNotFound();
 
         $this->assertDatabaseHas('bank_accounts', ['id' => $bank->getKey()]);
     }

@@ -299,7 +299,7 @@ class MidtransOrderTest extends TestCase
 
         $this->actingAs(User::factory()->create())
             ->get(route('orders.qris', $order))
-            ->assertForbidden();
+            ->assertNotFound();
     }
 
     public function test_sync_status_returns_null_when_not_configured(): void

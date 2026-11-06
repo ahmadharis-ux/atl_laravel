@@ -114,7 +114,7 @@ class BankAccountController extends Controller
 
     private function authorizeOwner(Request $request, BankAccount $bankAccount): void
     {
-        abort_unless($bankAccount->user_id === $request->user()->getKey(), 403);
+        abort_unless($bankAccount->user_id === $request->user()->getKey(), 404);
     }
 
     /**
