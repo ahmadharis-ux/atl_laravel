@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Daftar - Atlantic Pedia Tab</title>
 <link rel="icon" href="{{ asset('assets/images/logo.png') }}">
-<link rel="icon" type="image/png" sizes="16x16" href="{{ asset('assets/images/favicon-16x16.png') }}">
-<link rel="icon" type="image/png" sizes="32x32" href="{{ asset('assets/images/favicon-32x32.png') }}">
+<link rel="icon" type="image/png" sizes="16x16" href="{{ asset('assets/images/logo.png') }}">
+<link rel="icon" type="image/png" sizes="32x32" href="{{ asset('assets/images/logo.png') }}">
 <link rel="apple-touch-icon" href="{{ asset('assets/images/apple-touch-icon.png') }}">
 <link rel="manifest" href="{{ asset('assets/images/site.webmanifest') }}">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
