@@ -43,9 +43,9 @@ LOW                         | - Off X-Powered-By  | - SRI Bootstrap   | - Restru
   * **Solusi:** Validasi dan respon dibuat netral seragam: "*Jika email terdaftar, tautan reset kata sandi telah dikirim.*"
 
 ### 3. Urgensi Low
-* **⏳ Tertunda — Bocor Versi Teknologi** `x-powered-by`
+* **✅ Selesai sebagian — Bocor Versi Teknologi** `x-powered-by`
   * **Masalah:** Header `x-powered-by: PHP/8.4.27` membocorkan versi spesifik PHP.
-  * **Solusi:** Matikan `expose_php = Off` pada file `php.ini`.
+  * **Solusi:** Header `X-Powered-By` dihapus pada Apache melalui `.htaccess`. Pengaturan `expose_php = Off` tetap perlu diterapkan pada runtime PHP/Cloud.
 
 ### 4. Urgensi UX / Content
 * **✅ Selesai sebagian — Perbaikan Copywriting & Metadata**
@@ -79,7 +79,7 @@ LOW                         | - Off X-Powered-By  | - SRI Bootstrap   | - Restru
 * **Perbaikan Layout & Alur Pengguna**
    * **✅ Selesai — Scroll Horizontal Mobile:** Grid landing diubah dari `.row.g-5` menjadi `.row.g-3`.
    * **⏳ Akses Katalog Produk:** Tombol *"Lihat Produk"* di beranda mengarah ke `/login`. Buat halaman produk/katalog publik agar pengunjung belum login bisa melihat harga.
-   * **⏳ Navigasi Footer:** Link footer masih memiliki tautan produk berbasis section. Perbesar target sentuh tombol (minimal height ~44px untuk mobile).
+   * **✅ Selesai sebagian — Navigasi Footer:** Link legal ditambahkan dan target sentuh link footer diperbesar minimal 44px pada mobile. Link produk masih berbasis section karena katalog publik belum dikerjakan.
    * **✅ Selesai sebagian — Legalitas:** Halaman *Kebijakan Privasi* dan *Syarat & Ketentuan* sudah tersedia dan ditautkan dari footer. Review legal formal dan data badan usaha masih diperlukan.
 
 ---
@@ -98,15 +98,15 @@ LOW                         | - Off X-Powered-By  | - SRI Bootstrap   | - Restru
   * **Solusi:** Seragamkan respon menjadi `404 Not Found` untuk otorisasi gagal, atau migrasikan ID incremental (1, 2, 3) menggunakan **UUID** untuk transaksi & topup.
 
 ### 3. Urgensi UX / Performa Frontend
-* **Optimasi Asset & CSS Inlining**
+* **✅ Selesai sebagian — Optimasi Asset & CSS Inlining**
   * **Masalah:** CSS Bootstrap (~230KB) di-inline langsung pada HTML halaman login/register sehingga total ukuran halaman ~250KB dan tidak bisa di-cache browser. Favicon logo tampak gepeng pada 16/32px.
-  * **Solusi:** Pisahkan file CSS menjadi asset eksternal agar memanfaatkan *browser caching*. Buat varian favicon khusus berukuran kecil (icon-only 16x16 / 32x32).
+   * **Solusi:** Varian favicon icon-only 16x16/32x32 sudah digunakan pada layout utama dan halaman auth. Pemisahan Bootstrap inline pada halaman login/register masih tertunda.
 
 ---
 
 ## 📊 Progres Penanganan
 
-**50%** berdasarkan 13 item utama: 5 selesai penuh, 3 selesai sebagian (dihitung 50%), dan 5 masih tertunda. Persentase ini akan diperbarui setiap kali item berikutnya ditangani.
+**58%** berdasarkan 13 item utama: 5 selesai penuh, 5 selesai sebagian (dihitung 50%), dan 3 masih tertunda. Persentase ini akan diperbarui setiap kali item berikutnya ditangani. Poin akses katalog publik sengaja tetap tertunda sesuai arahan.
 
 ---
 
