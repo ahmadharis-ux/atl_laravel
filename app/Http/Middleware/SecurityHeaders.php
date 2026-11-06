@@ -25,7 +25,12 @@ class SecurityHeaders
             $response->headers->set('X-Robots-Tag', 'noindex, nofollow, noarchive');
         }
 
-        if (config('security.csp_report_only')) {
+        if (config('security.csp_enforce')) {
+            $response->headers->set(
+                'Content-Security-Policy',
+                (string) config('security.content_security_policy'),
+            );
+        } elseif (config('security.csp_report_only')) {
             $response->headers->set(
                 'Content-Security-Policy-Report-Only',
                 (string) config('security.content_security_policy'),

@@ -29,6 +29,18 @@ class SecurityHeadersTest extends TestCase
             ->assertHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
     }
 
+    public function test_csp_can_be_enforced(): void
+    {
+        config([
+            'security.csp_enforce' => true,
+            'security.csp_report_only' => true,
+        ]);
+
+        $this->get('/login')
+            ->assertHeader('Content-Security-Policy')
+            ->assertHeaderMissing('Content-Security-Policy-Report-Only');
+    }
+
     public function test_http_requests_are_redirected_when_force_https_is_enabled(): void
     {
         config(['app.force_https' => true]);

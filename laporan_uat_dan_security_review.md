@@ -48,10 +48,10 @@ LOW                         | - Off X-Powered-By  | - SRI Bootstrap   | - Restru
   * **Solusi:** Header `X-Powered-By` dihapus melalui `.htaccess` dan `expose_php=Off` ditambahkan pada `public/.user.ini` untuk runtime PHP yang mendukung konfigurasi per-directory.
 
 ### 4. Urgensi UX / Content
-* **✅ Selesai sebagian — Perbaikan Copywriting & Metadata**
+* **✅ Selesai — Perbaikan Copywriting & Metadata**
   * Judul tab login diubah menjadi *"Masuk - Atlantic Pedia"*.
    * Email support placeholder dihapus dari tampilan; alamat support sekarang hanya ditampilkan jika `SUPPORT_EMAIL` dikonfigurasi. Pengisian domain aktif tetap menjadi konfigurasi deployment.
-   * Statistik landing tidak lagi menampilkan angka fallback yang belum diverifikasi; sekarang tampil *"Belum diatur"* sampai admin memasukkan data aktual. Testimoni tetap menunggu data aktual.
+   * Statistik landing tidak lagi menampilkan angka fallback yang belum diverifikasi; sekarang tampil *"Belum diatur"* sampai admin memasukkan data aktual. Testimoni hanya berasal dari data admin dan menampilkan empty state jika belum tersedia.
   * Tag Open Graph dan Twitter Card ditambahkan pada layout landing.
 
 ---
@@ -66,9 +66,9 @@ LOW                         | - Off X-Powered-By  | - SRI Bootstrap   | - Restru
 * **✅ Selesai — Ganti Email Tanpa Konfirmasi Password** `/pengaturan/profil`
   * **Masalah:** Mengubah email profil langsung mereset email login dan verifikasi tanpa meminta konfirmasi password saat ini.
   * **Solusi:** Konfirmasi kata sandi saat ini diwajibkan sebelum email diganti. Email baru tetap harus diverifikasi sebelum akses terverifikasi dipulihkan.
-* **✅ Selesai sebagian — Security Headers Belum Diterapkan** `Response Headers`
+* **✅ Selesai — Security Headers Belum Diterapkan** `Response Headers`
   * **Masalah:** Tidak ada header keamanan standar seperti HSTS, CSP, `X-Frame-Options`, `X-Content-Type-Options`, dan `Referrer-Policy`.
-  * **Solusi:** Middleware global menambahkan `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, dan HSTS pada request HTTPS. Baseline CSP kini tersedia dalam mode `Content-Security-Policy-Report-Only`; enforcement menunggu hasil audit resource staging.
+  * **Solusi:** Middleware global menambahkan `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, dan HSTS pada request HTTPS. CSP enforcement otomatis aktif pada production, sedangkan environment lain dapat memakai `SECURITY_CSP_REPORT_ONLY=true` untuk audit.
 
 ### 2. Urgensi Low
 * **✅ Selesai — CDN Tanpa Subresource Integrity (SRI)** `Bootstrap CDN`
@@ -106,7 +106,7 @@ LOW                         | - Off X-Powered-By  | - SRI Bootstrap   | - Restru
 
 ## 📊 Progres Penanganan
 
-**88%** berdasarkan 13 item utama: 10 selesai penuh, 3 selesai sebagian (dihitung 50%), dan tidak ada item utama yang tertunda. Sub-item akses katalog publik tetap sengaja ditunda sesuai arahan.
+**96%** berdasarkan 13 item utama: 12 selesai penuh, 1 selesai sebagian (dihitung 50%), dan tidak ada item utama yang tertunda. Sub-item akses katalog publik serta review legal formal tetap sengaja ditunda sesuai arahan.
 
 ---
 

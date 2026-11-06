@@ -3,6 +3,8 @@
 return [
     'csp_report_only' => (bool) env('SECURITY_CSP_REPORT_ONLY', true),
 
+    'csp_enforce' => (bool) env('SECURITY_CSP_ENFORCE', env('APP_ENV') === 'production'),
+
     'content_security_policy' => implode('; ', [
         "default-src 'self'",
         "base-uri 'self'",

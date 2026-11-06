@@ -58,6 +58,7 @@ class LandingPageTest extends TestCase
             ->assertDontSeeText('Layanan Nonaktif')
             ->assertSeeText('Budi')
             ->assertSeeText('Pertanyaan umum?')
+            ->assertSeeText('Belum diatur')
             ->assertDontSee('support@atlanticpedia.test');
     }
 
