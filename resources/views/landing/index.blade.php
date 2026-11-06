@@ -14,7 +14,7 @@
 @section('content')
     <section class="landing-hero">
         <div class="container">
-            <div class="row align-items-center g-5">
+            <div class="row align-items-center g-3">
                 <div class="col-lg-6">
                     @if ($settings->hero_badge)
                         <span class="landing-badge">
@@ -122,7 +122,7 @@
 
     <section id="tentang" class="landing-section landing-about">
         <div class="container">
-            <div class="row align-items-center g-5">
+            <div class="row align-items-center g-3">
                 <div class="col-lg-6">
                     <span class="pill bg-mint-l tx-mintt">Tentang Kami</span>
                     <h2 class="landing-section-title mt-3">{!! $settings->about_title ?: 'Kenapa Atlantic Pedia?' !!}</h2>
@@ -198,7 +198,7 @@
 
     <section id="faq" class="landing-section">
         <div class="container">
-            <div class="row g-5">
+            <div class="row g-3">
                 <div class="col-lg-4">
                     <span class="pill bg-tealc-m tx-tealt">FAQ</span>
                     <h2 class="landing-section-title mt-3">Pertanyaan yang sering diajukan</h2>

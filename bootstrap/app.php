@@ -5,6 +5,7 @@ use App\Http\Middleware\EnsureFeatureEnabled;
 use App\Http\Middleware\EnsurePinIsSet;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\RedirectAdminToAdminPanel;
+use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\TrustCloudflareProxies;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -41,6 +42,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(prepend: [
             EnsureComingSoonMode::class,
         ]);
+        $middleware->append(SecurityHeaders::class);
 
         $middleware->alias([
             'admin' => EnsureUserIsAdmin::class,

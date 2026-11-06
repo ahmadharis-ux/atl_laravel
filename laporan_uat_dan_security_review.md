@@ -35,24 +35,24 @@ LOW                         | - Off X-Powered-By  | - SRI Bootstrap   | - Restru
   * **Solusi:** Rate limiter Laravel diterapkan pada route login, dibatasi 5 percobaan/menit per email dan 20 percobaan/menit per IP. CAPTCHA belum ditambahkan.
 
 ### 2. Urgensi Medium
-* **IP Asli Tidak Terbaca (Sesi Tercatat 127.0.0.1)** `TrustProxies`
+* **✅ Selesai — IP Asli Tidak Terbaca (Sesi Tercatat 127.0.0.1)** `TrustProxies`
   * **Masalah:** Semua sesi login tercatat dari IP `127.0.0.1` karena aplikasi tidak membaca IP proxy Cloudflare. Akibatnya rate limit IP dan log keamanan tidak akurat.
-  * **Solusi:** Konfigurasi `TrustProxies` di Laravel dengan `$proxies = '*'` (atau range IP Cloudflare) dan pastikan header `X-Forwarded-For` diproses.
+  * **Solusi:** Middleware `TrustCloudflareProxies` menggunakan range IP Cloudflare dan memproses `CF-Connecting-IP` ke `X-Forwarded-For`.
 * **✅ Selesai — User Enumeration di "Lupa Password"** `/forgot-password`
   * **Masalah:** Email tidak terdaftar dibalas "*Email tidak terdaftar di sistem*", memudahkan penyerang memetakan akun terdaftar.
   * **Solusi:** Validasi dan respon dibuat netral seragam: "*Jika email terdaftar, tautan reset kata sandi telah dikirim.*"
 
 ### 3. Urgensi Low
-* **Bocor Versi Teknologi** `x-powered-by`
+* **⏳ Tertunda — Bocor Versi Teknologi** `x-powered-by`
   * **Masalah:** Header `x-powered-by: PHP/8.4.27` membocorkan versi spesifik PHP.
   * **Solusi:** Matikan `expose_php = Off` pada file `php.ini`.
 
 ### 4. Urgensi UX / Content
-* **Perbaikan Copywriting & Metadata**
-  * Ubah judul tab yang janggal (*"Masuk - Atlantic Pedia Tab"*).
+* **✅ Selesai sebagian — Perbaikan Copywriting & Metadata**
+  * Judul tab login diubah menjadi *"Masuk - Atlantic Pedia"*.
   * Ganti email support placeholder (`support@atlanticpedia.test`) dengan domain aktif.
   * Perbarui data statistik & testimoni placeholder dengan data aktual agar tidak menyesatkan.
-  * Tambahkan tag Open Graph agar link preview di WhatsApp/Sosmed tampil rapi.
+  * Tag Open Graph dan Twitter Card ditambahkan pada layout landing.
 
 ---
 
@@ -66,18 +66,18 @@ LOW                         | - Off X-Powered-By  | - SRI Bootstrap   | - Restru
 * **Ganti Email Tanpa Konfirmasi Password** `/pengaturan/profil`
   * **Masalah:** Mengubah email profil langsung mereset email login dan verifikasi tanpa meminta konfirmasi password saat ini.
   * **Solusi:** Wajibkan konfirmasi password/2FA sebelum ganti email. Kirim verifikasi ke email baru dengan tetap mempertahankan email lama aktif sampai proses verifikasi selesai, dan beri notifikasi peringatan ke email lama.
-* **Security Headers Belum Diterapkan** `Response Headers`
+* **✅ Selesai sebagian — Security Headers Belum Diterapkan** `Response Headers`
   * **Masalah:** Tidak ada header keamanan standar seperti HSTS, CSP, `X-Frame-Options`, `X-Content-Type-Options`, dan `Referrer-Policy`.
-  * **Solusi:** Tambahkan middleware global pada Laravel atau atur Transform Rules di Cloudflare (Minimal: HSTS, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`).
+  * **Solusi:** Middleware global menambahkan `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, dan HSTS pada request HTTPS. CSP masih perlu disusun setelah audit seluruh asset inline.
 
 ### 2. Urgensi Low
-* **CDN Tanpa Subresource Integrity (SRI)** `Bootstrap CDN`
+* **✅ Selesai — CDN Tanpa Subresource Integrity (SRI)** `Bootstrap CDN`
   * **Masalah:** Script Bootstrap dari jsDelivr dimuat tanpa atribut `integrity`.
-  * **Solusi:** Tambahkan hash SRI pada tag `<script>` untuk mencegah potensi kompromi CDN.
+  * **Solusi:** Hash SRI dan `crossorigin="anonymous"` ditambahkan pada seluruh Bootstrap CDN CSS/JS yang digunakan aplikasi.
 
 ### 3. Urgensi UX / Layout
 * **Perbaikan Layout & Alur Pengguna**
-  * **Scroll Horizontal Mobile:** Pada layar 375px muncul scroll samping akibat `.row.g-5`. Ubah class grid menjadi `g-3` atau `g-4`.
+   * **✅ Selesai — Scroll Horizontal Mobile:** Grid landing diubah dari `.row.g-5` menjadi `.row.g-3`.
   * **Akses Katalog Produk:** Tombol *"Lihat Produk"* di beranda mengarah ke `/login`. Buat halaman produk/katalog publik agar pengunjung belum login bisa melihat harga.
   * **Navigasi Footer:** Link footer hanya mengarah ke `#layanan` alih-alih halaman produk. Perbesar target sentuh tombol (minimal height ~44px untuk mobile).
   * **Legalitas:** Buat halaman *Kebijakan Privasi* dan *Syarat & Ketentuan* yang valid (diperlukan untuk aplikasi transaksi/pembayaran).
