@@ -55,6 +55,12 @@ class SettingsController extends Controller
 
         $emailChanged = $user->email !== $data['email'];
 
+        if ($emailChanged) {
+            $request->validate([
+                'current_password' => ['required', 'current_password'],
+            ]);
+        }
+
         $user->name = $data['name'];
         $user->phone = $data['phone'] ?? null;
 

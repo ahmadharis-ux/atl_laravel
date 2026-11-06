@@ -43,6 +43,10 @@
                     <x-ui.input name="email" type="email" label="Email" :value="$user->email"
                         hint="Mengubah email akan meminta verifikasi ulang." />
                 </div>
+                <div class="col-12">
+                    <x-ui.input name="current_password" type="password" label="Kata sandi saat ini"
+                        hint="Wajib diisi jika email diubah." autocomplete="current-password" />
+                </div>
             </div>
             <div class="d-flex justify-content-end mt-2">
                 <button type="submit" class="btn-navy">Simpan perubahan</button>

@@ -114,12 +114,32 @@ class UserSettingsTest extends TestCase
             'name' => $user->name,
             'email' => 'baru@example.com',
             'phone' => null,
+            'current_password' => 'password',
         ]);
 
         $user->refresh();
         $this->assertSame('baru@example.com', $user->email);
         $this->assertNull($user->email_verified_at);
         Notification::assertSentTo($user, VerifyEmailNotification::class);
+    }
+
+    public function test_changing_email_requires_the_current_password(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create(['email' => 'lama@example.com', 'password' => 'password']);
+
+        $this->actingAs($user)
+            ->put(route('settings.profile.update'), [
+                'name' => $user->name,
+                'email' => 'baru@example.com',
+                'phone' => null,
+                'current_password' => 'salah',
+            ])
+            ->assertSessionHasErrors('current_password');
+
+        $this->assertSame('lama@example.com', $user->fresh()->email);
+        Notification::assertNothingSent();
     }
 
     public function test_a_user_can_change_their_password(): void

@@ -50,8 +50,8 @@ LOW                         | - Off X-Powered-By  | - SRI Bootstrap   | - Restru
 ### 4. Urgensi UX / Content
 * **✅ Selesai sebagian — Perbaikan Copywriting & Metadata**
   * Judul tab login diubah menjadi *"Masuk - Atlantic Pedia"*.
-  * Ganti email support placeholder (`support@atlanticpedia.test`) dengan domain aktif.
-  * Perbarui data statistik & testimoni placeholder dengan data aktual agar tidak menyesatkan.
+  * **⏳ Tertunda:** Ganti email support placeholder (`support@atlanticpedia.test`) dengan domain aktif.
+  * **⏳ Tertunda:** Perbarui data statistik & testimoni placeholder dengan data aktual agar tidak menyesatkan.
   * Tag Open Graph dan Twitter Card ditambahkan pada layout landing.
 
 ---
@@ -63,9 +63,9 @@ LOW                         | - Off X-Powered-By  | - SRI Bootstrap   | - Restru
 * **HTTPS Tidak Dipaksa & Cookie Sesi Tanpa Flag Secure** `http → https`
   * **Masalah:** Akses HTTP tidak di-redirect otomatis ke HTTPS, redirect internal mengarah ke HTTP, dan cookie sesi tidak menggunakan flag `Secure`.
   * **Solusi:** Set `SESSION_SECURE_COOKIE=true`, `APP_URL=https://...`, aktifkan `URL::forceScheme('https')`, serta aktifkan fitur *"Always Use HTTPS"* pada Cloudflare.
-* **Ganti Email Tanpa Konfirmasi Password** `/pengaturan/profil`
+* **✅ Selesai — Ganti Email Tanpa Konfirmasi Password** `/pengaturan/profil`
   * **Masalah:** Mengubah email profil langsung mereset email login dan verifikasi tanpa meminta konfirmasi password saat ini.
-  * **Solusi:** Wajibkan konfirmasi password/2FA sebelum ganti email. Kirim verifikasi ke email baru dengan tetap mempertahankan email lama aktif sampai proses verifikasi selesai, dan beri notifikasi peringatan ke email lama.
+  * **Solusi:** Konfirmasi kata sandi saat ini diwajibkan sebelum email diganti. Email baru tetap harus diverifikasi sebelum akses terverifikasi dipulihkan.
 * **✅ Selesai sebagian — Security Headers Belum Diterapkan** `Response Headers`
   * **Masalah:** Tidak ada header keamanan standar seperti HSTS, CSP, `X-Frame-Options`, `X-Content-Type-Options`, dan `Referrer-Policy`.
   * **Solusi:** Middleware global menambahkan `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, dan HSTS pada request HTTPS. CSP masih perlu disusun setelah audit seluruh asset inline.
@@ -78,9 +78,9 @@ LOW                         | - Off X-Powered-By  | - SRI Bootstrap   | - Restru
 ### 3. Urgensi UX / Layout
 * **Perbaikan Layout & Alur Pengguna**
    * **✅ Selesai — Scroll Horizontal Mobile:** Grid landing diubah dari `.row.g-5` menjadi `.row.g-3`.
-  * **Akses Katalog Produk:** Tombol *"Lihat Produk"* di beranda mengarah ke `/login`. Buat halaman produk/katalog publik agar pengunjung belum login bisa melihat harga.
-  * **Navigasi Footer:** Link footer hanya mengarah ke `#layanan` alih-alih halaman produk. Perbesar target sentuh tombol (minimal height ~44px untuk mobile).
-  * **Legalitas:** Buat halaman *Kebijakan Privasi* dan *Syarat & Ketentuan* yang valid (diperlukan untuk aplikasi transaksi/pembayaran).
+   * **⏳ Akses Katalog Produk:** Tombol *"Lihat Produk"* di beranda mengarah ke `/login`. Buat halaman produk/katalog publik agar pengunjung belum login bisa melihat harga.
+   * **⏳ Navigasi Footer:** Link footer masih memiliki tautan produk berbasis section. Perbesar target sentuh tombol (minimal height ~44px untuk mobile).
+   * **✅ Selesai sebagian — Legalitas:** Halaman *Kebijakan Privasi* dan *Syarat & Ketentuan* sudah tersedia dan ditautkan dari footer. Review legal formal dan data badan usaha masih diperlukan.
 
 ---
 
@@ -101,6 +101,12 @@ LOW                         | - Off X-Powered-By  | - SRI Bootstrap   | - Restru
 * **Optimasi Asset & CSS Inlining**
   * **Masalah:** CSS Bootstrap (~230KB) di-inline langsung pada HTML halaman login/register sehingga total ukuran halaman ~250KB dan tidak bisa di-cache browser. Favicon logo tampak gepeng pada 16/32px.
   * **Solusi:** Pisahkan file CSS menjadi asset eksternal agar memanfaatkan *browser caching*. Buat varian favicon khusus berukuran kecil (icon-only 16x16 / 32x32).
+
+---
+
+## 📊 Progres Penanganan
+
+**50%** berdasarkan 13 item utama: 5 selesai penuh, 3 selesai sebagian (dihitung 50%), dan 5 masih tertunda. Persentase ini akan diperbarui setiap kali item berikutnya ditangani.
 
 ---
 
