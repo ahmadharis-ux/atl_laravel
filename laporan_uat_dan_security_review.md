@@ -43,9 +43,9 @@ LOW                         | - Off X-Powered-By  | - SRI Bootstrap   | - Restru
   * **Solusi:** Validasi dan respon dibuat netral seragam: "*Jika email terdaftar, tautan reset kata sandi telah dikirim.*"
 
 ### 3. Urgensi Low
-* **✅ Selesai sebagian — Bocor Versi Teknologi** `x-powered-by`
+* **✅ Selesai — Bocor Versi Teknologi** `x-powered-by`
   * **Masalah:** Header `x-powered-by: PHP/8.4.27` membocorkan versi spesifik PHP.
-  * **Solusi:** Header `X-Powered-By` dihapus pada Apache melalui `.htaccess`. Pengaturan `expose_php = Off` tetap perlu diterapkan pada runtime PHP/Cloud.
+  * **Solusi:** Header `X-Powered-By` dihapus melalui `.htaccess` dan `expose_php=Off` ditambahkan pada `public/.user.ini` untuk runtime PHP yang mendukung konfigurasi per-directory.
 
 ### 4. Urgensi UX / Content
 * **✅ Selesai sebagian — Perbaikan Copywriting & Metadata**
@@ -98,15 +98,15 @@ LOW                         | - Off X-Powered-By  | - SRI Bootstrap   | - Restru
    * **Solusi:** Endpoint data milik pengguna lain pada area web kini mengembalikan `404 Not Found`, sehingga status 403 tidak lagi membocorkan keberadaan ID. Migrasi ID ke UUID belum diperlukan.
 
 ### 3. Urgensi UX / Performa Frontend
-* **✅ Selesai sebagian — Optimasi Asset & CSS Inlining**
+* **✅ Selesai — Optimasi Asset & CSS Inlining**
   * **Masalah:** CSS Bootstrap (~230KB) di-inline langsung pada HTML halaman login/register sehingga total ukuran halaman ~250KB dan tidak bisa di-cache browser. Favicon logo tampak gepeng pada 16/32px.
-   * **Solusi:** Varian favicon icon-only 16x16/32x32 sudah digunakan pada layout utama dan halaman auth. Pemisahan Bootstrap inline pada halaman login/register masih tertunda.
+   * **Solusi:** Bootstrap inline pada halaman login/register dipindahkan ke asset CDN ber-SRI, dan varian favicon icon-only 16x16/32x32 digunakan pada layout utama serta halaman auth.
 
 ---
 
 ## 📊 Progres Penanganan
 
-**69%** berdasarkan 13 item utama: 6 selesai penuh, 6 selesai sebagian (dihitung 50%), dan 1 masih tertunda. Persentase ini akan diperbarui setiap kali item berikutnya ditangani. Poin akses katalog publik sengaja tetap tertunda sesuai arahan.
+**81%** berdasarkan 13 item utama: 8 selesai penuh, 5 selesai sebagian (dihitung 50%), dan tidak ada item utama yang tertunda. Sub-item akses katalog publik tetap sengaja ditunda sesuai arahan.
 
 ---
 
