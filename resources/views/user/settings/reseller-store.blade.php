@@ -56,6 +56,29 @@
         </div>
     </div>
 
+    <div class="row g-3 row-cols-2 row-cols-lg-4">
+        <div class="col"><x-ui.stat-card label="Total transaksi" value="{{ number_format($orderStats['total'], 0, ',', '.') }}" icon="receipt_long" tone="bg-sky-l tx-navy" /></div>
+        <div class="col"><x-ui.stat-card label="Pesanan API" value="{{ number_format($orderStats['api'], 0, ',', '.') }}" icon="api" tone="bg-gold tx-gold" /></div>
+        <div class="col"><x-ui.stat-card label="Transaksi toko" value="{{ number_format($orderStats['hosted'], 0, ',', '.') }}" icon="storefront" tone="bg-tealc-m tx-tealt" /></div>
+        <div class="col"><x-ui.stat-card label="Tunai menunggu" value="{{ number_format($orderStats['pendingCash'], 0, ',', '.') }}" icon="pending_actions" tone="bg-errc-l tx-err" /></div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-8">
+            <x-ui.card title="Aktivitas Transaksi · 30 Hari">
+                <x-ui.chart id="resellerTransactionChart" type="line" :config="$transactionChart" height="16rem" />
+            </x-ui.card>
+        </div>
+        <div class="col-lg-4">
+            <x-ui.card title="Riwayat Lengkap">
+                <p class="fs-12 tx-mute">Lihat seluruh transaksi API dan pesanan customer dari toko hosted, lengkap dengan filter dan detail alur dana.</p>
+                <a href="{{ route('settings.reseller.store.transactions') }}" class="btn-navy justify-content-center">
+                    <span class="ms ms-sm">receipt_long</span> Lihat Semua Transaksi
+                </a>
+            </x-ui.card>
+        </div>
+    </div>
+
     <x-ui.card title="Riwayat Komisi QRIS">
         @if ($commissionHistory->isEmpty())
             <p class="fs-12 tx-mute mb-0">Komisi akan tercatat setelah pesanan QRIS berhasil diproses.</p>

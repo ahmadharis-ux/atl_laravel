@@ -100,6 +100,65 @@ class ResellerStorefrontControllerTest extends TestCase
             ->assertSee('+Rp 2.500');
     }
 
+    public function test_reseller_dashboard_shows_transaction_summary_and_full_history_link(): void
+    {
+        $reseller = $this->reseller();
+        Order::factory()->for($reseller)->create(['source' => 'api']);
+        Order::factory()->for($reseller)->create(['source' => 'store_qris']);
+
+        $this->actingAs($reseller)
+            ->get(route('settings.reseller.store'))
+            ->assertOk()
+            ->assertSee('Total transaksi')
+            ->assertSee('Aktivitas Transaksi · 30 Hari')
+            ->assertSee(route('settings.reseller.store.transactions'), false);
+    }
+
+    public function test_reseller_can_filter_and_open_transaction_history_details(): void
+    {
+        $reseller = $this->reseller();
+        $apiOrder = Order::factory()->for($reseller)->create([
+            'source' => 'api',
+            'order_number' => 'TRX-API-HISTORY',
+        ]);
+        $cashOrder = Order::factory()->for($reseller)->create([
+            'source' => 'store_cash',
+            'order_number' => 'TRX-CASH-HISTORY',
+            'amount' => 10_800,
+            'metadata' => [
+                'storefront' => [
+                    'payment_method' => 'cash',
+                    'selling_price' => 12_000,
+                    'reseller_price' => 10_800,
+                ],
+            ],
+        ]);
+
+        $this->actingAs($reseller)
+            ->get(route('settings.reseller.store.transactions', ['source' => 'api']))
+            ->assertOk()
+            ->assertSee($apiOrder->order_number)
+            ->assertDontSee($cashOrder->order_number);
+
+        $this->actingAs($reseller)
+            ->get(route('settings.reseller.store.transactions.show', $cashOrder))
+            ->assertOk()
+            ->assertSee('Toko · Tunai customer')
+            ->assertSee('Harga customer')
+            ->assertSee('Keuntungan langsung')
+            ->assertSee('Rp 12.000');
+    }
+
+    public function test_reseller_cannot_view_another_users_transaction_detail(): void
+    {
+        $reseller = $this->reseller();
+        $otherOrder = Order::factory()->create(['source' => 'api']);
+
+        $this->actingAs($reseller)
+            ->get(route('settings.reseller.store.transactions.show', $otherOrder))
+            ->assertNotFound();
+    }
+
     private function reseller(): User
     {
         return User::factory()->create([

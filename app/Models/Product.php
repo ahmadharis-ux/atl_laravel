@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable([
     'external_id', 'code', 'provider', 'product_ref', 'name', 'region', 'payment_type',
     'brand_id', 'category_id', 'type_id', 'seller_id', 'description',
-    'cost_price', 'max_price', 'markup_type', 'markup_value',
+    'cost_price', 'max_price', 'markup_type', 'markup_value', 'reseller_price_override',
     'stock', 'unlimited_stock', 'start_cut_off', 'end_cut_off',
     'faktur', 'multi', 'multi_counter',
     'seller_sku_code', 'seller_sku_id', 'seller_sku_id_int', 'seller_connection_type',
@@ -105,8 +105,12 @@ class Product extends Model
     protected function resellerPrice(): Attribute
     {
         return Attribute::get(function (): int {
+            if ($this->reseller_price_override !== null) {
+                return max((int) $this->cost_price, (int) $this->reseller_price_override, 1);
+            }
+
             $selling = $this->selling_price;
-            $percent = max(0.0, (float) config('reseller.discount_percent', 0));
+            $percent = FeatureSetting::resellerDiscountPercent();
             $discounted = (int) floor($selling * (1 - $percent / 100));
 
             return max((int) $this->cost_price, $discounted, 1);
@@ -190,6 +194,7 @@ class Product extends Model
             'cost_price' => 'integer',
             'max_price' => 'integer',
             'markup_value' => 'decimal:2',
+            'reseller_price_override' => 'integer',
             'stock' => 'integer',
             'unlimited_stock' => 'boolean',
             'faktur' => 'boolean',

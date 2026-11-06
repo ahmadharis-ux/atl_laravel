@@ -16,6 +16,7 @@ class FeatureSetting extends Model
 {
     protected $fillable = [
         'reseller_enabled',
+        'reseller_discount_percent',
         'ticket_enabled',
         'merchandise_enabled',
         'dashboard_promo_enabled',
@@ -31,6 +32,7 @@ class FeatureSetting extends Model
      */
     protected $attributes = [
         'reseller_enabled' => true,
+        'reseller_discount_percent' => null,
         'ticket_enabled' => true,
         'merchandise_enabled' => true,
         'dashboard_promo_enabled' => true,
@@ -48,12 +50,13 @@ class FeatureSetting extends Model
     }
 
     /**
-     * @return array<string, bool>
+     * @return array<string, bool|float|null>
      */
     public static function defaults(): array
     {
         return [
             'reseller_enabled' => true,
+            'reseller_discount_percent' => null,
             'ticket_enabled' => true,
             'merchandise_enabled' => true,
             'dashboard_promo_enabled' => true,
@@ -108,6 +111,15 @@ class FeatureSetting extends Model
         return (bool) static::current()->getAttribute($column);
     }
 
+    public static function resellerDiscountPercent(): float
+    {
+        $value = static::current()->reseller_discount_percent;
+
+        return $value === null
+            ? (float) config('reseller.discount_percent', 0)
+            : max(0, (float) $value);
+    }
+
     /**
      * @return array<string, string>
      */
@@ -115,6 +127,7 @@ class FeatureSetting extends Model
     {
         return [
             'reseller_enabled' => 'boolean',
+            'reseller_discount_percent' => 'decimal:2',
             'ticket_enabled' => 'boolean',
             'merchandise_enabled' => 'boolean',
             'dashboard_promo_enabled' => 'boolean',

@@ -16,6 +16,7 @@
         <ul class="fs-13 mb-0 ps-3">
             <li><a href="#doc-ringkasan">Ringkasan</a></li>
             <li><a href="#doc-autentikasi">Autentikasi</a></li>
+            <li><a href="#doc-hosted-flow">Alur Uang Toko Hosted</a></li>
             <li><a href="#doc-endpoint">Base URL dan Daftar Endpoint</a></li>
             <li><a href="#doc-profil">1. Profil dan Cek Saldo</a></li>
             <li><a href="#doc-produk">2. Ambil Daftar Produk dan Harga Reseller</a></li>
@@ -80,6 +81,40 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span
             <code>X-Transaction-PIN</code> berisi PIN transaksi 6 digit. Atur PIN dari
             <a href="{{ route('settings.pin') }}">Pengaturan PIN</a>; jangan kirim PIN pada body, query string, atau webhook.
         </p>
+    </x-ui.card>
+
+    <x-ui.card id="doc-hosted-flow" title="Alur Uang Toko Hosted">
+        <p class="fs-12 mb-3">
+            Toko hosted menerima pesanan dari customer dengan harga publik. Harga reseller dipakai sebagai biaya pemenuhan pesanan.
+            Alurnya berbeda dari API reseller yang selalu memotong saldo reseller.
+        </p>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="card-ap r-sm p-3 h-100">
+                    <h3 class="fs-13 fw-bold mb-2">Pembayaran tunai</h3>
+                    <ol class="fs-12 tx-mute mb-0 ps-3">
+                        <li>Customer menyerahkan harga publik langsung kepada reseller.</li>
+                        <li>Reseller mengonfirmasi penerimaan tunai dengan PIN transaksi.</li>
+                        <li>Saldo reseller dipotong sebesar <code>reseller_price</code>.</li>
+                        <li>Selisih harga publik dan harga reseller menjadi keuntungan langsung reseller.</li>
+                    </ol>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card-ap r-sm p-3 h-100">
+                    <h3 class="fs-13 fw-bold mb-2">Pembayaran QRIS</h3>
+                    <ol class="fs-12 tx-mute mb-0 ps-3">
+                        <li>Customer membayar melalui halaman Midtrans, termasuk biaya QRIS bila ada.</li>
+                        <li>Saldo reseller tidak dipotong.</li>
+                        <li>Setelah berhasil, selisih harga dicatat sebagai komisi reseller.</li>
+                        <li>Komisi dapat dilihat dan diajukan untuk pencairan melalui halaman reseller.</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+        <div class="alert-ap r-sm bg-sky-l tx-navy fs-12 px-3 py-2 mt-3">
+            Jika pembayaran tunai tidak dikonfirmasi, saldo reseller tidak dipotong dan pesanan dapat kedaluwarsa.
+        </div>
     </x-ui.card>
 
     <x-ui.card id="doc-endpoint" title="Base URL dan Daftar Endpoint">

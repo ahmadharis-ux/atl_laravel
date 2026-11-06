@@ -9,7 +9,8 @@ return [
     |
     | Potongan harga (dalam persen) dari harga jual publik yang dipakai saat
     | reseller membeli lewat API. Harga reseller tidak pernah turun di bawah
-    | harga modal produk. Atur lewat env RESELLER_DISCOUNT_PERCENT.
+     | harga modal produk. Nilai utama disimpan di FeatureSetting; env menjadi
+     | fallback bila admin belum menetapkan nilai di database.
     |
     */
     'discount_percent' => (float) env('RESELLER_DISCOUNT_PERCENT', 5),

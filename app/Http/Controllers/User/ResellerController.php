@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
+use App\Models\FeatureSetting;
 use App\Models\User;
 use App\Support\ResellerKey;
 use App\Support\ResellerWebhook;
@@ -27,7 +28,7 @@ class ResellerController extends Controller
 
         return response()->view('user.settings.reseller', [
             'user' => $request->user(),
-            'discountPercent' => (float) config('reseller.discount_percent', 0),
+            'discountPercent' => FeatureSetting::resellerDiscountPercent(),
             'termsVersion' => (string) config('reseller.terms_version'),
             'usesApi' => in_array($salesChannel, ['api', 'both'], true),
             'usesHostedStore' => in_array($salesChannel, ['hosted', 'both'], true),
@@ -41,7 +42,7 @@ class ResellerController extends Controller
     {
         return view('user.settings.reseller-docs', [
             'user' => $request->user(),
-            'discountPercent' => (float) config('reseller.discount_percent', 0),
+            'discountPercent' => FeatureSetting::resellerDiscountPercent(),
             'apiBase' => url('/api/v1/reseller'),
         ]);
     }

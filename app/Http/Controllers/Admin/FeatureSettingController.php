@@ -21,6 +21,7 @@ class FeatureSettingController extends Controller
     {
         $request->validate([
             'reseller_enabled' => ['boolean'],
+            'reseller_discount_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'ticket_enabled' => ['boolean'],
             'merchandise_enabled' => ['boolean'],
             'dashboard_promo_enabled' => ['boolean'],
@@ -35,6 +36,9 @@ class FeatureSettingController extends Controller
 
         $settings = [
             'reseller_enabled' => $request->boolean('reseller_enabled'),
+            'reseller_discount_percent' => $request->filled('reseller_discount_percent')
+                ? $request->input('reseller_discount_percent')
+                : null,
             'ticket_enabled' => $request->boolean('ticket_enabled'),
             'merchandise_enabled' => $request->boolean('merchandise_enabled'),
             'dashboard_promo_enabled' => $request->boolean('dashboard_promo_enabled'),

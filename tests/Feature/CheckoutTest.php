@@ -450,13 +450,18 @@ class CheckoutTest extends TestCase
     public function test_history_lists_only_the_users_own_orders(): void
     {
         $user = User::factory()->create(['balance' => 1_000_000]);
-        $mine = Order::factory()->create(['user_id' => $user->getKey()]);
+        $mine = Order::factory()->create([
+            'user_id' => $user->getKey(),
+            'source' => 'store_cash',
+        ]);
         $other = Order::factory()->create();
 
         $this->actingAs($user)
             ->get(route('orders.index'))
             ->assertOk()
             ->assertSee($mine->order_number)
+            ->assertSee('Toko reseller')
+            ->assertSee('Tunai customer')
             ->assertDontSee($other->order_number);
     }
 

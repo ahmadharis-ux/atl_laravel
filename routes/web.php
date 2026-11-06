@@ -196,6 +196,10 @@ Route::middleware(['auth', 'non-admin', 'verified', 'pin.set'])->group(function 
         ->middleware('throttle:5,1')->name('settings.reseller.webhook.secret');
     Route::post('/pengaturan/reseller/nonaktifkan', [UserResellerController::class, 'deactivate'])->name('settings.reseller.deactivate');
     Route::get('/pengaturan/reseller/toko', [ResellerStorefrontController::class, 'index'])->name('settings.reseller.store');
+    Route::get('/pengaturan/reseller/toko/transaksi', [ResellerStorefrontController::class, 'transactions'])
+        ->name('settings.reseller.store.transactions');
+    Route::get('/pengaturan/reseller/toko/transaksi/{order}', [ResellerStorefrontController::class, 'transactionShow'])
+        ->name('settings.reseller.store.transactions.show');
     Route::post('/pengaturan/reseller/toko/pesanan/{order}/konfirmasi-tunai', [ResellerStorefrontController::class, 'confirmCash'])
         ->name('settings.reseller.store.cash.confirm');
     Route::post('/pengaturan/reseller/toko/pencairan', [ResellerStorefrontController::class, 'requestPayout'])

@@ -23,6 +23,13 @@
                         <div class="fs-12 tx-mute text-truncate">
                             {{ $order->order_number }} &middot; {{ $order->target }}@if ($order->target_zone) ({{ $order->target_zone }})@endif
                         </div>
+                        @if (in_array($order->source, ['store_cash', 'store_qris'], true))
+                            <span class="pill bg-sky-l tx-navy fs-11 mt-1 align-self-start">
+                                Toko reseller · {{ $order->source === 'store_qris' ? 'QRIS customer' : 'Tunai customer' }}
+                            </span>
+                        @elseif ($order->source === 'api')
+                            <span class="pill bg-gold tx-gold fs-11 mt-1 align-self-start">Pesanan API reseller</span>
+                        @endif
                         <div class="fs-11 tx-skyd">{{ $order->created_at->format('d M Y, H:i') }}</div>
                     </div>
                     <div class="d-flex flex-column align-items-end gap-1 flex-shrink-0">

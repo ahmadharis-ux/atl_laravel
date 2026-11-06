@@ -10,6 +10,7 @@
         if ($canEdit) {
             $rowActions[] = ['label' => 'Ubah', 'icon' => 'edit', 'href' => route('admin.users.edit', $user)];
         }
+        $rowActions[] = ['label' => 'Detail', 'icon' => 'visibility', 'href' => route('admin.users.show', $user)];
         if ($canDelete) {
             $rowActions[] = [
                 'label' => 'Hapus',
@@ -36,8 +37,15 @@
         <td><x-ui.tooltip :text="$user->email" truncate="11rem" class="tx-mute fs-12">{{ $user->email }}</x-ui.tooltip></td>
         <td class="tx-mute fs-12">{{ $user->phone ?: '—' }}</td>
         <td>
-            <span class="pill {{ \App\Support\Roles::tone($role ?? \App\Support\Roles::USER) }}">{{ $user->roleLabel() }}</span>
+            <div class="d-flex flex-wrap gap-1">
+                <span class="pill {{ \App\Support\Roles::tone($role ?? \App\Support\Roles::USER) }}">{{ $user->roleLabel() }}</span>
+                @if ($user->reseller_since !== null || $user->is_reseller)
+                    <span class="pill bg-sky-l tx-navy">Reseller</span>
+                @endif
+            </div>
         </td>
+        <td class="num text-end">Rp {{ number_format((int) $user->balance, 0, ',', '.') }}</td>
+        <td class="num text-end">{{ number_format((int) $user->points, 0, ',', '.') }}</td>
         <td class="text-end">
             @if (count($rowActions))
                 <x-ui.actions :actions="$rowActions" />
@@ -54,7 +62,7 @@
     </tr>
 @empty
     <tr>
-        <td colspan="5">
+        <td colspan="7">
             <x-ui.empty-state icon="group" title="Tidak ada pengguna"
                 description="Belum ada pengguna yang cocok dengan pencarian atau filter." />
         </td>

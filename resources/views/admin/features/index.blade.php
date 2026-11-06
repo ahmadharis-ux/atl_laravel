@@ -64,6 +64,17 @@
                         </div>
                     @endforeach
 
+                    <div class="d-flex flex-column gap-2 p-3 r-sm" style="border:1px solid #d3e3e1">
+                        <div>
+                            <div class="fw-semibold">Harga Reseller Global</div>
+                            <div class="tx-mute fs-12">Diskon default dari harga publik untuk produk tanpa override khusus. Harga tetap tidak boleh di bawah modal.</div>
+                        </div>
+                        <div class="d-flex align-items-end gap-2">
+                            <x-ui.input name="reseller_discount_percent" type="number" step="0.01" min="0" max="100" label="Diskon reseller (%)" :value="old('reseller_discount_percent', $setting->reseller_discount_percent)" hint="Kosongkan untuk memakai nilai fallback dari environment." />
+                            <span class="fs-12 tx-mute mb-2">%</span>
+                        </div>
+                    </div>
+
                     <div class="d-flex flex-column gap-3 pt-2">
                         <div>
                             <h2 class="fw-bold fs-6 m-0">Metode Pembayaran Isi Saldo</h2>

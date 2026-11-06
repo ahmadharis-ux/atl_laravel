@@ -41,6 +41,37 @@ class ResellerStorefrontController extends Controller
             ->limit(10)
             ->get();
 
+        $periodStart = now()->subDays(29)->startOfDay();
+        $recentOrders = $user->orders()
+            ->where('created_at', '>=', $periodStart)
+            ->get(['created_at', 'amount', 'source']);
+        $chartDays = collect(range(0, 29))->map(fn (int $days): string => $periodStart->copy()->addDays($days)->format('Y-m-d'));
+        $dailyOrders = $recentOrders->groupBy(fn (Order $order): string => $order->created_at->format('Y-m-d'));
+        $transactionChart = [
+            'data' => [
+                'labels' => $chartDays->map(fn (string $date): string => date('d/m', strtotime($date)))->values(),
+                'datasets' => [[
+                    'label' => 'Transaksi',
+                    'data' => $chartDays->map(fn (string $date): int => $dailyOrders->get($date, collect())->count())->values(),
+                    'borderColor' => '#1c9b91',
+                    'backgroundColor' => 'rgba(28, 155, 145, .12)',
+                    'fill' => true,
+                    'tension' => .35,
+                ]],
+            ],
+            'options' => [
+                'maintainAspectRatio' => false,
+                'plugins' => ['legend' => ['display' => false]],
+                'scales' => ['y' => ['beginAtZero' => true, 'ticks' => ['precision' => 0]]],
+            ],
+        ];
+        $orderStats = [
+            'total' => $user->orders()->count(),
+            'api' => $user->orders()->where('source', 'api')->count(),
+            'hosted' => $user->orders()->whereIn('source', ['store_cash', 'store_qris'])->count(),
+            'pendingCash' => $pendingCashOrders->count(),
+        ];
+
         return view('user.settings.reseller-store', [
             'user' => $user,
             'storeUrl' => $user->is_reseller ? route('storefront.index', $user) : null,
@@ -49,6 +80,43 @@ class ResellerStorefrontController extends Controller
             'bankAccounts' => $user->bankAccounts()->orderByDesc('is_primary')->orderBy('bank_name')->get(),
             'payouts' => $payouts,
             'commissionHistory' => $commissionHistory,
+            'orderStats' => $orderStats,
+            'transactionChart' => $transactionChart,
+        ]);
+    }
+
+    public function transactions(Request $request): View
+    {
+        $user = $request->user();
+        abort_unless($user !== null && $user->reseller_since !== null, 403);
+
+        $orders = $user->orders()
+            ->with(['product.brand', 'product.category'])
+            ->when($request->filled('source'), fn ($query) => $query->where('source', $request->string('source')->toString()))
+            ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
+            ->when($request->filled('q'), function ($query) use ($request): void {
+                $term = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], trim($request->string('q')->toString())).'%';
+                $query->where(function ($nested) use ($term): void {
+                    $nested->where('order_number', 'like', $term)
+                        ->orWhere('target', 'like', $term);
+                });
+            })
+            ->latest('id')
+            ->paginate(15)
+            ->withQueryString();
+
+        return view('user.settings.reseller-transactions.index', [
+            'orders' => $orders,
+        ]);
+    }
+
+    public function transactionShow(Request $request, Order $order): View
+    {
+        abort_unless($order->user_id === $request->user()->getKey(), 404);
+        abort_unless($request->user()->reseller_since !== null, 403);
+
+        return view('user.settings.reseller-transactions.show', [
+            'order' => $order->load(['product.brand', 'product.category', 'walletTransactions', 'resellerCommission']),
         ]);
     }
 

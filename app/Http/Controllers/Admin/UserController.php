@@ -60,6 +60,25 @@ class UserController extends Controller
         ]);
     }
 
+    public function show(User $user): View
+    {
+        $user->load('roles');
+
+        return view('admin.users.show', [
+            'user' => $user,
+            'orders' => $user->orders()
+                ->with(['product.brand', 'product.category'])
+                ->latest('id')
+                ->paginate(10, ['*'], 'orders_page')
+                ->withQueryString(),
+            'commissions' => $user->resellerCommissions()
+                ->with('order.product')
+                ->latest('id')
+                ->limit(20)
+                ->get(),
+        ]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([

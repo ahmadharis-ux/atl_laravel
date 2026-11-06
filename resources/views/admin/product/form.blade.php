@@ -51,7 +51,8 @@
                             <x-ui.select name="markup_type" label="Tipe Markup" :options="$markupTypes" :value="old('markup_type', $product->markup_type?->value)" />
                         </div>
                         <div class="col-md-6">
-                            <x-ui.input name="markup_value" type="number" step="0.01" min="0" label="Nilai Markup" :value="old('markup_value', (float) $product->markup_value)" hint="Nominal rupiah atau persen, sesuai tipe markup." />
+                        <x-ui.input name="markup_value" type="number" step="0.01" min="0" label="Nilai Markup" :value="old('markup_value', (float) $product->markup_value)" hint="Nominal rupiah atau persen, sesuai tipe markup." />
+                        <x-ui.input name="reseller_price_override" type="number" min="0" label="Harga Reseller Khusus (opsional)" :value="old('reseller_price_override', $product->reseller_price_override)" hint="Kosongkan untuk memakai diskon reseller global. Harga tidak boleh di bawah modal." />
                         </div>
                         <div class="col-md-6">
                             <x-ui.input name="max_price" type="number" min="0" label="Max Price" :value="old('max_price', $product->max_price)" hint="0 = tanpa batas." />
