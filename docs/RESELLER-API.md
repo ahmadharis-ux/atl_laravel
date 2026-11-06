@@ -34,7 +34,7 @@ Gunakan bentuk Bearer yang valid `Authorization: Bearer ap_XXXXXXXX...` bila tid
 Setiap pembuatan pesanan yang memotong saldo wajib mengirim header berikut:
 
 ```
-X-Transaction-PIN: 482916
+X-Transaction-PIN: YOUR_6_DIGIT_PIN
 ```
 
 - Header ini wajib untuk `POST /orders` dan `POST /transaksi/create`; endpoint baca tidak memerlukannya.
@@ -205,7 +205,7 @@ Untuk game yang memerlukan zona, kirim `zone` terpisah. Format H2H lama `target:
 ```bash
 curl -X POST "https://<domain>/api/v1/reseller/orders" \
   -H "X-API-Key: ap_XXXX" \
-  -H "X-Transaction-PIN: 482916" \
+  -H "X-Transaction-PIN: YOUR_6_DIGIT_PIN" \
   -H "Content-Type: application/json" \
   -d '{"product_id": 12, "target": "081234567890", "reff_id": "order-0001", "limit_price": 7000}'
 ```

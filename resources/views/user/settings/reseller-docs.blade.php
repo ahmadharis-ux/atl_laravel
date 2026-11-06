@@ -339,13 +339,13 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span
         <div class="position-relative mb-2">
             <pre class="ap-log-pre pe-5 mb-0">curl -X POST "{{ $apiBase }}/orders" \
   -H "X-API-Key: ap_XXXXXXXX..." \
-  -H "X-Transaction-PIN: 482916" \
+  -H "X-Transaction-PIN: YOUR_6_DIGIT_PIN" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -d '{"product_id": 12, "target": "081234567890", "reff_id": "order-0001", "limit_price": 7000}'</pre>
             <button type="button" class="ap-icon-btn position-absolute top-0 end-0 m-2" data-copy-text="curl -X POST &quot;{{ $apiBase }}/orders&quot; \
   -H &quot;X-API-Key: ap_XXXXXXXX...&quot; \
-  -H &quot;X-Transaction-PIN: 482916&quot; \
+  -H &quot;X-Transaction-PIN: YOUR_6_DIGIT_PIN&quot; \
   -H &quot;Content-Type: application/json&quot; \
   -H &quot;Accept: application/json&quot; \
   -d '{&quot;product_id&quot;: 12, &quot;target&quot;: &quot;081234567890&quot;, &quot;reff_id&quot;: &quot;order-0001&quot;, &quot;limit_price&quot;: 7000}'" data-copy-label="cURL Buat Pesanan" data-tip="Salin"><span class="ms ms-sm">content_copy</span></button>
@@ -353,7 +353,7 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span
         <div class="d-flex justify-content-end mb-3">
             <button type="button" class="btn-soft" data-copy-text="curl -X POST &quot;{{ $apiBase }}/orders&quot; \
   -H &quot;X-API-Key: ap_XXXXXXXX...&quot; \
-  -H &quot;X-Transaction-PIN: 482916&quot; \
+  -H &quot;X-Transaction-PIN: YOUR_6_DIGIT_PIN&quot; \
   -H &quot;Content-Type: application/json&quot; \
   -H &quot;Accept: application/json&quot; \
   -d '{&quot;product_id&quot;: 12, &quot;target&quot;: &quot;081234567890&quot;, &quot;reff_id&quot;: &quot;order-0001&quot;, &quot;limit_price&quot;: 7000}'" data-copy-label="cURL Buat Pesanan"><span class="ms ms-sm">content_copy</span> Salin Contoh cURL</button>
@@ -440,7 +440,7 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span
             selain Digiflazz belum tersedia pada API reseller.
         </p>
         <pre class="ap-log-pre mb-2">POST {{ url('/transaksi/create') }}
-X-Transaction-PIN: 482916
+X-Transaction-PIN: YOUR_6_DIGIT_PIN
 api_key={{ 'ap_XXXXXXXX' }}
 code=ML86
 reff_id=order-0001
