@@ -35,6 +35,15 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(120)->by($request->header('X-API-Key') ?: $request->ip());
         });
 
+        RateLimiter::for('login', function (Request $request): array {
+            $email = strtolower((string) $request->input('email'));
+
+            return [
+                Limit::perMinute(5)->by('login-email:'.$email),
+                Limit::perMinute(20)->by('login-ip:'.$request->ip()),
+            ];
+        });
+
         View::composer(['partials.sidebar', 'partials.topbar'], function ($view): void {
             $authUser = auth()->user();
             $now = now()->locale('id');
