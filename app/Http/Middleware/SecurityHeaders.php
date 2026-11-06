@@ -25,6 +25,13 @@ class SecurityHeaders
             $response->headers->set('X-Robots-Tag', 'noindex, nofollow, noarchive');
         }
 
+        if (config('security.csp_report_only')) {
+            $response->headers->set(
+                'Content-Security-Policy-Report-Only',
+                (string) config('security.content_security_policy'),
+            );
+        }
+
         if ($request->isSecure()) {
             $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
         }

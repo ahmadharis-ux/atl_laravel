@@ -11,7 +11,8 @@ class SecurityHeadersTest extends TestCase
         $this->get('/login')
             ->assertHeader('X-Frame-Options', 'DENY')
             ->assertHeader('X-Content-Type-Options', 'nosniff')
-            ->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+            ->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
+            ->assertHeader('Content-Security-Policy-Report-Only');
     }
 
     public function test_hsts_is_added_to_secure_responses(): void
@@ -34,5 +35,22 @@ class SecurityHeadersTest extends TestCase
 
         $this->get('/login')
             ->assertRedirect('https://localhost:8000/login');
+    }
+
+    public function test_staging_basic_auth_can_protect_responses(): void
+    {
+        config([
+            'app.staging_basic_auth' => true,
+            'app.staging_basic_auth_username' => 'reviewer',
+            'app.staging_basic_auth_password' => 'secret-password',
+        ]);
+
+        $this->get('/login')
+            ->assertUnauthorized()
+            ->assertHeader('WWW-Authenticate', 'Basic realm="Atlantic Pedia Staging"');
+
+        $this->withBasicAuth('reviewer', 'secret-password')
+            ->get('/login')
+            ->assertOk();
     }
 }

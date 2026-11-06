@@ -50,7 +50,7 @@ LOW                         | - Off X-Powered-By  | - SRI Bootstrap   | - Restru
 ### 4. Urgensi UX / Content
 * **✅ Selesai sebagian — Perbaikan Copywriting & Metadata**
   * Judul tab login diubah menjadi *"Masuk - Atlantic Pedia"*.
-  * **⏳ Tertunda:** Ganti email support placeholder (`support@atlanticpedia.test`) dengan domain aktif.
+   * Email support placeholder dihapus dari tampilan; alamat support sekarang hanya ditampilkan jika `SUPPORT_EMAIL` dikonfigurasi. Pengisian domain aktif tetap menjadi konfigurasi deployment.
    * Statistik landing tidak lagi menampilkan angka fallback yang belum diverifikasi; sekarang tampil *"Belum diatur"* sampai admin memasukkan data aktual. Testimoni tetap menunggu data aktual.
   * Tag Open Graph dan Twitter Card ditambahkan pada layout landing.
 
@@ -60,15 +60,15 @@ LOW                         | - Off X-Powered-By  | - SRI Bootstrap   | - Restru
 *Perbaikan yang membutuhkan penyesuaian logika aplikasi, konfigurasi web server/Cloudflare, atau pengkodean ringan (Estimasi: 1 - 3 jam per item).*
 
 ### 1. Urgensi Medium
-* **✅ Selesai sebagian — HTTPS Tidak Dipaksa & Cookie Sesi Tanpa Flag Secure** `http → https`
+* **✅ Selesai — HTTPS Tidak Dipaksa & Cookie Sesi Tanpa Flag Secure** `http → https`
   * **Masalah:** Akses HTTP tidak di-redirect otomatis ke HTTPS, redirect internal mengarah ke HTTP, dan cookie sesi tidak menggunakan flag `Secure`.
-  * **Solusi:** Opsi `FORCE_HTTPS=true` sekarang mengarahkan HTTP ke HTTPS. `SESSION_SECURE_COOKIE=true`, `APP_URL=https://...`, dan fitur *"Always Use HTTPS"* Cloudflare tetap perlu diaktifkan pada environment deployment.
+  * **Solusi:** HTTPS otomatis dipaksa pada environment production (dapat dioverride dengan `FORCE_HTTPS`), dan cookie sesi otomatis Secure pada production (dapat dioverride dengan `SESSION_SECURE_COOKIE`). `APP_URL=https://...` dan fitur *"Always Use HTTPS"* Cloudflare tetap harus disesuaikan saat deployment.
 * **✅ Selesai — Ganti Email Tanpa Konfirmasi Password** `/pengaturan/profil`
   * **Masalah:** Mengubah email profil langsung mereset email login dan verifikasi tanpa meminta konfirmasi password saat ini.
   * **Solusi:** Konfirmasi kata sandi saat ini diwajibkan sebelum email diganti. Email baru tetap harus diverifikasi sebelum akses terverifikasi dipulihkan.
 * **✅ Selesai sebagian — Security Headers Belum Diterapkan** `Response Headers`
   * **Masalah:** Tidak ada header keamanan standar seperti HSTS, CSP, `X-Frame-Options`, `X-Content-Type-Options`, dan `Referrer-Policy`.
-  * **Solusi:** Middleware global menambahkan `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, dan HSTS pada request HTTPS. CSP masih perlu disusun setelah audit seluruh asset inline.
+  * **Solusi:** Middleware global menambahkan `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, dan HSTS pada request HTTPS. Baseline CSP kini tersedia dalam mode `Content-Security-Policy-Report-Only`; enforcement menunggu hasil audit resource staging.
 
 ### 2. Urgensi Low
 * **✅ Selesai — CDN Tanpa Subresource Integrity (SRI)** `Bootstrap CDN`
@@ -88,9 +88,9 @@ LOW                         | - Off X-Powered-By  | - SRI Bootstrap   | - Restru
 *Perbaikan yang membutuhkan arsitektur ulang, proteksi akses staging, atau refactoring kode.*
 
 ### 1. Urgensi Medium
-* **✅ Selesai sebagian — Staging Terbuka Publik & Bisa Diindeks Search Engine** `robots.txt`
+* **✅ Selesai — Staging Terbuka Publik & Bisa Diindeks Search Engine** `robots.txt`
   * **Masalah:** `robots.txt` diset `Allow: /` tanpa otentikasi pintu masuk staging.
-   * **Solusi:** Opsi `STAGING_NOINDEX=true` menambahkan `X-Robots-Tag: noindex, nofollow, noarchive`. Akses staging tetap perlu dikunci menggunakan **Cloudflare Access** atau **Basic Authentication** (`htpasswd`).
+   * **Solusi:** Opsi `STAGING_NOINDEX=true` menambahkan `X-Robots-Tag: noindex, nofollow, noarchive`, dan `STAGING_BASIC_AUTH=true` menyediakan Basic Authentication berbasis environment. Cloudflare Access tetap menjadi opsi tambahan.
 
 ### 2. Urgensi Low
 * **✅ Selesai — Bocor Keberadaan ID Data (403 vs 404)** `IDOR-info`
@@ -106,7 +106,7 @@ LOW                         | - Off X-Powered-By  | - SRI Bootstrap   | - Restru
 
 ## 📊 Progres Penanganan
 
-**81%** berdasarkan 13 item utama: 8 selesai penuh, 5 selesai sebagian (dihitung 50%), dan tidak ada item utama yang tertunda. Sub-item akses katalog publik tetap sengaja ditunda sesuai arahan.
+**88%** berdasarkan 13 item utama: 10 selesai penuh, 3 selesai sebagian (dihitung 50%), dan tidak ada item utama yang tertunda. Sub-item akses katalog publik tetap sengaja ditunda sesuai arahan.
 
 ---
 

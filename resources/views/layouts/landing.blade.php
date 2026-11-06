@@ -77,7 +77,9 @@
                         <li><a href="#faq">FAQ</a></li>
                         <li><a href="{{ route('login') }}">Masuk</a></li>
                         <li><a href="{{ route('register') }}">Daftar</a></li>
-                        <li><a href="mailto:support@atlanticpedia.test">Email Support</a></li>
+                        @if (filled(config('support.email')))
+                            <li><a href="mailto:{{ config('support.email') }}">Email Support</a></li>
+                        @endif
                         <li><a href="{{ route('pages.privacy') }}">Kebijakan Privasi</a></li>
                         <li><a href="{{ route('pages.terms') }}">Syarat &amp; Ketentuan</a></li>
                     </ul>

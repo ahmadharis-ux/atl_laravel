@@ -7,6 +7,7 @@ use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\ForceHttps;
 use App\Http\Middleware\RedirectAdminToAdminPanel;
 use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\StagingBasicAuth;
 use App\Http\Middleware\TrustCloudflareProxies;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -43,6 +44,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(prepend: [
             EnsureComingSoonMode::class,
             ForceHttps::class,
+            StagingBasicAuth::class,
         ]);
         $middleware->append(SecurityHeaders::class);
 
