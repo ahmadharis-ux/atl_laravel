@@ -36,7 +36,7 @@ class LandingSetting extends Model
     }
 
     /**
-     * @return array<string, string>
+     * @return array<string, string|null>
      */
     public static function defaults(): array
     {
@@ -51,9 +51,9 @@ class LandingSetting extends Model
             'about_title' => 'Kenapa Atlantic Pedia?',
             'about_body' => 'Atlantic Pedia hadir sebagai mitra transaksi digital untuk kebutuhan sehari-hari. Harga bersaing, pembayaran fleksibel, dan dukungan tim yang sigap.',
             'whatsapp_number' => null,
-            'stat_customers' => '25.000+',
-            'stat_transactions' => '1,2 Jt+',
-            'stat_products' => '500+',
+            'stat_customers' => null,
+            'stat_transactions' => null,
+            'stat_products' => null,
             'stat_support' => '',
             'meta_description' => 'Atlantic Pedia — layanan PPOB, pulsa, paket data, token listrik, dan produk digital dengan proses instan.',
         ];

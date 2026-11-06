@@ -51,7 +51,7 @@ LOW                         | - Off X-Powered-By  | - SRI Bootstrap   | - Restru
 * **✅ Selesai sebagian — Perbaikan Copywriting & Metadata**
   * Judul tab login diubah menjadi *"Masuk - Atlantic Pedia"*.
   * **⏳ Tertunda:** Ganti email support placeholder (`support@atlanticpedia.test`) dengan domain aktif.
-  * **⏳ Tertunda:** Perbarui data statistik & testimoni placeholder dengan data aktual agar tidak menyesatkan.
+   * Statistik landing tidak lagi menampilkan angka fallback yang belum diverifikasi; sekarang tampil *"Belum diatur"* sampai admin memasukkan data aktual. Testimoni tetap menunggu data aktual.
   * Tag Open Graph dan Twitter Card ditambahkan pada layout landing.
 
 ---

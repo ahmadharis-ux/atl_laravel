@@ -78,16 +78,16 @@
             <div class="landing-stats mt-5">
                 <div class="row g-3">
                     <div class="col-6 col-lg-3">
-                        <div class="landing-stat"><span class="num">{{ $settings->stat_customers ?: '25.000+' }}</span><small>Pelanggan aktif</small></div>
+                        <div class="landing-stat"><span class="num">{{ $settings->stat_customers ?: 'Belum diatur' }}</span><small>Pelanggan aktif</small></div>
                     </div>
                     <div class="col-6 col-lg-3">
-                        <div class="landing-stat"><span class="num">{{ $settings->stat_transactions ?: '1,2 Jt+' }}</span><small>Transaksi diproses</small></div>
+                        <div class="landing-stat"><span class="num">{{ $settings->stat_transactions ?: 'Belum diatur' }}</span><small>Transaksi diproses</small></div>
                     </div>
                     <div class="col-6 col-lg-3">
-                        <div class="landing-stat"><span class="num">{{ $settings->stat_products ?: '500+' }}</span><small>Produk digital</small></div>
+                        <div class="landing-stat"><span class="num">{{ $settings->stat_products ?: 'Belum diatur' }}</span><small>Produk digital</small></div>
                     </div>
                     <div class="col-6 col-lg-3">
-                        <div class="landing-stat"><span class="num">{{ $settings->stat_support ?: '24/7' }}</span><small>Dukungan pelanggan</small></div>
+                        <div class="landing-stat"><span class="num">{{ $settings->stat_support ?: 'Belum diatur' }}</span><small>Dukungan pelanggan</small></div>
                     </div>
                 </div>
             </div>
