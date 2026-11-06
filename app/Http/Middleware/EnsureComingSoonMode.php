@@ -13,7 +13,7 @@ class EnsureComingSoonMode
     {
         $launchDate = Carbon::parse(
             config('landing.coming_soon_until'),
-            'Asia/Jakarta',
+            config('landing.coming_soon_timezone', 'Asia/Jakarta'),
         );
 
         if (now()->lt($launchDate)) {
