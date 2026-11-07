@@ -17,28 +17,42 @@
             />
         </div>
         <div class="col-12 col-lg-4 order-lg-1">
-            <section class="wallet r-card {{ $tier->cssClass() }} d-flex align-items-center gap-3 h-100">
-                <a href="{{ route('saldo.index') }}" class="wallet-fill" aria-label="Buka detail saldo"></a>
+            <section class="wallet r-card {{ $tier->cssClass() }} d-flex align-items-stretch h-100">
 
-                <div class="wallet-cell">
-                    <span class="wallet-label">Saldo</span>
-                    <span class="d-flex align-items-center gap-2">
-                        <span class="wallet-rp">Rp</span>
-                        <span class="num wallet-value" id="saldo">{{ number_format($balance, 0, ',', '.') }}</span>
-                        <button id="eye" class="btn-eye" type="button" aria-label="Tampilkan atau sembunyikan saldo">
-                            <span class="ms ms-sm align-middle">visibility</span>
-                        </button>
-                    </span>
+                {{-- Saldo --}}
+                <div class="wallet-cell position-relative">
+                    <div class="wallet-body">
+                        <span class="wallet-label">Saldo</span>
+                        <div class="wallet-row">
+                            <span class="wallet-rp">Rp</span>
+                            <span class="num wallet-value" id="saldo"
+                                data-short="{{ format_short($balance) }}"
+                                title="Rp {{ number_format($balance, 0, ',', '.') }}">{{ format_short($balance) }}</span>
+                            <button id="eye" class="btn-eye" type="button" aria-label="Tampilkan atau sembunyikan saldo">
+                                <span class="ms ms-sm">visibility</span>
+                            </button>
+                        </div>
+                    </div>
+                    <a href="{{ route('deposits.index') }}" class="wallet-arrow stretched-link" aria-label="Lihat saldo">
+                        <span class="ms ms-sm" aria-hidden="true">chevron_right</span>
+                    </a>
                 </div>
 
                 <span class="wallet-div" aria-hidden="true"></span>
 
-                <div class="wallet-cell">
-                    <span class="wallet-label">Poin Reward</span>
-                    <span class="num wallet-value">{{ number_format($points, 0, ',', '.') }}<span class="wallet-sub"> Poin</span></span>
+                {{-- Poin Reward --}}
+                <div class="wallet-cell position-relative">
+                    <div class="wallet-body">
+                        <span class="wallet-label">Poin Reward</span>
+                        <div class="wallet-row">
+                            <span class="num wallet-value">{{ format_short($points ?? 0) }}</span>
+                        </div>
+                    </div>
+                    <a href="{{ route('merchandise.index') }}" class="wallet-arrow stretched-link" aria-label="Lihat merchandise">
+                        <span class="ms ms-sm" aria-hidden="true">chevron_right</span>
+                    </a>
                 </div>
 
-                <span class="ms ms-sm wallet-arrow" aria-hidden="true">chevron_right</span>
             </section>
         </div>
     </div>
@@ -52,6 +66,7 @@
                         <a href="{{ $banner->link }}" class="btn-white promo-img-cta" @if (\Illuminate\Support\Str::startsWith($banner->link, ['http://', 'https://'])) target="_blank" rel="noopener" @endif>{{ $banner->cta_label ?: 'Selengkapnya' }}</a>
                     @endif
                 </section>
+                
             @else
                 <section class="promo r-card">
                     <div class="glow"></div><span class="ms bgico" aria-hidden="true">bolt</span>
@@ -77,7 +92,7 @@
                 </section>
             @endif
         @endforeach
-    @else
+    @elseif (\App\Models\FeatureSetting::enabled('dashboard_promo'))
         <section class="promo r-card">
             <div class="glow"></div><span class="ms bgico" aria-hidden="true">bolt</span>
             <div class="promo-in d-flex flex-column justify-content-between gap-3">
@@ -112,7 +127,12 @@
             @foreach ($catalog as $c)
                 <div class="col">
                     <a href="{{ $c['url'] }}" class="cat">
-                        <span class="ibox ibox-48 cat-ic mb-2"><span class="ms">{{ $c['icon'] }}</span></span>
+                        <img
+                            src="{{ asset('assets/icons/' . $c['icon']) }}"
+                            alt="{{ $c['label'] }}"
+                            class="cat-icon"
+                        >
+                        {{-- <span class="ibox ibox-48 cat-ic mb-2"><span class="ms">{{ $c['icon'] }}</span></span> --}}
                         <b>{{ $c['label'] }}</b>
                     </a>
                 </div>
@@ -124,7 +144,7 @@
     @if ($brands->isNotEmpty())
         <section>
             <div class="d-flex align-items-center justify-content-between mb-3">
-                <h2 class="fw-bold fs-5 m-0 d-flex align-items-center gap-2"><span class="ms tx-teal d-none d-lg-inline">brand</span>Brand Populer</h2>
+                <h2 class="fw-bold fs-5 m-0 d-flex align-items-center gap-2">Brand Populer</h2>
                 <a href="{{ route('products.index', ['tab' => 'brand']) }}" class="fw-semibold tx-teal d-inline-flex align-items-center">Lihat Semua<span class="ms ms-sm">chevron_right</span></a>
             </div>
             <div class="row row-cols-3 row-cols-sm-4 row-cols-lg-6 g-2 g-sm-3">

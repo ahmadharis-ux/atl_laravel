@@ -3,9 +3,10 @@
 namespace App\Support;
 
 use App\Enums\DepositStatus;
-use App\Enums\PointTransactionType;
+use App\Enums\PaymentMethod;
 use App\Enums\WalletTransactionType;
 use App\Models\Deposit;
+use App\Models\DepositProof;
 use App\Models\User;
 use App\Notifications\TransactionResult;
 use Illuminate\Support\Facades\DB;
@@ -30,17 +31,39 @@ final class DepositSettler
     {
         return DB::transaction(function () use ($deposit, $actor, $receivedAmount): bool {
             $locked = Deposit::query()->whereKey($deposit->getKey())->lockForUpdate()->firstOrFail();
+            $isManual = in_array($locked->payment_method, [PaymentMethod::VirtualAccount, PaymentMethod::EWallet], true);
+            $proof = null;
 
-            if (in_array($locked->status, [DepositStatus::Paid, DepositStatus::Failed], true)) {
+            if ($isManual) {
+                $proof = $locked->proofs()->lockForUpdate()->first();
+
+                if ($locked->status !== DepositStatus::UnderReview || $proof === null || $proof->review_action !== null || $actor === null) {
+                    return false;
+                }
+            } elseif ($locked->status !== DepositStatus::Pending) {
                 return false;
             }
 
             $received = $receivedAmount ?? $locked->totalDue();
             $credited = $locked->creditedFrom($received);
 
+            if ($isManual && $credited < 1) {
+                return false;
+            }
+
+            $proof?->update([
+                'reviewed_by' => $actor?->getKey(),
+                'review_action' => DepositProof::ACTION_APPROVED,
+                'review_reason' => null,
+                'reviewed_at' => now(),
+            ]);
+
+            $finalizedAt = now();
+
             $locked->update([
                 'status' => DepositStatus::Paid,
                 'paid_at' => now(),
+                'finalized_at' => $finalizedAt,
                 'received_amount' => $received,
             ]);
 
@@ -55,11 +78,9 @@ final class DepositSettler
                     'Top up saldo '.$locked->reference,
                 );
 
-                $owner->changePoints(1, PointTransactionType::TopupReward, 'Bonus top up '.$locked->reference, $locked);
-
                 $owner->notify(new TransactionResult(
-                    title: 'Top up berhasil',
-                    body: 'Top up '.$locked->reference.' (Rp '.number_format($credited, 0, ',', '.').') berhasil. Saldo telah ditambahkan ke akunmu.',
+                    title: 'Isi saldo berhasil',
+                    body: 'Pengisian saldo '.$locked->reference.' (Rp '.number_format($credited, 0, ',', '.').') berhasil. Saldo telah ditambahkan ke akunmu.',
                     level: 'success',
                     icon: 'account_balance_wallet',
                     url: route('deposits.show', $locked),

@@ -23,6 +23,13 @@
                         <div class="fs-12 tx-mute text-truncate">
                             {{ $order->order_number }} &middot; {{ $order->target }}@if ($order->target_zone) ({{ $order->target_zone }})@endif
                         </div>
+                        @if (in_array($order->source, ['store_cash', 'store_qris'], true))
+                            <span class="pill bg-sky-l tx-navy fs-11 mt-1 align-self-start">
+                                Toko reseller · {{ $order->source === 'store_qris' ? 'QRIS customer' : 'Tunai customer' }}
+                            </span>
+                        @elseif ($order->source === 'api')
+                            <span class="pill bg-gold tx-gold fs-11 mt-1 align-self-start">Pesanan API reseller</span>
+                        @endif
                         <div class="fs-11 tx-skyd">{{ $order->created_at->format('d M Y, H:i') }}</div>
                     </div>
                     <div class="d-flex flex-column align-items-end gap-1 flex-shrink-0">
@@ -30,9 +37,9 @@
                         <span class="pill fs-11 {{ $order->status->tone() }}">{{ $order->status->label() }}</span>
                     </div>
                     <div class="d-flex align-items-center gap-1">
-                        @if ($order->product && $order->product->status)
+                        {{-- @if ($order->product && $order->product->status)
                             <a href="{{ route('checkout.show', $order->product) }}" class="btn-soft btn-xs" data-tip="Beli lagi">Beli lagi</a>
-                        @endif
+                        @endif --}}
                         <a href="{{ route('orders.show', $order) }}" class="ap-icon-btn" data-tip="Detail"><span class="ms ms-md">chevron_right</span></a>
                     </div>
                 </li>

@@ -13,13 +13,14 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'phone', 'password', 'is_admin', 'points'])]
-#[Hidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'])]
+#[Fillable(['name', 'email', 'phone', 'password', 'is_admin', 'points', 'lifetime_points'])]
+#[Hidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes', 'reseller_webhook_secret', 'pin_hash'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
@@ -50,6 +51,26 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Order::class);
     }
 
+    public function resellerCommissions(): HasMany
+    {
+        return $this->hasMany(ResellerCommission::class);
+    }
+
+    public function resellerPayouts(): HasMany
+    {
+        return $this->hasMany(ResellerPayout::class);
+    }
+
+    public function resellerStatusHistories(): HasMany
+    {
+        return $this->hasMany(ResellerStatusHistory::class);
+    }
+
+    public function resellerReviewer(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'reseller_reviewed_by');
+    }
+
     public function deposits(): HasMany
     {
         return $this->hasMany(Deposit::class);
@@ -66,16 +87,11 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Tingkatan loyalitas berdasarkan akumulasi poin reward.
+     * Tingkatan loyalitas berdasarkan total poin reward yang pernah diperoleh.
      */
     public function tier(): UserTier
     {
-        return UserTier::fromPoints((int) $this->points);
-    }
-
-    public function addPoint(): void
-    {
-        $this->changePoints(1, PointTransactionType::OrderReward, 'Bonus poin pembelian');
+        return UserTier::fromPoints((int) $this->lifetime_points);
     }
 
     /**
@@ -86,7 +102,15 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         $after = (int) $this->points + $delta;
 
-        $this->forceFill(['points' => $after])->save();
+        $changes = ['points' => $after];
+
+        if ($type === PointTransactionType::OrderReward && $delta > 0) {
+            $changes['lifetime_points'] = (int) $this->lifetime_points + $delta;
+        } elseif ($type === PointTransactionType::OrderRewardReversed && $delta < 0) {
+            $changes['lifetime_points'] = max(0, (int) $this->lifetime_points + $delta);
+        }
+
+        $this->forceFill($changes)->save();
 
         $this->pointTransactions()->create([
             'type' => $type,
@@ -120,6 +144,26 @@ class User extends Authenticatable implements MustVerifyEmail
     public function sendPasswordResetNotification($token): void
     {
         $this->notify(new ResetPasswordNotification((string) $token));
+    }
+
+    public function hasPin(): bool
+    {
+        return filled($this->pin_hash);
+    }
+
+    public function pinResetOtps(): HasMany
+    {
+        return $this->hasMany(PinResetOtp::class);
+    }
+
+    public function pinResetTokens(): HasMany
+    {
+        return $this->hasMany(PinResetToken::class);
+    }
+
+    public function pinAuditLogs(): HasMany
+    {
+        return $this->hasMany(PinAuditLog::class);
     }
 
     public function bankAccounts(): HasMany
@@ -172,8 +216,19 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
             'is_admin' => 'boolean',
             'balance' => 'integer',
+            'pin_set_at' => 'datetime',
+            'pin_attempts' => 'integer',
+            'pin_locked_until' => 'datetime',
+            'pin_reset_at' => 'datetime',
+            'lifetime_points' => 'integer',
             'is_reseller' => 'boolean',
             'reseller_since' => 'datetime',
+            'reseller_allowed_ips' => 'array',
+            'reseller_terms_accepted_at' => 'datetime',
+            'reseller_last_api_at' => 'datetime',
+            'reseller_reviewed_at' => 'datetime',
+            'reseller_webhook_secret' => 'encrypted',
+            'reseller_webhook_last_sent_at' => 'datetime',
             'two_factor_secret' => 'encrypted',
             'two_factor_recovery_codes' => 'encrypted:array',
             'two_factor_confirmed_at' => 'datetime',

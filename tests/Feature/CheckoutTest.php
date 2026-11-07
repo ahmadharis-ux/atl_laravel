@@ -12,6 +12,7 @@ use App\Models\MasterBank;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
+use Database\Factories\UserFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -45,21 +46,140 @@ class CheckoutTest extends TestCase
             ->assertOk()
             ->assertSee('Diamond Mobile Legends')
             ->assertSee('ID Game')
+            ->assertSee('ID Game *')
+            ->assertSee('Masukkan ID akun persis seperti yang tampil pada profil game.')
             ->assertSee('Rp 10.000')
+            ->assertSee('data-checkout-product="Diamond Mobile Legends"', false)
+            ->assertSee('data-checkout-target-label="ID Game"', false)
             ->assertSee('Saldo')
             ->assertSee('QRIS')
+            ->assertSee('data-checkout-saldo-status', false)
+            ->assertSee('data-sufficient="1"', false)
+            ->assertSee('Saldo cukup untuk membayar pesanan ini.')
+            ->assertSee('Dipotong dari saldo saat pesanan dibuat.')
+            ->assertSee('Scan QRIS dan selesaikan pembayaran dalam 3 jam.')
+            ->assertSee('Perkiraan poin reward')
+            ->assertSee('0 poin')
+            ->assertSee('required', false)
             ->assertSee('data-min-loader="2000"', false);
     }
 
-    public function test_balance_checkout_creates_a_successful_order_and_deducts_balance(): void
+    public function test_checkout_estimates_reward_using_the_current_lifetime_tier(): void
+    {
+        $user = User::factory()->create(['lifetime_points' => 100]);
+        $product = $this->product(['markup_value' => 1_000]);
+
+        $this->actingAs($user)
+            ->get(route('checkout.show', $product))
+            ->assertSee('Tier Gold (1,25x)')
+            ->assertSee('37 poin');
+    }
+
+    public function test_checkout_shows_a_phone_number_example_for_pulsa_products(): void
+    {
+        $user = User::factory()->create();
+        $category = Category::factory()->create(['slug' => 'pulsa']);
+        $product = $this->product(['category_id' => $category->id]);
+
+        $this->actingAs($user)
+            ->get(route('checkout.show', $product))
+            ->assertOk()
+            ->assertSee('Contoh nomor HP: 081234567890.')
+            ->assertSee('Pastikan nomor aktif dan sesuai produk yang dipilih.');
+    }
+
+    public function test_checkout_shows_meter_guidance_for_pln_products(): void
+    {
+        $user = User::factory()->create();
+        $category = Category::factory()->create(['slug' => 'pln']);
+        $product = $this->product(['category_id' => $category->id]);
+
+        $this->actingAs($user)
+            ->get(route('checkout.show', $product))
+            ->assertOk()
+            ->assertSee('Masukkan nomor meter atau ID pelanggan yang tercantum pada meter atau tagihan.');
+    }
+
+    public function test_checkout_shows_profile_guidance_for_mobile_legends_id_and_zone(): void
+    {
+        $user = User::factory()->create();
+        $brand = Brand::factory()->create(['slug' => 'mobile-legends']);
+        $product = $this->product(['brand_id' => $brand->id]);
+
+        $this->actingAs($user)
+            ->get(route('checkout.show', $product))
+            ->assertOk()
+            ->assertSee('Masukkan ID akun persis seperti yang tampil pada profil game.')
+            ->assertSee('Isi juga Zone ID yang tercantum pada profil.')
+            ->assertSee('name="zone"', false);
+    }
+
+    public function test_checkout_hides_qris_fee_and_shows_product_total_when_saldo_is_selected(): void
+    {
+        config(['midtrans.qris_fee_percent' => 0.7]);
+        $user = User::factory()->create();
+        $product = $this->product();
+
+        $this->actingAs($user)
+            ->get(route('checkout.show', $product))
+            ->assertSee('<li class="d-flex align-items-center justify-content-between d-none" data-fee-row data-method="qris">', false)
+            ->assertSee('data-base-amount="10000"', false)
+            ->assertSee('data-qris-fee="71"', false)
+            ->assertSee('>Rp 10.000</span>', false);
+    }
+
+    public function test_checkout_shows_qris_fee_and_includes_it_in_total_when_qris_is_selected(): void
+    {
+        config(['midtrans.qris_fee_percent' => 0.7]);
+        $user = User::factory()->create();
+        $product = $this->product();
+
+        $this->actingAs($user)
+            ->withSession(['_old_input' => ['payment_method' => PaymentMethod::Qris->value]])
+            ->get(route('checkout.show', $product))
+            ->assertSee('<li class="d-flex align-items-center justify-content-between" data-fee-row data-method="qris">', false)
+            ->assertSee('Rp 71')
+            ->assertSee('data-base-amount="10000"', false)
+            ->assertSee('data-qris-fee="71"', false)
+            ->assertSee('>Rp 10.071</span>', false);
+    }
+
+    public function test_checkout_shows_top_up_action_when_balance_is_insufficient(): void
+    {
+        $user = User::factory()->create(['balance' => 5_000]);
+        $product = $this->product();
+
+        $this->actingAs($user)
+            ->get(route('checkout.show', $product))
+            ->assertOk()
+            ->assertSee('data-sufficient="0"', false)
+            ->assertSee('Saldo kurang untuk membayar pesanan ini.')
+            ->assertSee(route('deposits.create'), false)
+            ->assertSee('Isi Saldo');
+    }
+
+    public function test_checkout_defers_saldo_pin_entry_to_the_confirmation_modal(): void
     {
         $user = User::factory()->create(['balance' => 1_000_000]);
         $product = $this->product();
 
         $this->actingAs($user)
+            ->get(route('checkout.show', $product))
+            ->assertOk()
+            ->assertSee('name="pin" data-checkout-pin', false)
+            ->assertDontSee('PIN transaksi *');
+    }
+
+    public function test_balance_checkout_creates_a_successful_order_and_deducts_balance(): void
+    {
+        $user = User::factory()->create(['balance' => 1_000_000]);
+        $product = $this->product(['markup_value' => 2_000]);
+
+        $this->actingAs($user)
             ->post(route('checkout.store', $product), [
                 'target' => '123456789',
                 'payment_method' => PaymentMethod::Saldo->value,
+                'pin' => UserFactory::DEFAULT_PIN,
             ])
             ->assertRedirect();
 
@@ -67,20 +187,30 @@ class CheckoutTest extends TestCase
 
         $this->assertSame($user->getKey(), $order->user_id);
         $this->assertSame($product->getKey(), $order->product_id);
-        $this->assertSame(10_000, $order->amount);
+        $this->assertSame(12_000, $order->amount);
+        $this->assertSame(10_000, $order->supplier_cost_snapshot);
+        $this->assertSame(0, $order->company_cost_snapshot);
+        $this->assertTrue($order->reward_eligible);
         $this->assertSame('123456789', $order->target);
         $this->assertSame(OrderStatus::Success, $order->status);
         $this->assertSame(PaymentMethod::Saldo, $order->payment_method);
         $this->assertNotNull($order->paid_at);
-        $this->assertSame(990_000, $user->fresh()->balance);
+        $this->assertSame(988_000, $user->fresh()->balance);
+        $this->assertSame(60, (int) $user->fresh()->points);
+        $this->assertSame(60, (int) $user->fresh()->lifetime_points);
+
+        $this->actingAs($user)
+            ->get(route('orders.show', $order))
+            ->assertSee('Poin reward')
+            ->assertSee('+60 poin');
 
         $this->assertDatabaseHas('wallet_transactions', [
             'user_id' => $user->getKey(),
             'type' => WalletTransactionType::Purchase->value,
             'direction' => WalletTransactionDirection::Debit->value,
-            'amount' => 10_000,
+            'amount' => 12_000,
             'balance_before' => 1_000_000,
-            'balance_after' => 990_000,
+            'balance_after' => 988_000,
             'reference_id' => $order->getKey(),
         ]);
     }
@@ -88,14 +218,17 @@ class CheckoutTest extends TestCase
     public function test_qris_checkout_creates_a_pending_order_without_deducting_balance(): void
     {
         $user = User::factory()->create(['balance' => 1_000_000]);
-        $product = $this->product();
+        $product = $this->product(['markup_value' => 2_000]);
 
         $this->actingAs($user)
+            ->followingRedirects()
             ->post(route('checkout.store', $product), [
                 'target' => '123456789',
                 'payment_method' => PaymentMethod::Qris->value,
             ])
-            ->assertRedirect();
+            ->assertOk()
+            ->assertSee('Pesanan tersimpan, tetapi QRIS belum dapat ditampilkan.')
+            ->assertSee('role="alert" aria-live="assertive"', false);
 
         $order = Order::query()->sole();
 
@@ -105,6 +238,30 @@ class CheckoutTest extends TestCase
         $this->assertNull($order->paid_at);
         $this->assertSame(1_000_000, $user->fresh()->balance);
         $this->assertDatabaseCount('wallet_transactions', 0);
+    }
+
+    public function test_qris_details_explain_when_no_code_is_available_and_show_the_due_total(): void
+    {
+        $user = User::factory()->create();
+        $order = Order::factory()->for($user)->create([
+            'payment_method' => PaymentMethod::Qris,
+            'status' => OrderStatus::Pending,
+            'amount' => 50_000,
+            'fee' => 350,
+            'payment_code' => 'QR-STRING-IS-NOT-A-SCANABLE-CODE',
+            'expires_at' => now()->addHours(3),
+            'metadata' => null,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('orders.show', $order))
+            ->assertOk()
+            ->assertSee('QRIS belum tersedia')
+            ->assertSee('Jangan lakukan pembayaran sebelum kode QR tampil.')
+            ->assertSee('Batas waktu pesanan Atlantic:')
+            ->assertSee('Rp 50.350')
+            ->assertDontSee('QR-STRING-IS-NOT-A-SCANABLE-CODE')
+            ->assertSee(route('orders.sync', $order), false);
     }
 
     public function test_virtual_account_requires_a_master_bank_and_rejects_a_mismatched_one(): void
@@ -192,10 +349,30 @@ class CheckoutTest extends TestCase
             ->post(route('checkout.store', $product), [
                 'target' => '',
                 'payment_method' => PaymentMethod::Saldo->value,
+                'pin' => UserFactory::DEFAULT_PIN,
             ])
             ->assertSessionHasErrors('target');
 
         $this->assertSame(0, Order::query()->count());
+    }
+
+    public function test_checkout_validation_redirect_displays_field_errors_and_preserves_input(): void
+    {
+        $user = User::factory()->create(['balance' => 1_000_000]);
+        $brand = Brand::factory()->create(['slug' => 'mobile-legends']);
+        $product = $this->product(['brand_id' => $brand->getKey()]);
+
+        $this->actingAs($user)
+            ->from(route('checkout.show', $product))
+            ->followingRedirects()
+            ->post(route('checkout.store', $product), [
+                'target' => '123456789',
+                'payment_method' => PaymentMethod::Saldo->value,
+                'pin' => UserFactory::DEFAULT_PIN,
+            ])
+            ->assertOk()
+            ->assertSee('The zone field is required.')
+            ->assertSee('value="123456789"', false);
     }
 
     public function test_checkout_requires_zone_for_brands_that_use_one(): void
@@ -208,6 +385,7 @@ class CheckoutTest extends TestCase
             ->post(route('checkout.store', $product), [
                 'target' => '123456789',
                 'payment_method' => PaymentMethod::Saldo->value,
+                'pin' => UserFactory::DEFAULT_PIN,
             ])
             ->assertSessionHasErrors('zone');
 
@@ -216,6 +394,7 @@ class CheckoutTest extends TestCase
                 'target' => '123456789',
                 'zone' => '1234',
                 'payment_method' => PaymentMethod::Saldo->value,
+                'pin' => UserFactory::DEFAULT_PIN,
             ])
             ->assertRedirect();
 
@@ -231,6 +410,7 @@ class CheckoutTest extends TestCase
             ->post(route('checkout.store', $product), [
                 'target' => '123456789',
                 'payment_method' => PaymentMethod::Saldo->value,
+                'pin' => UserFactory::DEFAULT_PIN,
             ])
             ->assertSessionHasErrors('balance');
 
@@ -270,13 +450,18 @@ class CheckoutTest extends TestCase
     public function test_history_lists_only_the_users_own_orders(): void
     {
         $user = User::factory()->create(['balance' => 1_000_000]);
-        $mine = Order::factory()->create(['user_id' => $user->getKey()]);
+        $mine = Order::factory()->create([
+            'user_id' => $user->getKey(),
+            'source' => 'store_cash',
+        ]);
         $other = Order::factory()->create();
 
         $this->actingAs($user)
             ->get(route('orders.index'))
             ->assertOk()
             ->assertSee($mine->order_number)
+            ->assertSee('Toko reseller')
+            ->assertSee('Tunai customer')
             ->assertDontSee($other->order_number);
     }
 
@@ -288,8 +473,8 @@ class CheckoutTest extends TestCase
             'payment_method' => PaymentMethod::Qris,
         ]);
 
-        $this->actingAs($user)->get(route('orders.show', $order))->assertForbidden();
-        $this->actingAs($user)->post(route('orders.pay', $order))->assertForbidden();
+        $this->actingAs($user)->get(route('orders.show', $order))->assertNotFound();
+        $this->actingAs($user)->post(route('orders.pay', $order))->assertNotFound();
     }
 
     public function test_a_user_can_view_the_invoice_of_their_own_order(): void
@@ -318,7 +503,7 @@ class CheckoutTest extends TestCase
         $user = User::factory()->create();
         $order = Order::factory()->create();
 
-        $this->actingAs($user)->get(route('orders.invoice', $order))->assertForbidden();
+        $this->actingAs($user)->get(route('orders.invoice', $order))->assertNotFound();
     }
 
     public function test_product_page_submits_target_and_zone_to_checkout(): void
@@ -357,6 +542,7 @@ class CheckoutTest extends TestCase
             ->post(route('checkout.store', $product), [
                 'target' => '123456789',
                 'payment_method' => PaymentMethod::Saldo->value,
+                'pin' => UserFactory::DEFAULT_PIN,
             ])
             ->assertRedirect();
 

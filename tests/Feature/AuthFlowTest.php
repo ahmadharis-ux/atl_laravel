@@ -129,6 +129,13 @@ class AuthFlowTest extends TestCase
         Notification::assertSentTo($user, ResetPasswordNotification::class);
     }
 
+    public function test_a_password_reset_request_for_an_unknown_email_has_a_neutral_response(): void
+    {
+        $this->post(route('password.email'), ['email' => 'unknown@example.com'])
+            ->assertSessionHas('status', 'Jika email terdaftar, tautan reset kata sandi telah dikirim.')
+            ->assertSessionHasNoErrors();
+    }
+
     public function test_a_password_can_be_reset_with_a_valid_token(): void
     {
         $user = User::factory()->create();
@@ -154,6 +161,23 @@ class AuthFlowTest extends TestCase
         ])->assertRedirect(route('dashboard'));
 
         $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_login_attempts_are_rate_limited(): void
+    {
+        $user = User::factory()->create(['password' => 'password']);
+
+        foreach (range(1, 5) as $attempt) {
+            $this->post(route('login'), [
+                'email' => $user->email,
+                'password' => 'wrong-password',
+            ])->assertRedirect();
+        }
+
+        $this->post(route('login'), [
+            'email' => $user->email,
+            'password' => 'wrong-password',
+        ])->assertTooManyRequests();
     }
 
     public function test_login_with_two_factor_requires_the_challenge(): void

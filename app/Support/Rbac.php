@@ -3,6 +3,8 @@
 namespace App\Support;
 
 use App\Models\User;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 
 final class Rbac
 {
@@ -32,9 +34,9 @@ final class Rbac
                 'users.delete' => 'Menghapus pengguna',
                 'users.assign-role' => 'Menetapkan peran pengguna',
             ],
-            'Manajemen Halaman' => [
+            'Halaman & Pembayaran' => [
                 'features.view' => 'Melihat pengaturan halaman pengguna',
-                'features.update' => 'Mengaktifkan / menonaktifkan halaman pengguna',
+                'features.update' => 'Mengatur status halaman dan metode pembayaran',
             ],
             'Role & Permission' => [
                 'roles.view' => 'Melihat daftar peran',
@@ -84,9 +86,18 @@ final class Rbac
             ],
             'Reseller' => [
                 'resellers.view' => 'Melihat laporan reseller',
+                'resellers.update' => 'Meninjau dan mengelola status reseller',
+                'resellers.payouts.view' => 'Melihat permintaan pencairan reseller',
+                'resellers.payouts.update' => 'Memproses pencairan reseller',
             ],
             'Laporan' => [
                 'reports.view' => 'Melihat laporan & analitik',
+            ],
+            'Sistem' => [
+                'search.view' => 'Menggunakan pencarian admin',
+                'components.view' => 'Melihat halaman komponen UI',
+                'queue.view' => 'Melihat antrian & job gagal',
+                'queue.update' => 'Retry / menghapus job pada antrian',
             ],
         ];
     }
@@ -104,6 +115,20 @@ final class Rbac
         }
 
         return $names;
+    }
+
+    /**
+     * Pastikan seluruh permission yang didefinisikan di kode tersedia di
+     * database. Dipakai sebelum sinkronisasi role supaya penambahan modul baru
+     * tidak menyebabkan PermissionDoesNotExist saat menyimpan role.
+     */
+    public static function ensurePermissions(): void
+    {
+        foreach (self::all() as $permission) {
+            Permission::findOrCreate($permission, 'web');
+        }
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 
     /**
@@ -150,7 +175,10 @@ final class Rbac
                 'redemptions.view', 'redemptions.update',
                 'loyalty.view', 'loyalty.update',
                 'resellers.view',
+                'resellers.update',
+                'resellers.payouts.view', 'resellers.payouts.update',
                 'reports.view',
+                'search.view',
             ],
             Roles::STAFF => [
                 'dashboard.view',
@@ -168,7 +196,9 @@ final class Rbac
                 'redemptions.view', 'redemptions.update',
                 'loyalty.view', 'loyalty.update',
                 'resellers.view',
+                'resellers.payouts.view',
                 'reports.view',
+                'search.view',
             ],
             Roles::CS => [
                 'dashboard.view',
@@ -184,7 +214,9 @@ final class Rbac
                 'redemptions.view',
                 'loyalty.view',
                 'resellers.view',
+                'resellers.payouts.view',
                 'reports.view',
+                'search.view',
             ],
             Roles::USER => [],
         ];

@@ -41,6 +41,16 @@ return [
 
     'debug' => (bool) env('APP_DEBUG', false),
 
+    'force_https' => (bool) env('FORCE_HTTPS', env('APP_ENV') === 'production'),
+
+    'staging_noindex' => (bool) env('STAGING_NOINDEX', false),
+
+    'staging_basic_auth' => (bool) env('STAGING_BASIC_AUTH', false),
+
+    'staging_basic_auth_username' => env('STAGING_BASIC_AUTH_USERNAME', ''),
+
+    'staging_basic_auth_password' => env('STAGING_BASIC_AUTH_PASSWORD', ''),
+
     /*
     |--------------------------------------------------------------------------
     | Application URL

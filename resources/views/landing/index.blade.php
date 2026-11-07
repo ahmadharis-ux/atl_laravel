@@ -14,7 +14,7 @@
 @section('content')
     <section class="landing-hero">
         <div class="container">
-            <div class="row align-items-center g-5">
+            <div class="row align-items-center g-3">
                 <div class="col-lg-6">
                     @if ($settings->hero_badge)
                         <span class="landing-badge">
@@ -36,7 +36,6 @@
                     <div class="landing-trust d-flex flex-wrap gap-4 mt-4">
                         <span><span class="ms ms-sm">bolt</span>Proses instan</span>
                         <span><span class="ms ms-sm">shield_lock</span>Pembayaran aman</span>
-                        <span><span class="ms ms-sm">support_agent</span>CS 24/7</span>
                     </div>
                 </div>
 
@@ -79,16 +78,16 @@
             <div class="landing-stats mt-5">
                 <div class="row g-3">
                     <div class="col-6 col-lg-3">
-                        <div class="landing-stat"><span class="num">{{ $settings->stat_customers ?: '25.000+' }}</span><small>Pelanggan aktif</small></div>
+                        <div class="landing-stat"><span class="num">{{ $settings->stat_customers ?: 'Belum diatur' }}</span><small>Pelanggan aktif</small></div>
                     </div>
                     <div class="col-6 col-lg-3">
-                        <div class="landing-stat"><span class="num">{{ $settings->stat_transactions ?: '1,2 Jt+' }}</span><small>Transaksi diproses</small></div>
+                        <div class="landing-stat"><span class="num">{{ $settings->stat_transactions ?: 'Belum diatur' }}</span><small>Transaksi diproses</small></div>
                     </div>
                     <div class="col-6 col-lg-3">
-                        <div class="landing-stat"><span class="num">{{ $settings->stat_products ?: '500+' }}</span><small>Produk digital</small></div>
+                        <div class="landing-stat"><span class="num">{{ $settings->stat_products ?: 'Belum diatur' }}</span><small>Produk digital</small></div>
                     </div>
                     <div class="col-6 col-lg-3">
-                        <div class="landing-stat"><span class="num">{{ $settings->stat_support ?: '24/7' }}</span><small>Dukungan pelanggan</small></div>
+                        <div class="landing-stat"><span class="num">{{ $settings->stat_support ?: 'Belum diatur' }}</span><small>Dukungan pelanggan</small></div>
                     </div>
                 </div>
             </div>
@@ -123,7 +122,7 @@
 
     <section id="tentang" class="landing-section landing-about">
         <div class="container">
-            <div class="row align-items-center g-5">
+            <div class="row align-items-center g-3">
                 <div class="col-lg-6">
                     <span class="pill bg-mint-l tx-mintt">Tentang Kami</span>
                     <h2 class="landing-section-title mt-3">{!! $settings->about_title ?: 'Kenapa Atlantic Pedia?' !!}</h2>
@@ -199,7 +198,7 @@
 
     <section id="faq" class="landing-section">
         <div class="container">
-            <div class="row g-5">
+            <div class="row g-3">
                 <div class="col-lg-4">
                     <span class="pill bg-tealc-m tx-tealt">FAQ</span>
                     <h2 class="landing-section-title mt-3">Pertanyaan yang sering diajukan</h2>

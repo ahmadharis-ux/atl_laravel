@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Support\Digiflazz;
 use App\Support\DigiflazzException;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -58,6 +59,28 @@ class DigiflazzClientTest extends TestCase
         Http::assertSent(fn ($request): bool => $request['testing'] === true);
     }
 
+    public function test_status_check_uses_the_original_transaction_reference(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake([
+            'api.digiflazz.com/*' => Http::response(['data' => ['rc' => '03', 'status' => 'Pending']]),
+        ]);
+
+        (new Digiflazz('user', 'key'))->checkTransactionStatus(
+            'ML-86',
+            '183920144.1234',
+            'TRX-ORIGINAL-1',
+        );
+
+        Http::assertSent(fn ($request): bool => $request->url() === 'https://api.digiflazz.com/v1/transaction'
+            && $request['buyer_sku_code'] === 'ML-86'
+            && $request['customer_no'] === '183920144.1234'
+            && $request['ref_id'] === 'TRX-ORIGINAL-1'
+            && $request['sign'] === md5('user'.'key'.'TRX-ORIGINAL-1')
+            && $request['allow_dot'] === true
+            && ! isset($request['testing']));
+    }
+
     public function test_price_list_throws_when_digiflazz_returns_an_error(): void
     {
         Http::fake([
@@ -68,6 +91,18 @@ class DigiflazzClientTest extends TestCase
         $this->expectExceptionMessage('Digiflazz error [83]: limit');
 
         (new Digiflazz('user', 'key'))->priceList();
+    }
+
+    public function test_transaction_status_check_throws_on_http_failure(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake([
+            'api.digiflazz.com/*' => Http::response(['message' => 'Unavailable'], 503),
+        ]);
+
+        $this->expectException(RequestException::class);
+
+        (new Digiflazz('user', 'key'))->checkTransactionStatus('ML-86', '183920144', 'TRX-HTTP-ERROR');
     }
 
     public function test_verify_webhook_checks_the_x_hub_signature(): void

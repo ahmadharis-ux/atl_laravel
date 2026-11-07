@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\HasPerPage;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Support\Rbac;
@@ -14,6 +15,8 @@ use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
+    use HasPerPage;
+
     public function index(Request $request): View|JsonResponse
     {
         $users = User::query()
@@ -28,7 +31,7 @@ class UserController extends Controller
             })
             ->when($request->filled('role'), fn ($query) => $query->whereHas('roles', fn ($r) => $r->where('name', $request->query('role'))))
             ->orderByDesc('id')
-            ->paginate(15)
+            ->paginate($this->perPage($request))
             ->withQueryString();
 
         $data = [
@@ -54,6 +57,25 @@ class UserController extends Controller
             'roles' => $this->assignableRoles(),
             'currentRole' => null,
             'mode' => 'create',
+        ]);
+    }
+
+    public function show(User $user): View
+    {
+        $user->load('roles');
+
+        return view('admin.users.show', [
+            'user' => $user,
+            'orders' => $user->orders()
+                ->with(['product.brand', 'product.category'])
+                ->latest('id')
+                ->paginate(10, ['*'], 'orders_page')
+                ->withQueryString(),
+            'commissions' => $user->resellerCommissions()
+                ->with('order.product')
+                ->latest('id')
+                ->limit(20)
+                ->get(),
         ]);
     }
 

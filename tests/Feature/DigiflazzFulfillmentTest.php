@@ -7,15 +7,18 @@ use App\Enums\PaymentMethod;
 use App\Enums\WalletTransactionDirection;
 use App\Enums\WalletTransactionType;
 use App\Jobs\SendDigiflazzTransaction;
+use App\Jobs\SyncDigiflazzTransactionStatus;
 use App\Models\Category;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\WalletTransaction;
 use App\Support\OrderFulfillment;
+use Database\Factories\UserFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
+use RuntimeException;
 use Tests\TestCase;
 
 class DigiflazzFulfillmentTest extends TestCase
@@ -65,6 +68,7 @@ class DigiflazzFulfillmentTest extends TestCase
             ->post(route('checkout.store', $product), [
                 'target' => '123456789',
                 'payment_method' => PaymentMethod::Saldo->value,
+                'pin' => UserFactory::DEFAULT_PIN,
             ])
             ->assertRedirect();
 
@@ -184,6 +188,100 @@ class DigiflazzFulfillmentTest extends TestCase
         $this->assertSame(1, WalletTransaction::query()
             ->where('type', WalletTransactionType::Refund)
             ->count());
+    }
+
+    public function test_a_final_queue_failure_keeps_the_order_processing_without_refunding(): void
+    {
+        $user = User::factory()->create(['balance' => 90_000]);
+        $order = $this->order(['user_id' => $user->getKey()]);
+
+        (new SendDigiflazzTransaction($order->getKey()))->failed(new RuntimeException('Connection timed out'));
+
+        $this->assertSame(OrderStatus::Processing, $order->fresh()->status);
+        $this->assertNull($order->fresh()->refunded_at);
+        $this->assertSame(90_000, $user->fresh()->balance);
+        $this->assertDatabaseHas('transaction_logs', [
+            'order_id' => $order->getKey(),
+            'event' => 'digiflazz.status_unknown',
+        ]);
+        $this->assertDatabaseMissing('wallet_transactions', [
+            'reference_id' => $order->getKey(),
+            'type' => WalletTransactionType::Refund->value,
+            'direction' => WalletTransactionDirection::Credit->value,
+        ]);
+    }
+
+    public function test_a_late_provider_result_does_not_overwrite_a_final_order(): void
+    {
+        $order = $this->order([
+            'status' => OrderStatus::Failed,
+            'provider_status' => 'Gagal',
+            'provider_sn' => null,
+            'provider_payload' => ['status' => 'Gagal', 'rc' => '14'],
+        ]);
+
+        OrderFulfillment::applyResult($order, [
+            'status' => 'Sukses',
+            'sn' => 'SN-LATE-1',
+            'rc' => '00',
+        ]);
+
+        $order->refresh();
+
+        $this->assertSame(OrderStatus::Failed, $order->status);
+        $this->assertSame('Gagal', $order->provider_status);
+        $this->assertNull($order->provider_sn);
+        $this->assertSame(['status' => 'Gagal', 'rc' => '14'], $order->provider_payload);
+        $this->assertDatabaseHas('transaction_logs', [
+            'order_id' => $order->getKey(),
+            'event' => 'digiflazz.late_result_ignored',
+        ]);
+    }
+
+    public function test_the_provider_request_uses_the_existing_ref_id_when_rechecking(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake([
+            'api.digiflazz.com/*' => Http::response(['data' => [
+                'status' => 'Pending',
+                'rc' => '03',
+            ]]),
+        ]);
+
+        $order = $this->order(['provider_ref' => 'TRX-RECHECK-SAME']);
+
+        (new SyncDigiflazzTransactionStatus($order->getKey()))->handle();
+
+        Http::assertSent(fn ($request): bool => $request->data()['ref_id'] === 'TRX-RECHECK-SAME');
+        $this->assertSame(OrderStatus::Processing, $order->fresh()->status);
+        $this->assertSame(0, WalletTransaction::query()
+            ->where('reference_id', $order->getKey())
+            ->where('type', WalletTransactionType::Refund)
+            ->count());
+    }
+
+    public function test_a_provider_error_without_a_final_status_does_not_trigger_a_refund(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake([
+            'api.digiflazz.com/*' => Http::response(['data' => [
+                'rc' => '83',
+                'message' => 'Akun provider sedang bermasalah',
+            ]]),
+        ]);
+
+        $user = User::factory()->create(['balance' => 90_000]);
+        $order = $this->order(['user_id' => $user->getKey()]);
+
+        (new SyncDigiflazzTransactionStatus($order->getKey()))->handle();
+
+        $this->assertSame(OrderStatus::Processing, $order->fresh()->status);
+        $this->assertNull($order->fresh()->refunded_at);
+        $this->assertSame(90_000, $user->fresh()->balance);
+        $this->assertDatabaseMissing('wallet_transactions', [
+            'reference_id' => $order->getKey(),
+            'type' => WalletTransactionType::Refund->value,
+        ]);
     }
 
     public function test_a_pending_va_order_dispatches_the_job_once_paid(): void

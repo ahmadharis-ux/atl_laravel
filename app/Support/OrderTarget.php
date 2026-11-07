@@ -50,6 +50,22 @@ final class OrderTarget
         return 'Masukkan '.mb_strtolower(self::label($categorySlug));
     }
 
+    public static function hint(?string $categorySlug): string
+    {
+        return match ($categorySlug) {
+            'pulsa', 'data', 'e-money', 'esim' => 'Contoh nomor HP: 081234567890. Pastikan nomor aktif dan sesuai produk yang dipilih.',
+            'games' => 'Masukkan ID akun persis seperti yang tampil pada profil game. Pastikan nama akun sesuai sebelum melanjutkan.',
+            'tagihan', 'gas' => 'Masukkan nomor pelanggan persis seperti yang tercantum pada tagihan.',
+            'pln' => 'Masukkan nomor meter atau ID pelanggan yang tercantum pada meter atau tagihan.',
+            'aktivasi-voucher' => 'Masukkan kode persis seperti yang tertera pada voucher dan ikuti ketentuan huruf besar/kecil.',
+            'hiburan', 'streaming' => 'Masukkan ID akun atau email yang digunakan untuk login ke layanan.',
+            'tv' => 'Masukkan ID atau nomor pelanggan persis seperti yang tercantum pada tagihan.',
+            'voucher' => 'Periksa deskripsi produk untuk memastikan apakah yang diminta adalah kode atau ID tujuan.',
+            'malaysia-topup', 'philippines-topup', 'thailand-topup', 'singapore-topup', 'vietnam-topup' => 'Ikuti format ID akun atau nomor HP yang diminta pada deskripsi produk dan pastikan wilayahnya sesuai.',
+            default => 'Periksa deskripsi produk untuk mengetahui format tujuan yang diminta.',
+        };
+    }
+
     public static function zoneLabel(): string
     {
         return 'ID Server / Zona';

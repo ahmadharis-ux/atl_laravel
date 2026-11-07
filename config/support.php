@@ -2,6 +2,8 @@
 
 return [
 
+    'email' => env('SUPPORT_EMAIL', ''),
+
     /*
     |--------------------------------------------------------------------------
     | Nomor WhatsApp Customer Service

@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\CustomerTopup\ProductController;
 use App\Http\Controllers\Admin\CustomerTopup\TopupController;
 use App\Http\Controllers\Admin\DashboardBannerController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\FeatureSettingController;
 use App\Http\Controllers\Admin\Landing\FaqController as LandingFaqController;
 use App\Http\Controllers\Admin\Landing\ServiceController as LandingServiceController;
 use App\Http\Controllers\Admin\Landing\SettingController as LandingSettingController;
@@ -18,30 +19,35 @@ use App\Http\Controllers\Admin\MerchandiseController;
 use App\Http\Controllers\Admin\MerchandiseRedemptionController;
 use App\Http\Controllers\Admin\Product\ProductController as ProductModuleController;
 use App\Http\Controllers\Admin\Product\SyncDigiflazzController;
+use App\Http\Controllers\Admin\Queue\QueueMonitorController;
 use App\Http\Controllers\Admin\Report\CustomerReportController;
 use App\Http\Controllers\Admin\Report\ExportController;
 use App\Http\Controllers\Admin\Report\OverviewController;
 use App\Http\Controllers\Admin\Report\ProductReportController;
 use App\Http\Controllers\Admin\Report\ProviderReportController;
 use App\Http\Controllers\Admin\ResellerController;
+use App\Http\Controllers\Admin\ResellerPayoutController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SearchController;
 use App\Http\Controllers\Admin\TicketController;
 use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\User\DepositController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'admin'])->group(function () {
-    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
-    Route::view('/components', 'admin.components')->name('components');
+    Route::get('/', [DashboardController::class, 'index'])->middleware('permission:dashboard.view')->name('dashboard');
+    Route::view('/components', 'admin.components')->middleware('permission:components.view')->name('components');
 
     Route::get('/lookup/{type}', LookupController::class)->middleware('permission:products.view')->name('lookup');
 
-    Route::get('/search', SearchController::class)->name('search');
+    Route::get('/search', SearchController::class)->middleware('permission:search.view')->name('search');
 
     Route::get('/users', [UserController::class, 'index'])->middleware('permission:users.view')->name('users.index');
     Route::get('/users/create', [UserController::class, 'create'])->middleware('permission:users.create')->name('users.create');
     Route::post('/users', [UserController::class, 'store'])->middleware('permission:users.create')->name('users.store');
+    Route::get('/users/{user}', [UserController::class, 'show'])->middleware('permission:users.view')->name('users.show');
     Route::get('/users/{user}/edit', [UserController::class, 'edit'])->middleware('permission:users.update')->name('users.edit');
     Route::put('/users/{user}', [UserController::class, 'update'])->middleware('permission:users.update')->name('users.update');
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->middleware('permission:users.delete')->name('users.destroy');
@@ -55,58 +61,29 @@ Route::middleware(['auth', 'admin'])->group(function () {
 
     Route::get('/customer-topup/topup', [TopupController::class, 'index'])->middleware('permission:topups.view')->name('topup.index');
     Route::get('/customer-topup/topup/{deposit}', [TopupController::class, 'show'])->middleware('permission:topups.view')->name('topup.show');
+    Route::get('/customer-topup/topup/{deposit}/bukti/{proof}/preview', [DepositController::class, 'previewProofForAdmin'])->middleware('permission:topups.view')->name('topup.proof.preview');
+    Route::get('/customer-topup/topup/{deposit}/bukti/{proof}', [DepositController::class, 'downloadProofForAdmin'])->middleware('permission:topups.view')->name('topup.proof.download');
     Route::post('/customer-topup/topup/{deposit}/settle', [TopupController::class, 'settle'])->middleware('permission:topups.update')->name('topup.settle');
+    Route::post('/customer-topup/topup/{deposit}/review', [TopupController::class, 'review'])->middleware('permission:topups.update')->name('topup.review');
     Route::post('/customer-topup/topup/{deposit}/expire', [TopupController::class, 'expire'])->middleware('permission:topups.update')->name('topup.expire');
     Route::get('/customer-topup/product', [ProductController::class, 'index'])->middleware('permission:products.view')->name('product.index');
 
     Route::get('/transactions', [TransactionController::class, 'index'])->middleware('permission:transactions.view')->name('transactions.index');
     Route::get('/transactions/{order}', [TransactionController::class, 'show'])->middleware('permission:transactions.view')->name('transactions.show');
     Route::get('/transactions/{order}/invoice', [TransactionController::class, 'invoice'])->middleware('permission:transactions.view')->name('transactions.invoice');
+    Route::get('/transactions/{order}/invoice/pdf', [TransactionController::class, 'invoicePdf'])->middleware('permission:transactions.view')->name('transactions.invoice.pdf');
     Route::post('/transactions/{order}/settle', [TransactionController::class, 'settle'])->middleware('permission:transactions.update')->name('transactions.settle');
     Route::post('/transactions/{order}/expire', [TransactionController::class, 'expire'])->middleware('permission:transactions.update')->name('transactions.expire');
     Route::post('/transactions/{order}/refund', [TransactionController::class, 'refund'])->middleware('permission:transactions.update')->name('transactions.refund');
+    Route::post('/transactions/{order}/sync-digiflazz', [TransactionController::class, 'syncDigiflazz'])->middleware('permission:transactions.update')->name('transactions.sync-digiflazz');
 
     Route::get('/resellers', [ResellerController::class, 'index'])->middleware('permission:resellers.view')->name('resellers.index');
-
-    Route::prefix('tickets')->name('tickets.')->group(function () {
-        Route::get('/', [TicketController::class, 'index'])->middleware('permission:tickets.view')->name('index');
-        Route::get('/{ticket}', [TicketController::class, 'show'])->middleware('permission:tickets.view')->name('show');
-        Route::post('/{ticket}/balas', [TicketController::class, 'reply'])->middleware('permission:tickets.update')->name('reply');
-        Route::put('/{ticket}/status', [TicketController::class, 'updateStatus'])->middleware('permission:tickets.update')->name('status');
-    });
-
-    Route::prefix('reports')->name('reports.')->middleware('permission:reports.view')->group(function () {
-        Route::redirect('/', '/admin/reports/overview');
-        Route::get('/overview', OverviewController::class)->name('overview');
-        Route::get('/products', ProductReportController::class)->name('products');
-        Route::get('/providers', ProviderReportController::class)->name('providers');
-        Route::get('/customers', CustomerReportController::class)->name('customers');
-        Route::get('/{section}/export', ExportController::class)
-            ->whereIn('section', ['overview', 'products', 'providers', 'customers'])
-            ->name('export');
-    });
-
-    Route::prefix('landing')->name('landing.')->group(function () {
-        Route::get('/', [LandingSettingController::class, 'index'])->middleware('permission:landing.view')->name('settings');
-        Route::put('/', [LandingSettingController::class, 'update'])->middleware('permission:landing.update')->name('settings.update');
-
-        Route::get('/layanan', [LandingServiceController::class, 'index'])->middleware('permission:landing.view')->name('services');
-        Route::post('/layanan', [LandingServiceController::class, 'store'])->middleware('permission:landing.update')->name('services.store');
-        Route::put('/layanan/{service}', [LandingServiceController::class, 'update'])->middleware('permission:landing.update')->name('services.update');
-        Route::delete('/layanan/{service}', [LandingServiceController::class, 'destroy'])->middleware('permission:landing.update')->name('services.destroy');
-
-        Route::get('/testimoni', [LandingTestimonialController::class, 'index'])->middleware('permission:landing.view')->name('testimonials');
-        Route::post('/testimoni', [LandingTestimonialController::class, 'store'])->middleware('permission:landing.update')->name('testimonials.store');
-        Route::put('/testimoni/{testimonial}', [LandingTestimonialController::class, 'update'])->middleware('permission:landing.update')->name('testimonials.update');
-        Route::delete('/testimoni/{testimonial}', [LandingTestimonialController::class, 'destroy'])->middleware('permission:landing.update')->name('testimonials.destroy');
-
-        Route::get('/faq', [LandingFaqController::class, 'index'])->middleware('permission:landing.view')->name('faqs');
-        Route::post('/faq', [LandingFaqController::class, 'store'])->middleware('permission:landing.update')->name('faqs.store');
-        Route::put('/faq/{faq}', [LandingFaqController::class, 'update'])->middleware('permission:landing.update')->name('faqs.update');
-        Route::delete('/faq/{faq}', [LandingFaqController::class, 'destroy'])->middleware('permission:landing.update')->name('faqs.destroy');
-    });
-
-    Route::get('/resellers', [ResellerController::class, 'index'])->middleware('permission:resellers.view')->name('resellers.index');
+    Route::post('/resellers/{reseller}/status', [ResellerController::class, 'updateStatus'])
+        ->middleware('permission:resellers.update')->name('resellers.status.update');
+    Route::get('/reseller-payouts', [ResellerPayoutController::class, 'index'])
+        ->middleware('permission:resellers.payouts.view')->name('reseller-payouts.index');
+    Route::post('/reseller-payouts/{payout}', [ResellerPayoutController::class, 'update'])
+        ->middleware('permission:resellers.payouts.update')->name('reseller-payouts.update');
 
     Route::prefix('tickets')->name('tickets.')->group(function () {
         Route::get('/', [TicketController::class, 'index'])->middleware('permission:tickets.view')->name('index');
@@ -195,6 +172,14 @@ Route::middleware(['auth', 'admin'])->group(function () {
         Route::put('/', [FeatureSettingController::class, 'update'])->middleware('permission:features.update')->name('update');
     });
 
+    Route::prefix('queue')->name('queue.')->group(function () {
+        Route::get('/', [QueueMonitorController::class, 'index'])->middleware('permission:queue.view')->name('index');
+        Route::get('/failed/{uuid}', [QueueMonitorController::class, 'showFailed'])->middleware('permission:queue.view')->name('failed.show');
+        Route::post('/retry/{uuid}', [QueueMonitorController::class, 'retry'])->middleware('permission:queue.update')->name('retry');
+        Route::post('/forget/{uuid}', [QueueMonitorController::class, 'forget'])->middleware('permission:queue.update')->name('forget');
+        Route::post('/flush', [QueueMonitorController::class, 'flush'])->middleware('permission:queue.update')->name('flush');
+        Route::post('/retry-all', [QueueMonitorController::class, 'retryAll'])->middleware('permission:queue.update')->name('retry-all');
+    });
     Route::prefix('bot/digiflazz')->name('bot.digiflazz.')->group(function () {
         Route::get('/', [DigiflazzController::class, 'index'])->middleware('permission:products.view')->name('index');
         Route::get('/create', [DigiflazzController::class, 'create'])->middleware('permission:products.update')->name('create');
@@ -223,4 +208,9 @@ Route::middleware(['auth', 'admin'])->group(function () {
         Route::get('/{product}/edit', [ProductModuleController::class, 'edit'])->middleware('permission:products.update')->name('edit');
         Route::put('/{product}', [ProductModuleController::class, 'update'])->middleware('permission:products.update')->name('update');
     });
+    Route::get('/notifikasi', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifikasi/daftar', [NotificationController::class, 'list'])->name('notifications.list');
+    Route::get('/notifikasi/{notification}/buka', [NotificationController::class, 'open'])->name('notifications.open');
+    Route::post('/notifikasi/baca-semua', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+
 });

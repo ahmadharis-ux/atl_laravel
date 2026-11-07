@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Top Up Saldo - Atlantic Pedia Tab')
+@section('title', 'Isi Saldo - Atlantic Pedia Tab')
 
 @section('content')
 <div class="d-flex flex-column gap-3">
@@ -8,8 +8,8 @@
     <div class="d-flex align-items-center gap-2">
         <a href="{{ route('saldo.index') }}" class="ap-icon-btn" data-tip="Kembali"><span class="ms ms-md">arrow_back</span></a>
         <div>
-            <h1 class="fw-bold fs-4 m-0">Top Up Saldo</h1>
-            <p class="tx-mute fs-12 m-0">Isi saldo lewat transfer bank, e-wallet, atau QRIS.</p>
+            <h1 class="fw-bold fs-4 m-0">Isi Saldo</h1>
+            <p class="tx-mute fs-12 m-0">Tambahkan saldo akun lewat transfer bank, e-wallet, atau QRIS. Ini bukan metode pembayaran produk; saat checkout, pilih Saldo atau QRIS.</p>
         </div>
     </div>
 
@@ -25,7 +25,7 @@
             <form method="POST" action="{{ route('deposits.store') }}" data-min-loader="2000" class="d-flex flex-column gap-3">
                 @csrf
 
-                <x-ui.card title="Nominal Top Up">
+                <x-ui.card title="Nominal Isi Saldo">
                     <div class="d-flex flex-column gap-2">
                         <x-ui.currency-input
                             name="amount"
@@ -49,14 +49,18 @@
 
                 <x-ui.card title="Metode Pembayaran">
                     <div class="d-flex flex-column gap-2" data-payment-methods>
-                        @foreach ($paymentMethods as $method)
+                        @forelse ($paymentMethods as $method)
                             <x-ui.radio-card
                                 name="payment_method"
                                 :value="$method->value"
-                                :label="$method->label().' — '.$method->description()"
+                                :label="$method->value === \App\Enums\PaymentMethod::Qris->value ? $method->label().' — '.$method->description().' (Biaya admin 0,7%)' : $method->label().' — '.$method->description()"
                                 :checked="$selectedMethod === $method->value"
                             />
-                        @endforeach
+                        @empty
+                            <div class="alert-ap r-sm bg-errc-l tx-err fs-12 px-3 py-2">
+                                Belum ada metode isi saldo yang aktif. Silakan hubungi admin.
+                            </div>
+                        @endforelse
 
                         <div data-payment-channel="va" class="mt-1">
                             @if ($bankTargets->isEmpty())
@@ -86,14 +90,14 @@
                             @endif
                         </div>
 
-                        @error('payment_method')<div class="err show">{{ $message }}</div>@enderror
-                        @error('master_bank_id')<div class="err show">{{ $message }}</div>@enderror
+                        @error('payment_method')<div class="err show" id="payment_method-error">{{ $message }}</div>@enderror
+                        @error('master_bank_id')<div class="err show" id="master_bank_id-error">{{ $message }}</div>@enderror
                     </div>
                 </x-ui.card>
 
                 <div class="d-flex gap-2">
                     <a href="{{ route('saldo.index') }}" class="btn-ap btn-err flex-fill justify-content-center">Batal</a>
-                    <button type="submit" class="btn-ap btn-mint flex-fill justify-content-center"><span class="ms align-middle me-1">add</span>Top Up</button>
+                    <button type="submit" class="btn-ap btn-mint flex-fill justify-content-center"><span class="ms align-middle me-1">add</span>Isi Saldo</button>
                 </div>
             </form>
         </div>
@@ -103,7 +107,7 @@
                 <x-ui.card title="Pembayaran Manual">
                     <p class="fs-13 tx-mute m-0">
                         Untuk transfer bank &amp; e-wallet, bayar sesuai nominal ke rekening tujuan lalu tunggu
-                        konfirmasi admin. Saldo bertambah setelah pembayaran diverifikasi.
+                        konfirmasi admin. Saldo akun bertambah setelah pembayaran diverifikasi.
                     </p>
                 </x-ui.card>
 

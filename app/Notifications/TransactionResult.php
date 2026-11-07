@@ -55,6 +55,7 @@ class TransactionResult extends Notification
         return match ($this->level) {
             'success' => 'check_circle',
             'error' => 'error',
+            'warning' => 'warning',
             default => 'notifications',
         };
     }

@@ -1,6 +1,9 @@
 <?php
 
+use App\Http\Controllers\Api\Reseller\OrderController as ResellerOrderApiController;
+use App\Http\Controllers\Api\Reseller\ProductController as ResellerProductApiController;
 use App\Http\Controllers\Auth\EmailVerificationController;
+use App\Http\Controllers\Auth\LegacyMigrationController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\SocialiteController;
 use App\Http\Controllers\Auth\TwoFactorController;
@@ -9,6 +12,8 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FirebaseServiceWorkerController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\PageController;
+use App\Http\Controllers\StorefrontController;
 use App\Http\Controllers\User\BankAccountController as UserBankAccountController;
 use App\Http\Controllers\User\CheckoutController as UserCheckoutController;
 use App\Http\Controllers\User\ContactController as UserContactController;
@@ -20,19 +25,36 @@ use App\Http\Controllers\User\MerchandiseController as UserMerchandiseController
 use App\Http\Controllers\User\NicknameController as UserNicknameController;
 use App\Http\Controllers\User\OrderController as UserOrderController;
 use App\Http\Controllers\User\PhoneOperatorController as UserPhoneOperatorController;
+use App\Http\Controllers\User\PinController as UserPinController;
 use App\Http\Controllers\User\ProductController as UserProductController;
 use App\Http\Controllers\User\PulsaController as UserPulsaController;
 use App\Http\Controllers\User\ResellerController as UserResellerController;
+use App\Http\Controllers\User\ResellerStorefrontController;
 use App\Http\Controllers\User\SaldoController as UserSaldoController;
 use App\Http\Controllers\User\SearchHistoryController as UserSearchHistoryController;
 use App\Http\Controllers\User\SettingsController as UserSettingsController;
 use App\Http\Controllers\User\TicketController as UserTicketController;
 use App\Http\Controllers\Webhook\DigiflazzWebhookController;
 use App\Http\Controllers\Webhook\MidtransWebhookController;
+use App\Http\Middleware\AuthenticateReseller;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/webhook/digiflazz', DigiflazzWebhookController::class)->name('webhook.digiflazz');
 Route::post('/webhook/midtrans', MidtransWebhookController::class)->name('webhook.midtrans');
+
+Route::post('/transaksi/create', [ResellerOrderApiController::class, 'legacyStore'])
+    ->middleware(['throttle:reseller-api', AuthenticateReseller::class])
+    ->withoutMiddleware(ValidateCsrfToken::class)
+    ->name('legacy.h2h.orders.store');
+Route::post('/transaksi/status', [ResellerOrderApiController::class, 'legacyStatus'])
+    ->middleware(['throttle:reseller-api', AuthenticateReseller::class])
+    ->withoutMiddleware(ValidateCsrfToken::class)
+    ->name('legacy.h2h.orders.status');
+Route::post('/layanan/price_list', [ResellerProductApiController::class, 'legacyIndex'])
+    ->middleware(['throttle:reseller-api', AuthenticateReseller::class])
+    ->withoutMiddleware(ValidateCsrfToken::class)
+    ->name('legacy.h2h.products.index');
 
 Route::get('/firebase-messaging-sw.js', FirebaseServiceWorkerController::class)->name('firebase.sw');
 
@@ -40,9 +62,24 @@ Route::get('/', LandingController::class)->name('landing');
 
 Route::get('/', LandingController::class)->name('landing');
 
+Route::get('/toko/{reseller}', [StorefrontController::class, 'index'])
+    ->whereNumber('reseller')->name('storefront.index');
+Route::get('/toko/{reseller}/produk/{product}', [StorefrontController::class, 'product'])
+    ->whereNumber(['reseller', 'product'])->name('storefront.product');
+Route::post('/toko/{reseller}/produk/{product}', [StorefrontController::class, 'checkout'])
+    ->whereNumber(['reseller', 'product'])->middleware('throttle:10,1')->name('storefront.checkout');
+Route::get('/toko/pesanan/{order}/{token}', [StorefrontController::class, 'orderStatus'])
+    ->where('token', '[A-Za-z0-9]{48}')->name('storefront.orders.show');
+Route::post('/toko/pesanan/{order}/{token}/cek-status', [StorefrontController::class, 'syncOrderStatus'])
+    ->where('token', '[A-Za-z0-9]{48}')->middleware('throttle:10,1')->name('storefront.orders.sync');
+
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
+    Route::get('/login/user-lama', [LegacyMigrationController::class, 'showLogin'])->name('legacy-migration.login');
+    Route::post('/login/user-lama', [LegacyMigrationController::class, 'verify'])->middleware('throttle:5,1')->name('legacy-migration.verify');
+    Route::get('/login/user-lama/konfirmasi', [LegacyMigrationController::class, 'confirm'])->name('legacy-migration.confirm');
+    Route::post('/login/user-lama/konfirmasi', [LegacyMigrationController::class, 'complete'])->middleware('throttle:5,1')->name('legacy-migration.complete');
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
     Route::post('/register', [AuthController::class, 'register']);
 
@@ -68,7 +105,7 @@ Route::middleware('auth')->group(function () {
         ->middleware('throttle:6,1')->name('verification.send');
 });
 
-Route::middleware(['auth', 'non-admin', 'verified'])->group(function () {
+Route::middleware(['auth', 'non-admin', 'verified', 'pin.set'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
@@ -82,6 +119,8 @@ Route::middleware(['auth', 'non-admin', 'verified'])->group(function () {
     Route::post('/saldo/topup', [UserDepositController::class, 'store'])->name('deposits.store');
     Route::get('/saldo/topup/riwayat', [UserDepositController::class, 'index'])->name('deposits.index');
     Route::get('/saldo/topup/{deposit}', [UserDepositController::class, 'show'])->name('deposits.show');
+    Route::post('/saldo/topup/{deposit}/bukti', [UserDepositController::class, 'uploadProof'])->middleware('throttle:10,1')->name('deposits.proof.store');
+    Route::get('/saldo/topup/{deposit}/bukti/{proof}', [UserDepositController::class, 'downloadProof'])->name('deposits.proof.download');
     Route::get('/saldo/topup/{deposit}/qris', [UserDepositController::class, 'downloadQris'])->name('deposits.qris');
     Route::post('/saldo/topup/{deposit}/cek-status', [UserDepositController::class, 'sync'])
         ->middleware('throttle:10,1')->name('deposits.sync');
@@ -119,6 +158,7 @@ Route::middleware(['auth', 'non-admin', 'verified'])->group(function () {
         ->middleware('throttle:10,1')->name('orders.sync');
     Route::get('/transaksi/{order}/qris', [UserOrderController::class, 'downloadQris'])->name('orders.qris');
     Route::get('/transaksi/{order}/invoice', [UserOrderController::class, 'invoice'])->name('orders.invoice');
+    Route::get('/transaksi/{order}/invoice/pdf', [UserOrderController::class, 'invoicePdf'])->name('orders.invoice.pdf');
 
     Route::get('/bantuan', [UserTicketController::class, 'index'])->name('tickets.index');
     Route::get('/bantuan/baru', [UserTicketController::class, 'create'])->name('tickets.create');
@@ -136,11 +176,39 @@ Route::middleware(['auth', 'non-admin', 'verified'])->group(function () {
 
     Route::get('/pengaturan', [UserSettingsController::class, 'index'])->name('settings.index');
 
+    Route::get('/pengaturan/pin', [UserPinController::class, 'show'])->name('settings.pin');
+    Route::post('/pengaturan/pin', [UserPinController::class, 'store'])->name('settings.pin.store');
+    Route::get('/pengaturan/pin/ubah', [UserPinController::class, 'change'])->name('settings.pin.change');
+    Route::post('/pengaturan/pin/ubah/kirim-otp', [UserPinController::class, 'sendChangeOtp'])
+        ->middleware('throttle:5,1')->name('settings.pin.change.send');
+    Route::get('/pengaturan/pin/ubah/verifikasi', [UserPinController::class, 'verify'])
+        ->name('settings.pin.change.verify');
+    Route::post('/pengaturan/pin/ubah/verifikasi', [UserPinController::class, 'verifyStore'])
+        ->middleware('throttle:10,1')->name('settings.pin.change.verify.store');
+    Route::get('/pengaturan/pin/ubah/reset', [UserPinController::class, 'reset'])
+        ->name('settings.pin.change.reset');
+    Route::post('/pengaturan/pin/ubah/reset', [UserPinController::class, 'resetStore'])
+        ->name('settings.pin.change.reset.store');
+
     Route::get('/pengaturan/reseller', [UserResellerController::class, 'show'])->name('settings.reseller');
     Route::get('/pengaturan/reseller/dokumentasi', [UserResellerController::class, 'docs'])->name('settings.reseller.docs');
-    Route::post('/pengaturan/reseller/aktifkan', [UserResellerController::class, 'activate'])->name('settings.reseller.activate');
+    Route::post('/pengaturan/reseller/aktifkan', [UserResellerController::class, 'activate'])
+        ->middleware('throttle:5,1')->name('settings.reseller.activate');
     Route::post('/pengaturan/reseller/buat-ulang', [UserResellerController::class, 'regenerate'])->name('settings.reseller.regenerate');
+    Route::put('/pengaturan/reseller/webhook', [UserResellerController::class, 'updateWebhook'])
+        ->name('settings.reseller.webhook.update');
+    Route::post('/pengaturan/reseller/webhook/secret', [UserResellerController::class, 'regenerateWebhookSecret'])
+        ->middleware('throttle:5,1')->name('settings.reseller.webhook.secret');
     Route::post('/pengaturan/reseller/nonaktifkan', [UserResellerController::class, 'deactivate'])->name('settings.reseller.deactivate');
+    Route::get('/pengaturan/reseller/toko', [ResellerStorefrontController::class, 'index'])->name('settings.reseller.store');
+    Route::get('/pengaturan/reseller/toko/transaksi', [ResellerStorefrontController::class, 'transactions'])
+        ->name('settings.reseller.store.transactions');
+    Route::get('/pengaturan/reseller/toko/transaksi/{order}', [ResellerStorefrontController::class, 'transactionShow'])
+        ->name('settings.reseller.store.transactions.show');
+    Route::post('/pengaturan/reseller/toko/pesanan/{order}/konfirmasi-tunai', [ResellerStorefrontController::class, 'confirmCash'])
+        ->name('settings.reseller.store.cash.confirm');
+    Route::post('/pengaturan/reseller/toko/pencairan', [ResellerStorefrontController::class, 'requestPayout'])
+        ->name('settings.reseller.store.payouts.store');
 
     Route::get('/pengaturan/profil', [UserSettingsController::class, 'profile'])->name('settings.profile');
     Route::put('/pengaturan/profil', [UserSettingsController::class, 'updateProfile'])->name('settings.profile.update');
@@ -165,3 +233,6 @@ Route::middleware(['auth', 'non-admin', 'verified'])->group(function () {
 
     Route::delete('/search-history', [UserSearchHistoryController::class, 'clear'])->name('search.history.clear');
 });
+
+Route::get('/syarat-ketentuan', [PageController::class, 'terms'])->name('pages.terms');
+Route::get('/kebijakan-privasi', [PageController::class, 'privacy'])->name('pages.privacy');

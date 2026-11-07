@@ -23,7 +23,7 @@ final class FcmSender
     public function __construct(private ?Messaging $messaging = null) {}
 
     /**
-     * @param  array{title?: string, body?: string, level?: string, icon?: string, url?: string}  $payload
+     * @param  array{title?: string, body?: string, level?: string, icon?: string, url?: string, notification_id?: string}  $payload
      */
     public function sendToUser(User $user, array $payload): void
     {
@@ -107,7 +107,7 @@ final class FcmSender
     }
 
     /**
-     * @param  array{title?: string, body?: string, level?: string, icon?: string, url?: string}  $payload
+     * @param  array{title?: string, body?: string, level?: string, icon?: string, url?: string, notification_id?: string}  $payload
      */
     private function buildMessage(array $payload): CloudMessage
     {
@@ -115,6 +115,7 @@ final class FcmSender
         $body = (string) ($payload['body'] ?? '');
         $level = (string) ($payload['level'] ?? 'info');
         $url = (string) ($payload['url'] ?? '');
+        $notificationId = (string) ($payload['notification_id'] ?? '');
 
         // Pesan data-only: penampilan & klik notifikasi ditangani sepenuhnya oleh
         // service worker (firebase-messaging-sw.js) supaya tidak dobel tampil dan
@@ -124,6 +125,7 @@ final class FcmSender
             'body' => $body,
             'level' => $level,
             'url' => $url,
+            'notification_id' => $notificationId,
         ], static fn (string $value): bool => $value !== '');
 
         return CloudMessage::new()

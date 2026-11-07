@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Api\Reseller;
 
+use App\Enums\ProductPaymentType;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Support\OrderTarget;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class ProductController extends Controller
 {
@@ -31,6 +33,8 @@ class ProductController extends Controller
 
         $products = Product::query()
             ->where('status', true)
+            ->where('provider', Product::PROVIDER_DIGIFLAZZ)
+            ->where('payment_type', ProductPaymentType::Prabayar->value)
             ->with(['brand:id,name,slug', 'category:id,name,slug'])
             ->when(($validated['q'] ?? '') !== '', fn ($query) => $query->where(function ($query) use ($term): void {
                 $query->where('name', 'like', $term)->orWhere('code', 'like', $term);
@@ -58,12 +62,83 @@ class ProductController extends Controller
      */
     public function show(Product $product): JsonResponse
     {
-        abort_unless($product->status, 404, 'Produk tidak ditemukan atau tidak aktif.');
+        abort_unless(
+            $product->status && $product->supportsResellerApiOrder(),
+            404,
+            'Produk tidak ditemukan atau belum didukung untuk pesanan API reseller.'
+        );
 
         $product->load(['brand:id,name,slug', 'category:id,name,slug']);
 
         return response()->json([
             'data' => $this->transform($product),
+        ]);
+    }
+
+    /**
+     * Daftar produk untuk klien H2H lama.
+     */
+    public function legacyIndex(Request $request): JsonResponse
+    {
+        $request->headers->set('Accept', 'application/json');
+
+        try {
+            $validated = $request->validate([
+                'type' => ['required', Rule::in(['prabayar', 'pascabayar'])],
+                'code' => ['nullable', 'string', 'max:100'],
+            ]);
+        } catch (ValidationException $exception) {
+            return response()->json([
+                'status' => false,
+                'message' => (string) collect($exception->errors())->flatten()->first(),
+                'code' => 400,
+            ], 400);
+        }
+
+        if ($validated['type'] !== ProductPaymentType::Prabayar->value) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Produk pascabayar belum didukung pada API reseller.',
+                'code' => 503,
+            ], 503);
+        }
+
+        $products = Product::query()
+            ->where('status', true)
+            ->where('provider', Product::PROVIDER_DIGIFLAZZ)
+            ->where('payment_type', ProductPaymentType::Prabayar->value)
+            ->when(
+                filled($validated['code'] ?? null),
+                fn ($query) => $query->where('code', $validated['code'])
+            )
+            ->with(['brand:id,name,slug,logo', 'category:id,name,slug'])
+            ->orderBy('name')
+            ->get();
+
+        if ($products->isEmpty()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Produk tidak ditemukan.',
+                'code' => 404,
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => true,
+            'data' => $products->map(fn (Product $product): array => [
+                'code' => $product->code,
+                'name' => $product->name,
+                'category' => $product->category?->name,
+                'type' => $product->payment_type->value,
+                'provider' => $product->brand?->name,
+                'brand_status' => true,
+                'price' => (int) $product->reseller_price,
+                'note' => $product->description,
+                'status' => $product->unlimited_stock || $product->stock > 0 ? 'available' : 'empty',
+                'img_url' => $product->brand?->logoUrl(),
+                'has_zone_id' => OrderTarget::requiresZone($product->brand?->slug),
+            ]),
+            'code' => 200,
         ]);
     }
 

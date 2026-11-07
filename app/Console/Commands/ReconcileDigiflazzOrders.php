@@ -13,7 +13,7 @@ use Illuminate\Support\Carbon;
 use Throwable;
 
 #[Signature('digiflazz:reconcile-orders {--minutes=10 : Usia minimum (menit) order Processing untuk direkonsiliasi} {--limit=100 : Jumlah maksimum order per jalan}')]
-#[Description('Kirim ulang transaksi ke Digiflazz untuk order yang tertahan di status Processing')]
+#[Description('Periksa status Digiflazz untuk order yang tertahan di status Processing')]
 class ReconcileDigiflazzOrders extends Command
 {
     public function handle(): int
@@ -41,24 +41,26 @@ class ReconcileDigiflazzOrders extends Command
             return self::SUCCESS;
         }
 
-        $sent = 0;
+        $checked = 0;
+        $failed = 0;
         $finished = 0;
 
         foreach ($orders as $order) {
             try {
-                OrderFulfillment::send($order);
-                $sent++;
+                OrderFulfillment::syncStatus($order);
+                $checked++;
 
                 if ($order->fresh()->status->isFinal()) {
                     $finished++;
                 }
             } catch (Throwable $e) {
-                $this->warn("Order {$order->order_number} gagal dikirim ulang: {$e->getMessage()}");
+                $failed++;
+                $this->warn("Order {$order->order_number} gagal diperiksa: {$e->getMessage()}");
             }
         }
 
-        $this->info("Direkonsiliasi: {$sent} dikirim, {$finished} selesai.");
+        $this->info("Direkonsiliasi: {$checked} diperiksa, {$finished} selesai, {$failed} gagal.");
 
-        return self::SUCCESS;
+        return $failed > 0 ? self::FAILURE : self::SUCCESS;
     }
 }

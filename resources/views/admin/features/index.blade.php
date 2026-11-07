@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
-@section('title', 'Manajemen Halaman - Admin Atlantic Pedia')
-@section('page-title', 'Manajemen Halaman')
+@section('title', 'Halaman & Pembayaran - Admin Atlantic Pedia')
+@section('page-title', 'Halaman & Pembayaran')
 
 @section('content')
 <div class="d-flex flex-column gap-4">
@@ -21,13 +21,13 @@
     @endif
 
     <div>
-        <h1 class="fw-bold fs-4 m-0">Manajemen Halaman</h1>
-        <p class="tx-mute fs-12 m-0">Aktifkan atau nonaktifkan halaman pengguna. Bila dimatikan, halaman terkait menampilkan "Coming Soon".</p>
+        <h1 class="fw-bold fs-4 m-0">Halaman &amp; Pembayaran</h1>
+        <p class="tx-mute fs-12 m-0">Atur halaman pengguna serta metode isi saldo dan checkout yang tersedia.</p>
     </div>
 
     <div class="row g-3">
         <div class="col-lg-8">
-            <x-ui.card title="Status Halaman">
+            <x-ui.card title="Status Halaman & Pembayaran">
                 <form action="{{ route('admin.features.update') }}" method="POST" class="d-flex flex-column gap-3">
                     @csrf
                     @method('PUT')
@@ -37,6 +37,7 @@
                             ['key' => 'reseller', 'column' => 'reseller_enabled', 'label' => 'Reseller', 'icon' => 'storefront', 'desc' => 'Halaman harga & keanggotaan reseller pengguna.', 'url' => auth()->user()->can('resellers.view') ? route('admin.resellers.index') : null],
                             ['key' => 'ticket', 'column' => 'ticket_enabled', 'label' => 'Ticket', 'icon' => 'support_agent', 'desc' => 'Halaman bantuan & tiket pengguna.', 'url' => auth()->user()->can('tickets.view') ? route('admin.tickets.index') : null],
                             ['key' => 'merchandise', 'column' => 'merchandise_enabled', 'label' => 'Merchandise', 'icon' => 'redeem', 'desc' => 'Katalog penukaran poin merchandise pengguna.', 'url' => auth()->user()->can('merchandise.view') ? route('admin.merchandise.index') : null],
+                            ['key' => 'dashboard_promo', 'column' => 'dashboard_promo_enabled', 'label' => 'Promo Fallback Dashboard', 'icon' => 'campaign', 'desc' => 'Tampilkan banner promo fallback di beranda jika belum ada banner dashboard.', 'url' => route('admin.dashboard-banners.index')],
                         ];
                     @endphp
 
@@ -62,6 +63,80 @@
                             </div>
                         </div>
                     @endforeach
+
+                    <div class="d-flex flex-column gap-2 p-3 r-sm" style="border:1px solid #d3e3e1">
+                        <div>
+                            <div class="fw-semibold">Harga Reseller Global</div>
+                            <div class="tx-mute fs-12">Diskon default dari harga publik untuk produk tanpa override khusus. Harga tetap tidak boleh di bawah modal.</div>
+                        </div>
+                        <div class="d-flex align-items-end gap-2">
+                            <x-ui.input name="reseller_discount_percent" type="number" step="0.01" min="0" max="100" label="Diskon reseller (%)" :value="old('reseller_discount_percent', $setting->reseller_discount_percent)" hint="Kosongkan untuk memakai nilai fallback dari environment." />
+                            <span class="fs-12 tx-mute mb-2">%</span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-column gap-3 pt-2">
+                        <div>
+                            <h2 class="fw-bold fs-6 m-0">Metode Pembayaran Isi Saldo</h2>
+                            <p class="tx-mute fs-12 m-0">Metode nonaktif tidak akan muncul saat pengguna membuat permintaan isi saldo baru.</p>
+                        </div>
+
+                        @foreach ([
+                            ['column' => 'deposit_qris_enabled', 'label' => 'QRIS', 'icon' => 'qr_code_2', 'desc' => 'Pembayaran isi saldo menggunakan QRIS.'],
+                            ['column' => 'deposit_transfer_enabled', 'label' => 'Transfer Bank', 'icon' => 'account_balance', 'desc' => 'Transfer bank/virtual account untuk isi saldo.'],
+                            ['column' => 'deposit_ewallet_enabled', 'label' => 'E-Wallet', 'icon' => 'wallet', 'desc' => 'Pembayaran manual melalui e-wallet untuk isi saldo.'],
+                        ] as $method)
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 p-3 r-sm" style="border:1px solid #d3e3e1">
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="ibox ibox-48 {{ $setting->{$method['column']} ? 'bg-mint-l tx-mintt' : 'bg-errc-l tx-err' }}">
+                                        <span class="ms">{{ $method['icon'] }}</span>
+                                    </span>
+                                    <div>
+                                        <div class="fw-semibold">{{ $method['label'] }}</div>
+                                        <div class="tx-mute fs-12">{{ $method['desc'] }}</div>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="pill {{ $setting->{$method['column']} ? 'bg-mint-l tx-mintt' : 'bg-errc-l tx-err' }}">
+                                        {{ $setting->{$method['column']} ? 'Aktif' : 'Nonaktif' }}
+                                    </span>
+                                    <input type="hidden" name="{{ $method['column'] }}" value="0">
+                                    <x-ui.switch :name="$method['column']" :checked="$setting->{$method['column']}" />
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <div class="d-flex flex-column gap-3 pt-2">
+                        <div>
+                            <h2 class="fw-bold fs-6 m-0">Metode Pembayaran Transaksi</h2>
+                            <p class="tx-mute fs-12 m-0">Metode nonaktif tidak akan muncul saat pengguna checkout produk.</p>
+                        </div>
+
+                        @foreach ([
+                            ['column' => 'transaction_saldo_enabled', 'label' => 'Saldo', 'icon' => 'account_balance_wallet', 'desc' => 'Pembayaran transaksi langsung dari saldo akun.'],
+                            ['column' => 'transaction_qris_enabled', 'label' => 'QRIS', 'icon' => 'qr_code_2', 'desc' => 'Pembayaran transaksi menggunakan QRIS.'],
+                        ] as $method)
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 p-3 r-sm" style="border:1px solid #d3e3e1">
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="ibox ibox-48 {{ $setting->{$method['column']} ? 'bg-mint-l tx-mintt' : 'bg-errc-l tx-err' }}">
+                                        <span class="ms">{{ $method['icon'] }}</span>
+                                    </span>
+                                    <div>
+                                        <div class="fw-semibold">{{ $method['label'] }}</div>
+                                        <div class="tx-mute fs-12">{{ $method['desc'] }}</div>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="pill {{ $setting->{$method['column']} ? 'bg-mint-l tx-mintt' : 'bg-errc-l tx-err' }}">
+                                        {{ $setting->{$method['column']} ? 'Aktif' : 'Nonaktif' }}
+                                    </span>
+                                    <input type="hidden" name="{{ $method['column'] }}" value="0">
+                                    <x-ui.switch :name="$method['column']" :checked="$setting->{$method['column']}" />
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
 
                     @can('features.update')
                         <div class="d-flex justify-content-end">

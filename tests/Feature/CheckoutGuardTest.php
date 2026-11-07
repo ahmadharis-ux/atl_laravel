@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
+use Database\Factories\UserFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -45,6 +46,7 @@ class CheckoutGuardTest extends TestCase
             ->post(route('checkout.store', $product), [
                 'target' => '111111111',
                 'payment_method' => PaymentMethod::Saldo->value,
+                'pin' => UserFactory::DEFAULT_PIN,
             ])
             ->assertRedirect();
 
@@ -52,6 +54,7 @@ class CheckoutGuardTest extends TestCase
             ->post(route('checkout.store', $product), [
                 'target' => '222222222',
                 'payment_method' => PaymentMethod::Saldo->value,
+                'pin' => UserFactory::DEFAULT_PIN,
             ])
             ->assertSessionHasErrors('product');
 
@@ -70,6 +73,7 @@ class CheckoutGuardTest extends TestCase
             ->post(route('checkout.store', $product), [
                 'target' => '111111111',
                 'payment_method' => PaymentMethod::Saldo->value,
+                'pin' => UserFactory::DEFAULT_PIN,
             ])
             ->assertRedirect();
 
@@ -77,6 +81,7 @@ class CheckoutGuardTest extends TestCase
             ->post(route('checkout.store', $product), [
                 'target' => '222222222',
                 'payment_method' => PaymentMethod::Saldo->value,
+                'pin' => UserFactory::DEFAULT_PIN,
             ])
             ->assertSessionHasErrors('balance');
 

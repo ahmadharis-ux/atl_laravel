@@ -47,6 +47,8 @@
             ['label' => 'Email'],
             ['label' => 'Telepon'],
             ['label' => 'Peran'],
+            ['label' => 'Saldo', 'class' => 'text-end'],
+            ['label' => 'Poin', 'class' => 'text-end'],
             ['label' => 'Aksi', 'class' => 'text-end'],
         ]"
     >

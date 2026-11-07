@@ -181,6 +181,29 @@
 .ap-modal-head h3{font-size:1rem;font-weight:800;margin:0}
 .ap-modal-body{padding:1.1rem;font-size:.875rem}
 .ap-modal-foot{display:flex;justify-content:flex-end;gap:.5rem;padding:.85rem 1.1rem;border-top:1px solid var(--line);background:#f8fcfb;border-radius:0 0 1rem 1rem}
+.ap-modal-dialog.ap-checkout-confirm-dialog{max-width:31rem}
+.ap-checkout-confirm{display:flex;flex-direction:column;gap:.85rem}
+.ap-checkout-confirm[hidden]{display:none}
+.ap-checkout-confirm-product{display:flex;align-items:center;gap:.75rem;min-width:0;padding:.8rem;border:1px solid var(--line);border-radius:.75rem;background:#f5faf9}
+.ap-checkout-confirm-product-icon{display:inline-flex;align-items:center;justify-content:center;flex:none;width:2.5rem;height:2.5rem;border-radius:.7rem;background:rgba(0,105,111,.1);color:var(--teal)}
+.ap-checkout-confirm-product-details{display:flex;flex-direction:column;gap:.2rem;min-width:0}
+.ap-checkout-confirm-eyebrow{color:var(--mute);font-size:.7rem;font-weight:700;letter-spacing:.04em}
+.ap-checkout-confirm-product-name{overflow-wrap:anywhere;color:var(--navy);font-size:.9rem;line-height:1.35}
+.ap-checkout-confirm-rows{display:flex;flex-direction:column;margin:0}
+.ap-checkout-confirm-row{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;padding:.65rem .1rem;border-bottom:1px solid var(--line)}
+.ap-checkout-confirm-row dt{color:var(--mute);font-size:.78rem;font-weight:500}
+.ap-checkout-confirm-row dd{margin:0;color:var(--ink);font-size:.8rem;font-weight:700;text-align:right;overflow-wrap:anywhere}
+.ap-checkout-confirm-total{align-items:center;margin-top:.35rem;padding:.8rem;border:0;border-radius:.7rem;background:rgba(0,105,111,.08)}
+.ap-checkout-confirm-total dt{color:var(--navy);font-size:.82rem;font-weight:700}
+.ap-checkout-confirm-total dd{color:var(--teal);font-size:1.05rem;font-weight:800}
+.ap-checkout-confirm-payment{display:flex;align-items:center;justify-content:space-between;gap:.75rem}
+.ap-checkout-confirm-method{display:inline-flex;align-items:center;padding:.3rem .7rem;border:1px solid rgba(0,105,111,.18);border-radius:50rem;background:rgba(0,105,111,.08);color:var(--teal);font-size:.75rem;font-weight:800}
+.ap-checkout-confirm-impact{display:flex;align-items:flex-start;gap:.5rem;margin:0;padding:.7rem .75rem;border-radius:.7rem;background:#f0f7f6;color:var(--mute);font-size:.76rem;line-height:1.5}
+.ap-checkout-confirm-impact .ms{flex:none;color:var(--teal);font-size:1rem}
+.deposit-proof-controls{display:flex;align-items:center;gap:.5rem;margin-bottom:.75rem}
+.deposit-proof-frame{max-height:70vh;overflow:auto;background:#f3f7f8;border-radius:.6rem;padding:.5rem}
+.deposit-proof-image{display:block;width:auto;max-width:100%;max-height:68vh;margin:0 auto}
+.deposit-proof-image.is-zoomed{max-width:none;max-height:none}
 body.ap-modal-open{overflow:hidden}
 @keyframes apFade{from{opacity:0}to{opacity:1}}
 @keyframes apPop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
@@ -189,10 +212,10 @@ body.ap-modal-open{overflow:hidden}
 .ap-banner-pop{align-items:center}
 .ap-banner-pop-backdrop{background:transparent;backdrop-filter:none}
 .ap-banner-pop-body{position:relative;width:100%;max-width:32rem;animation:apPop .18s ease}
-.ap-banner-pop-img{display:block;width:100%;height:auto;border-radius:1rem;box-shadow:0 24px 60px rgba(6,40,58,.35)}
+.ap-banner-pop-img{display:block;width:100%;height:auto;border-radius:1rem;}
 .ap-banner-pop-close{position:absolute;top:-.75rem;right:-.75rem;z-index:2;display:flex;align-items:center;justify-content:center;width:2.25rem;height:2.25rem;border:0;border-radius:999px;background:#fff;color:var(--deep);box-shadow:0 8px 20px rgba(0,0,0,.28);cursor:pointer}
 .ap-banner-pop-close:hover{background:var(--mint-l);color:var(--teal)}
-.ap-banner-pop-card{background:#fff;border-radius:1rem;padding:1.5rem;box-shadow:0 24px 60px rgba(6,40,58,.35)}
+.ap-banner-pop-card{background:#fff;border-radius:1rem;padding:1.5rem;}
 
 /* Banner dashboard — gambar menutupi penuh kartu promo, hanya tombol CTA */
 .promo-img{padding:0}
@@ -309,6 +332,14 @@ body.ap-modal-open{overflow:hidden}
 .notif-reorder{flex:none;align-self:center;display:inline-flex;align-items:center;gap:.2rem;padding:.35rem .65rem;border-radius:50rem;background:rgba(100,253,185,.25);color:var(--tealt);font-size:.72rem;font-weight:800;text-decoration:none;white-space:nowrap;transition:background .15s,color .15s}
 .notif-reorder:hover{background:var(--teal);color:#fff}
 
+/* Menu akun pengguna di topbar */
+.user-menu{position:relative;z-index:1050}
+.user-menu-pop{position:absolute;top:calc(100% + .5rem);right:0;width:13rem;padding:.35rem;border:1px solid var(--line);border-radius:.85rem;background:var(--bg);box-shadow:0 18px 40px -18px rgba(6,40,58,.4)}
+.user-menu-pop[hidden]{display:none}
+.user-menu-item{display:flex;align-items:center;gap:.65rem;width:100%;padding:.65rem .75rem;border:0;border-radius:.55rem;background:transparent;color:var(--ink);font:inherit;font-size:.8125rem;font-weight:700;text-align:left;text-decoration:none}
+.user-menu-item:hover,.user-menu-item:focus-visible{background:rgba(159,240,247,.2);color:var(--tealt);outline:0}
+.user-menu-item .ms{font-size:1.125rem;color:var(--tealt)}
+.user-menu-form{margin:0}
 
 /* ---------------- Landing page publik ---------------- */
 .landing-body{background:#f6fbfa;color:var(--ink);min-height:100vh;display:flex;flex-direction:column}
@@ -374,5 +405,6 @@ body.ap-modal-open{overflow:hidden}
 .landing-footer{padding:3rem 0;background:var(--deep);color:rgba(255,255,255,.72)}
 .landing-footer a{color:rgba(255,255,255,.72);transition:color .15s}
 .landing-footer a:hover{color:#fff}
+@media (max-width:767.98px){.landing-footer a{display:inline-flex;align-items:center;min-height:44px}}
 .landing-footer-title{font-size:.8rem;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.06em;margin:0 0 .9rem}
 @media (max-width:575.98px){.landing-hero{padding:3rem 0 2.5rem}.landing-preview{max-width:100%}.landing-cta{padding:1.5rem}.landing-section{padding:3.25rem 0}}

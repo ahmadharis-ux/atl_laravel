@@ -11,6 +11,7 @@ use App\Models\Product;
 use App\Models\User;
 use App\Services\MidtransService;
 use App\Support\DepositSettler;
+use Database\Factories\UserFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -76,6 +77,8 @@ class QrisAdminFeeTest extends TestCase
         $this->assertSame(DepositStatus::Paid, $deposit->status);
         $this->assertSame(50_000 + $expectedFee, $deposit->received_amount);
         $this->assertSame(50_000, $user->fresh()->balance);
+        $this->assertSame(0, (int) $user->fresh()->points);
+        $this->assertDatabaseCount('point_transactions', 0);
     }
 
     public function test_qris_checkout_stores_the_admin_fee_on_the_order(): void
@@ -107,6 +110,7 @@ class QrisAdminFeeTest extends TestCase
             ->post(route('checkout.store', $product), [
                 'target' => '123456789',
                 'payment_method' => PaymentMethod::Saldo->value,
+                'pin' => UserFactory::DEFAULT_PIN,
             ])
             ->assertRedirect();
 

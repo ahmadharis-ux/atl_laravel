@@ -15,7 +15,7 @@
 
     <x-ui.card title="Push Notification">
         <p class="tx-mute fs-12">
-            Aktifkan untuk mendapat notifikasi saat top up atau pembelian selesai &mdash; termasuk ketika
+            Aktifkan untuk mendapat notifikasi saat isi saldo atau pembelian selesai &mdash; termasuk ketika
             aplikasi sedang tertutup. Berjalan di Android/Chrome dan iOS 16.4+ yang sudah
             <em>Add to Home Screen</em>.
         </p>

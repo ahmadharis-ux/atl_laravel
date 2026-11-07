@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\BankAccount;
+use App\Models\LoyaltySetting;
 use App\Models\MasterBank;
 use App\Models\User;
 use App\Notifications\VerifyEmailNotification;
@@ -24,11 +25,55 @@ class UserSettingsTest extends TestCase
             ->get(route('settings.index'))
             ->assertOk()
             ->assertSee('Pengaturan')
+            ->assertSee('Menu pengguna')
+            ->assertSee('id="userMenuDesktop"', false)
+            ->assertSee('id="userMenuMobile"', false)
+            ->assertSee('class="ibox bg-deep rounded-circle shadow-sm flex-shrink-0"', false)
+            ->assertSee('Pengaturan akun')
+            ->assertSee('action="'.route('logout').'"', false)
+            ->assertSee('aria-label="Keluar"', false)
             ->assertSee('Profil')
             ->assertSee('Rekening Bank')
             ->assertSee('Ubah Kata Sandi')
             ->assertSee('Autentikasi Dua Faktor')
             ->assertSee('Perangkat Aktif');
+    }
+
+    public function test_the_topbar_uses_the_image_for_each_loyalty_tier(): void
+    {
+        $thresholds = LoyaltySetting::current();
+        $tiers = [
+            ['lifetime_points' => 0, 'badge' => 'silver'],
+            ['lifetime_points' => $thresholds->gold_points, 'badge' => 'gold'],
+            ['lifetime_points' => $thresholds->platinum_points, 'badge' => 'platinum'],
+        ];
+
+        foreach ($tiers as $tier) {
+            $user = User::factory()->create(['lifetime_points' => $tier['lifetime_points']]);
+
+            $this->actingAs($user)
+                ->get(route('settings.index'))
+                ->assertSee(asset('assets/images/'.$tier['badge'].'.png'), false)
+                ->assertSee('alt="'.ucfirst($tier['badge']).'"', false);
+        }
+    }
+
+    public function test_the_first_invalid_profile_field_is_marked_for_keyboard_focus(): void
+    {
+        $user = User::factory()->create();
+
+        $this->followingRedirects()
+            ->actingAs($user)
+            ->from(route('settings.profile'))
+            ->put(route('settings.profile.update'), [
+                'name' => '',
+                'email' => $user->email,
+                'phone' => null,
+            ])
+            ->assertOk()
+            ->assertSee('aria-invalid="true"', false)
+            ->assertSee('aria-describedby="name-error"', false)
+            ->assertSee('id="name-error"', false);
     }
 
     public function test_each_settings_detail_page_renders(): void
@@ -69,12 +114,32 @@ class UserSettingsTest extends TestCase
             'name' => $user->name,
             'email' => 'baru@example.com',
             'phone' => null,
+            'current_password' => 'password',
         ]);
 
         $user->refresh();
         $this->assertSame('baru@example.com', $user->email);
         $this->assertNull($user->email_verified_at);
         Notification::assertSentTo($user, VerifyEmailNotification::class);
+    }
+
+    public function test_changing_email_requires_the_current_password(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create(['email' => 'lama@example.com', 'password' => 'password']);
+
+        $this->actingAs($user)
+            ->put(route('settings.profile.update'), [
+                'name' => $user->name,
+                'email' => 'baru@example.com',
+                'phone' => null,
+                'current_password' => 'salah',
+            ])
+            ->assertSessionHasErrors('current_password');
+
+        $this->assertSame('lama@example.com', $user->fresh()->email);
+        Notification::assertNothingSent();
     }
 
     public function test_a_user_can_change_their_password(): void
@@ -146,7 +211,7 @@ class UserSettingsTest extends TestCase
 
         $this->actingAs($user)
             ->delete(route('settings.banks.destroy', $bank))
-            ->assertForbidden();
+            ->assertNotFound();
 
         $this->assertDatabaseHas('bank_accounts', ['id' => $bank->getKey()]);
     }

@@ -4,15 +4,23 @@ namespace App\Services;
 
 use App\Enums\DepositStatus;
 use App\Enums\OrderStatus;
+use App\Enums\PaymentMethod;
+use App\Jobs\RefundStorefrontOrder;
 use App\Models\Deposit;
 use App\Models\Order;
 use App\Models\User;
 use App\Support\DepositSettler;
+use App\Support\OrderFulfillment;
 use App\Support\OrderPaymentSettler;
+use App\Support\OrderRewardLedger;
+use App\Support\TransactionLogger;
 use Closure;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Midtrans\Config as MidtransConfig;
 use Midtrans\CoreApi;
+use Midtrans\Snap;
 use Midtrans\Transaction;
 use Throwable;
 
@@ -70,6 +78,102 @@ class MidtransService
     }
 
     /**
+     * Buat transaksi QRIS melalui halaman hosted Midtrans Snap.
+     */
+    public function chargeStorefrontOrder(Order $order, string $statusUrl): ?string
+    {
+        if (! $this->isConfigured()) {
+            return null;
+        }
+
+        $this->boot();
+        $product = $order->product;
+        $items = [[
+            'id' => (string) $order->product_id,
+            'price' => (int) $order->amount,
+            'quantity' => 1,
+            'name' => Str::limit($product?->name ?? 'Produk Atlantic Pedia', 50, ''),
+        ]];
+
+        if ($order->fee > 0) {
+            $items[] = [
+                'id' => 'qris-fee',
+                'price' => (int) $order->fee,
+                'quantity' => 1,
+                'name' => 'Biaya QRIS',
+            ];
+        }
+
+        try {
+            $response = Snap::createTransaction([
+                'transaction_details' => [
+                    'order_id' => $order->order_number,
+                    'gross_amount' => (int) $order->totalDue(),
+                ],
+                'item_details' => $items,
+                'enabled_payments' => ['qris'],
+                'callbacks' => [
+                    'finish' => $statusUrl,
+                    'error' => $statusUrl,
+                    'pending' => $statusUrl,
+                ],
+            ]);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return null;
+        }
+
+        $redirectUrl = $response->redirect_url ?? null;
+
+        if (! is_string($redirectUrl) || ! filter_var($redirectUrl, FILTER_VALIDATE_URL)) {
+            report(new \UnexpectedValueException('Midtrans Snap tidak mengembalikan redirect_url yang valid.'));
+
+            return null;
+        }
+
+        $metadata = $order->metadata ?? [];
+        $metadata['midtrans'] = [
+            'snap_token' => $response->token ?? null,
+            'redirect_url' => $redirectUrl,
+        ];
+
+        $order->forceFill(['metadata' => $metadata])->save();
+
+        return $redirectUrl;
+    }
+
+    /**
+     * Ajukan refund penuh untuk QRIS yang dibuat melalui toko reseller.
+     */
+    public function requestStorefrontRefund(Order $order): object
+    {
+        if (! $this->isConfigured()) {
+            throw new \RuntimeException('Kredensial Midtrans belum dikonfigurasi.');
+        }
+
+        if ($order->source !== 'store_qris' || $order->payment_method !== PaymentMethod::Qris) {
+            throw new \InvalidArgumentException('Refund Midtrans hanya berlaku untuk pesanan QRIS toko reseller.');
+        }
+
+        $this->boot();
+
+        $currentStatus = Transaction::status($order->order_number);
+        if ((string) ($currentStatus->transaction_status ?? '') === 'refund'
+            && (float) ($currentStatus->refund_amount ?? 0) >= $order->totalDue()) {
+            return is_object($currentStatus) ? $currentStatus : (object) $currentStatus;
+        }
+
+        $response = Transaction::refund($order->order_number, [
+            'refund_key' => 'store-refund-'.$order->order_number,
+            'amount' => (int) $order->totalDue(),
+            'reason' => 'Pesanan toko reseller gagal diproses',
+        ]);
+
+        return is_object($response) ? $response : (object) $response;
+    }
+
+    /**
      * Buat transaksi QRIS dinamis untuk pesanan produk, simpan QR ke metadata
      * order dan set kode pembayaran (qr_string) bila kosong.
      *
@@ -113,6 +217,8 @@ class MidtransService
             orderId: $orderId,
             status: (string) ($payload['transaction_status'] ?? ''),
             fraud: (string) ($payload['fraud_status'] ?? ''),
+            refundAmount: isset($payload['refund_amount']) ? (string) $payload['refund_amount'] : null,
+            transactionId: isset($payload['transaction_id']) ? (string) $payload['transaction_id'] : null,
         );
     }
 
@@ -165,6 +271,8 @@ class MidtransService
             orderId: $orderId,
             status: $status,
             fraud: (string) ($response->fraud_status ?? ''),
+            refundAmount: isset($response->refund_amount) ? (string) $response->refund_amount : null,
+            transactionId: isset($response->transaction_id) ? (string) $response->transaction_id : null,
         );
 
         return $status;
@@ -195,8 +303,13 @@ class MidtransService
      * Terapkan status transaksi ke deposit (berdasarkan reference) atau order
      * (berdasarkan order_number).
      */
-    private function applyTransactionStatus(string $orderId, string $status, string $fraud): Deposit|Order|null
-    {
+    private function applyTransactionStatus(
+        string $orderId,
+        string $status,
+        string $fraud,
+        ?string $refundAmount = null,
+        ?string $transactionId = null,
+    ): Deposit|Order|null {
         $settled = in_array($status, ['capture', 'settlement'], true)
             && in_array($fraud, ['', 'accept'], true);
 
@@ -209,7 +322,10 @@ class MidtransService
             }
 
             if ($status === 'expire' && $deposit->status === DepositStatus::Pending) {
-                $deposit->update(['status' => DepositStatus::Expired]);
+                $deposit->update([
+                    'status' => DepositStatus::Expired,
+                    'finalized_at' => now(),
+                ]);
 
                 return $deposit->refresh();
             }
@@ -219,14 +335,64 @@ class MidtransService
 
         $order = Order::query()->where('order_number', $orderId)->first();
         if ($order !== null) {
+            $metadata = $order->metadata ?? [];
+            $metadata['midtrans'] = array_merge($metadata['midtrans'] ?? [], [
+                'status' => $status,
+                'fraud_status' => $fraud,
+                'transaction_id' => $transactionId,
+                'refund_amount' => $refundAmount,
+                'last_status_at' => now()->toIso8601String(),
+            ]);
+            $order->forceFill(['metadata' => $metadata])->save();
+
+            TransactionLogger::info('midtrans.payment_status', 'Status pembayaran dari Midtrans diterima.', [
+                'status' => $status,
+                'fraud_status' => $fraud,
+                'transaction_id' => $transactionId,
+                'refund_amount' => $refundAmount,
+            ], $order, $order->user);
+
             if ($settled && $order->status === OrderStatus::Pending) {
                 OrderPaymentSettler::settle($order);
 
                 return $order->refresh();
             }
 
+            if ($settled && in_array($order->source, ['store_qris'], true)
+                && in_array($order->status, [OrderStatus::Expired, OrderStatus::Failed], true)) {
+                RefundStorefrontOrder::dispatch($order->getKey())->afterCommit();
+
+                return $order->refresh();
+            }
+
             if ($status === 'expire' && $order->status === OrderStatus::Pending) {
-                $order->update(['status' => OrderStatus::Expired]);
+                OrderFulfillment::expire($order);
+
+                return $order->refresh();
+            }
+
+            if (in_array($status, ['refund', 'partial_refund'], true) && $order->source === 'store_qris') {
+                DB::transaction(function () use ($order, $status, $refundAmount, $transactionId): void {
+                    $lockedOrder = Order::query()->whereKey($order->getKey())->lockForUpdate()->firstOrFail();
+                    $isFullRefund = $status === 'refund'
+                        || ($refundAmount !== null && (float) $refundAmount >= $lockedOrder->totalDue());
+                    $metadata = $lockedOrder->metadata ?? [];
+                    $metadata['midtrans_refund'] = [
+                        'status' => $isFullRefund ? 'completed' : 'manual_required',
+                        'transaction_id' => $transactionId,
+                    ];
+
+                    $lockedOrder->forceFill([
+                        'refund_status' => $isFullRefund ? 'completed' : 'manual_required',
+                        'refund_transaction_id' => $transactionId,
+                        'refunded_at' => $isFullRefund ? ($lockedOrder->refunded_at ?? now()) : $lockedOrder->refunded_at,
+                        'metadata' => $metadata,
+                    ])->save();
+
+                    if ($isFullRefund) {
+                        OrderRewardLedger::reverseForRefund($lockedOrder);
+                    }
+                });
 
                 return $order->refresh();
             }

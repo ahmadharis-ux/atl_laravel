@@ -78,6 +78,76 @@ class MidtransOrderTest extends TestCase
             ->assertDontSee('Data Testing (Sandbox Midtrans)');
     }
 
+    public function test_failed_order_explains_completed_balance_refund(): void
+    {
+        $user = User::factory()->create();
+        $product = $this->product();
+        $order = Order::factory()->create([
+            'user_id' => $user->getKey(),
+            'product_id' => $product->getKey(),
+            'status' => OrderStatus::Failed,
+            'payment_method' => PaymentMethod::Saldo,
+            'refunded_at' => now(),
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('orders.show', $order))
+            ->assertSee('Pesanan gagal diproses')
+            ->assertSee('Pengembalian dana telah selesai.')
+            ->assertSee('Beli Lagi');
+    }
+
+    public function test_failed_order_explains_refund_needing_manual_help(): void
+    {
+        $user = User::factory()->create();
+        $product = $this->product();
+        $order = Order::factory()->create([
+            'user_id' => $user->getKey(),
+            'product_id' => $product->getKey(),
+            'status' => OrderStatus::Failed,
+            'payment_method' => PaymentMethod::Qris,
+            'refund_status' => 'manual_required',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('orders.show', $order))
+            ->assertSee('Pengembalian dana memerlukan bantuan CS.')
+            ->assertSee('Hubungi CS');
+    }
+
+    public function test_expired_order_explains_payment_deadline_and_retry_action(): void
+    {
+        $user = User::factory()->create();
+        $product = $this->product();
+        $order = Order::factory()->create([
+            'user_id' => $user->getKey(),
+            'product_id' => $product->getKey(),
+            'status' => OrderStatus::Expired,
+            'payment_method' => PaymentMethod::Qris,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('orders.show', $order))
+            ->assertSee('Batas pembayaran sudah berakhir')
+            ->assertSee('Kode pembayaran ini tidak dapat digunakan lagi.')
+            ->assertSee('Beli Lagi');
+    }
+
+    public function test_expired_order_shows_when_its_refund_is_still_processing(): void
+    {
+        $user = User::factory()->create();
+        $order = Order::factory()->create([
+            'user_id' => $user->getKey(),
+            'status' => OrderStatus::Expired,
+            'payment_method' => PaymentMethod::Qris,
+            'refund_status' => 'pending',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('orders.show', $order))
+            ->assertSee('Pengembalian dana sedang diproses.');
+    }
+
     public function test_webhook_settles_order_and_starts_fulfillment_for_provider_products(): void
     {
         $this->configureMidtrans();
@@ -106,12 +176,22 @@ class MidtransOrderTest extends TestCase
             'status' => OrderStatus::Pending,
         ]);
 
-        $this->postJson(route('webhook.midtrans'), $this->notification($order))
+        $notification = $this->notification($order);
+        $notification['transaction_id'] = 'MIDTRANS-ORDER-123';
+
+        $this->postJson(route('webhook.midtrans'), $notification)
             ->assertOk();
 
         $order->refresh();
         $this->assertSame(OrderStatus::Processing, $order->status);
         $this->assertNotNull($order->paid_at);
+        $this->assertSame('settlement', data_get($order->metadata, 'midtrans.status'));
+        $this->assertSame('accept', data_get($order->metadata, 'midtrans.fraud_status'));
+        $this->assertSame('MIDTRANS-ORDER-123', data_get($order->metadata, 'midtrans.transaction_id'));
+        $this->assertDatabaseHas('transaction_logs', [
+            'order_id' => $order->getKey(),
+            'event' => 'midtrans.payment_status',
+        ]);
         Queue::assertPushed(SendDigiflazzTransaction::class);
     }
 
@@ -151,7 +231,7 @@ class MidtransOrderTest extends TestCase
         $this->actingAs($order->user)
             ->post(route('orders.sync', $order))
             ->assertRedirect(route('orders.show', $order))
-            ->assertSessionHas('status', 'Status tidak dapat diambil dari Midtrans.');
+            ->assertSessionHas('error', 'Belum berhasil mengambil status dari Midtrans. Coba cek kembali beberapa saat lagi.');
     }
 
     public function test_order_show_offers_qris_download_and_status_buttons(): void
@@ -219,7 +299,7 @@ class MidtransOrderTest extends TestCase
 
         $this->actingAs(User::factory()->create())
             ->get(route('orders.qris', $order))
-            ->assertForbidden();
+            ->assertNotFound();
     }
 
     public function test_sync_status_returns_null_when_not_configured(): void

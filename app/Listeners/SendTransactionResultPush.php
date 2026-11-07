@@ -32,9 +32,9 @@ class SendTransactionResultPush
             return;
         }
 
-        $this->fcm->sendToUser(
-            $event->notifiable,
-            $event->notification->toArray($event->notifiable),
-        );
+        $payload = $event->notification->toArray($event->notifiable);
+        $payload['notification_id'] = (string) $event->notification->id;
+
+        $this->fcm->sendToUser($event->notifiable, $payload);
     }
 }

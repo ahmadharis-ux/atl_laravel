@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Services\MidtransService;
 use App\Support\OrderPaymentSettler;
 use App\Support\TransactionLogger;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -32,7 +33,7 @@ class OrderController extends Controller
 
     public function show(Request $request, Order $order): View|JsonResponse
     {
-        abort_unless($order->user_id === $request->user()->getKey(), 403);
+        abort_unless($order->user_id === $request->user()->getKey(), 404);
 
         if ($request->ajax()) {
             return response()->json([
@@ -42,7 +43,7 @@ class OrderController extends Controller
         }
 
         return view('user.orders.show', [
-            'order' => $order->load(['product.brand', 'product.category']),
+            'order' => $order->load(['product.brand', 'product.category', 'pointTransactions']),
         ]);
     }
 
@@ -51,12 +52,27 @@ class OrderController extends Controller
      */
     public function invoice(Request $request, Order $order): View
     {
-        abort_unless($order->user_id === $request->user()->getKey(), 403);
+        abort_unless($order->user_id === $request->user()->getKey(), 404);
 
         return view('orders.invoice', [
             'order' => $order->load(['user', 'product.brand', 'product.category']),
             'backUrl' => route('orders.show', $order),
+            'pdfUrl' => route('orders.invoice.pdf', $order),
         ]);
+    }
+
+    /**
+     * Unduh invoice sebagai berkas PDF.
+     */
+    public function invoicePdf(Request $request, Order $order): Response
+    {
+        abort_unless($order->user_id === $request->user()->getKey(), 404);
+
+        $order->load(['user', 'product.brand', 'product.category']);
+
+        return Pdf::loadView('orders.invoice-pdf', ['order' => $order])
+            ->setPaper('a4')
+            ->download('invoice-'.$order->order_number.'.pdf');
     }
 
     /**
@@ -65,7 +81,7 @@ class OrderController extends Controller
      */
     public function pay(Request $request, Order $order): RedirectResponse
     {
-        abort_unless($order->user_id === $request->user()->getKey(), 403);
+        abort_unless($order->user_id === $request->user()->getKey(), 404);
 
         if ($order->status !== OrderStatus::Pending) {
             return redirect()->route('orders.show', $order);
@@ -100,7 +116,7 @@ class OrderController extends Controller
      */
     public function sync(Request $request, Order $order, MidtransService $midtrans): RedirectResponse
     {
-        abort_unless($order->user_id === $request->user()->getKey(), 403);
+        abort_unless($order->user_id === $request->user()->getKey(), 404);
 
         if ($order->payment_method !== PaymentMethod::Qris) {
             return redirect()->route('orders.show', $order);
@@ -115,18 +131,22 @@ class OrderController extends Controller
 
             return redirect()
                 ->route('orders.show', $order)
-                ->with('status', 'Gagal mengambil status dari Midtrans.');
+                ->with('error', 'Belum berhasil mengambil status dari Midtrans. Coba cek kembali beberapa saat lagi.');
         }
 
         $message = match ($status) {
-            null => 'Status tidak dapat diambil dari Midtrans.',
+            null => 'Belum berhasil mengambil status dari Midtrans. Coba cek kembali beberapa saat lagi.',
             'settlement', 'capture' => 'Pembayaran '.$order->order_number.' terverifikasi. Pesanan sedang diproses.',
             'expire' => 'Kode QRIS pesanan '.$order->order_number.' sudah kedaluwarsa.',
             'deny', 'cancel', 'failure' => 'Pembayaran pesanan '.$order->order_number.' ditolak atau dibatalkan.',
             default => 'Status pembayaran '.$order->order_number.': '.$status.'.',
         };
 
-        return redirect()->route('orders.show', $order)->with('status', $message);
+        $redirect = redirect()->route('orders.show', $order);
+
+        return $status === null
+            ? $redirect->with('error', $message)
+            : $redirect->with('status', $message);
     }
 
     /**
@@ -134,7 +154,7 @@ class OrderController extends Controller
      */
     public function downloadQris(Request $request, Order $order, MidtransService $midtrans): Response
     {
-        abort_unless($order->user_id === $request->user()->getKey(), 403);
+        abort_unless($order->user_id === $request->user()->getKey(), 404);
 
         $url = data_get($order->metadata, 'midtrans.qr_url');
         $image = $midtrans->fetchQrImage(is_string($url) ? $url : null);

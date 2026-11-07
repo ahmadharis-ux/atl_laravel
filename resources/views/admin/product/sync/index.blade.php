@@ -78,7 +78,13 @@
         <x-slot:footer>
             <div class="d-flex justify-content-between align-items-center">
                 <span class="fs-12 tx-mute">Menampilkan {{ $jobs->firstItem() ?? 0 }}–{{ $jobs->lastItem() ?? 0 }} dari {{ $jobs->total() }} data</span>
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-3">
+                <div class="d-flex align-items-center gap-3 flex-wrap">
+                    <span class="fs-12 tx-mute">Menampilkan {{ $jobs->firstItem() ?? 0 }}–{{ $jobs->lastItem() ?? 0 }} dari {{ $jobs->total() }} job</span>
+                    @include('admin.partials.table-per-page')
+                </div>
                 {{ $jobs->links() }}
+            </div>
             </div>
         </x-slot:footer>
     </x-ui.card>

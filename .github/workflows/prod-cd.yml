@@ -1,0 +1,117 @@
+name: Laravel CD (atl_laravel Production)
+
+on:
+  push:
+    branches: [ prod ]
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Verify secrets
+        env:
+          PRIVATE_KEYPROD: ${{ secrets.PRIVATE_KEYPROD }}
+          HOSTNAMEPROD: ${{ secrets.HOSTNAMEPROD }}
+          USERNAMEPROD: ${{ secrets.USERNAMEPROD }}
+        run: |
+          missing=0
+          for v in PRIVATE_KEYPROD HOSTNAMEPROD USERNAMEPROD; do
+            if [ -z "${!v}" ]; then echo "::error::Secret $v kosong"; missing=1; fi
+          done
+          exit $missing
+
+      - name: Setup SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.PRIVATE_KEYPROD }}
+          SSH_HOST: ${{ secrets.HOSTNAMEPROD }}
+          SSH_USER: ${{ secrets.USERNAMEPROD }}
+          SSH_PORT: ${{ secrets.PORTPROD || '22' }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+          cat > ~/.ssh/config <<EOF
+          Host deploy-target
+            HostName $SSH_HOST
+            User $SSH_USER
+            Port $SSH_PORT
+            IdentityFile ~/.ssh/id_ed25519
+            IdentitiesOnly yes
+            BatchMode yes
+            ConnectTimeout 20
+            StrictHostKeyChecking no
+            UserKnownHostsFile /dev/null
+          EOF
+          chmod 600 ~/.ssh/config
+
+      - name: Test SSH connection
+        run: |
+          ssh deploy-target 'echo "SSH OK" && whoami && hostname'
+
+      - name: Deploy via Rsync
+        run: |
+          set -euo pipefail
+          echo "Starting deployment to /opt/project/atl_laravel..."
+
+          rsync -avz --delete --no-owner --no-group \
+            --exclude='.env' \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='/vendor' \
+            --exclude='/node_modules' \
+            --exclude='database/*.sqlite*' \
+            --exclude='/storage/*.key' \
+            --exclude='/storage/logs/*.log' \
+            --exclude='/storage/framework/cache/data' \
+            --exclude='/storage/framework/sessions' \
+            --exclude='/storage/framework/views' \
+            --exclude='/storage/app/firebase' \
+            --exclude='/storage/app/public' \
+            --exclude='/public/storage' \
+            -e ssh \
+            ./ deploy-target:/opt/project/atl_laravel/
+
+          echo "Files synced successfully!"
+
+      - name: Execute Remote Post-Deployment Commands
+        run: |
+          ssh deploy-target 'bash -s' << 'EOF'
+          set -e
+          export PATH="$PATH:/usr/local/bin:/usr/bin"
+          export COMPOSER_ALLOW_SUPERUSER=1
+          cd /opt/project/atl_laravel
+
+          git config --global --add safe.directory /opt/project/atl_laravel
+
+          echo "Installing composer dependencies on server..."
+          php -d disable_functions= /usr/local/bin/composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
+
+          rm -f bootstrap/cache/packages.php bootstrap/cache/services.php
+          php -d disable_functions= artisan package:discover --ansi
+
+          echo "Running database migrations..."
+          php artisan migrate --force
+
+          echo "Optimizing Laravel Cache..."
+          php artisan optimize:clear
+          php artisan config:cache
+          php artisan route:cache
+          php artisan view:cache
+
+          echo "Fixing ownership..."
+          chown -R www:www vendor storage bootstrap/cache
+
+          echo "All post-deploy steps completed!"
+          EOF

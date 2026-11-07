@@ -2,6 +2,9 @@
     $product = $order->product;
     $targetLabel = \App\Support\OrderTarget::label($product?->category?->slug);
     $method = $order->payment_method;
+    $methodLabel = $method?->label();
+    $isStorefrontCash = ($order->metadata['storefront']['payment_method'] ?? null) === 'cash';
+    $storefrontSellingPrice = (int) ($order->metadata['storefront']['selling_price'] ?? 0);
     $channelLabel = $method?->channelLabel($order->payment_channel);
     $rupiah = fn (int|float $n): string => 'Rp '.number_format((float) $n, 0, ',', '.');
     $meta = collect([$product?->code, $product?->brand?->name, $product?->category?->name])->filter()->implode(' · ');
@@ -14,7 +17,7 @@
     <title>Invoice {{ $order->order_number }} - Atlantic Pedia</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link href="{{ asset('assets/css/atlantic.css') }}?v={{ filemtime(public_path('assets/css/atlantic.css')) }}" rel="stylesheet">
     <link rel="icon" href="{{ asset('assets/images/logo.png') }}">
 
@@ -35,13 +38,13 @@
 </head>
 <body class="py-4">
     <div class="container">
-        <div class="d-flex justify-content-between align-items-center mb-3 no-print">
-            <a href="{{ $backUrl }}" class="btn-soft">
+        <div class="d-flex justify-content-between align-items-center mb-3 no-print flex-wrap gap-2">
+            <a href="{{ $backUrl }}" class="btn-ap btn-glass">
                 <span class="ms ms-sm align-middle me-1">arrow_back</span>Kembali
             </a>
-            <button type="button" class="btn-navy" onclick="window.print()">
-                <span class="ms ms-sm align-middle me-1">print</span>Cetak / Simpan PDF
-            </button>
+            <a href="{{ $pdfUrl }}" class="btn-ap btn-navy">
+               Download PDF
+            </a>
         </div>
 
         <div class="invoice-doc r-card shadow-sm">
@@ -70,7 +73,10 @@
                     </div>
                     <div class="col-sm-6 text-sm-end">
                         <div class="tx-mute fs-11 text-uppercase fw-semibold mb-1">Pembayaran</div>
-                        <div class="fw-semibold">{{ $method?->label() }}@if ($channelLabel) &middot; {{ $channelLabel }}@endif</div>
+                        <div class="fw-semibold">{{ $methodLabel }}@if ($channelLabel) &middot; {{ $channelLabel }}@endif</div>
+                        @if ($isStorefrontCash)
+                            <div class="tx-mute fs-12">Pelanggan membayar tunai kepada reseller: {{ $rupiah($storefrontSellingPrice) }}</div>
+                        @endif
                         <div class="tx-mute fs-12">{{ $order->paid_at ? 'Dibayar '.$order->paid_at->locale('id')->translatedFormat('d F Y, H:i') : 'Belum dibayar' }}</div>
                     </div>
                 </div>
@@ -81,7 +87,7 @@
                             <tr>
                                 <th>Produk</th>
                                 <th>Tujuan</th>
-                                <th class="text-end">Harga</th>
+                                <th class="text-end">{{ $isStorefrontCash ? 'Tagihan reseller' : 'Harga' }}</th>
                             </tr>
                         </thead>
                         <tbody>

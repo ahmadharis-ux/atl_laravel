@@ -27,6 +27,10 @@ class EmailVerificationController extends Controller
             $user->markEmailAsVerified();
         }
 
+        if (! $user->canAccessAdmin() && ! $user->hasPin()) {
+            return redirect()->intended(route('settings.pin'));
+        }
+
         return redirect()->intended(route('dashboard').'?verified=1');
     }
 

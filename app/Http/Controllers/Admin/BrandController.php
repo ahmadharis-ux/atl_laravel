@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\HasPerPage;
 use App\Http\Controllers\Controller;
 use App\Models\Brand;
 use App\Support\ImageProcessor;
@@ -13,6 +14,8 @@ use Illuminate\View\View;
 
 class BrandController extends Controller
 {
+    use HasPerPage;
+
     public function index(Request $request): View|JsonResponse
     {
         $brands = Brand::query()
@@ -24,7 +27,7 @@ class BrandController extends Controller
                 });
             })
             ->orderBy('name')
-            ->paginate(15)
+            ->paginate($this->perPage($request))
             ->withQueryString();
 
         $data = [

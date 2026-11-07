@@ -4,17 +4,25 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
+use App\Http\Controllers\Admin\Concerns\HasPerPage;
 use App\Http\Controllers\Controller;
+use App\Jobs\SyncDigiflazzTransactionStatus;
 use App\Models\Order;
+use App\Models\Product;
 use App\Support\OrderFulfillment;
 use App\Support\OrderPaymentSettler;
+use App\Support\TransactionLogger;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class TransactionController extends Controller
 {
+    use HasPerPage;
+
     public function index(Request $request): View|JsonResponse
     {
         $orders = Order::query()
@@ -30,7 +38,7 @@ class TransactionController extends Controller
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->query('status')))
             ->when($request->filled('payment_method'), fn ($query) => $query->where('payment_method', $request->query('payment_method')))
             ->latest('id')
-            ->paginate(15)
+            ->paginate($this->perPage($request))
             ->withQueryString();
 
         $data = [
@@ -57,13 +65,36 @@ class TransactionController extends Controller
             'product.brand',
             'product.category',
             'logs.user',
+            'walletTransactions',
         ]);
 
         $logs = $order->logs->sortByDesc('id')->values();
+        $providerStatusConflict = $logs->firstWhere('event', 'digiflazz.late_result_ignored');
+        $timelineLogs = $logs->filter(fn ($log): bool => in_array($log->event, [
+            'order.created',
+            'order.paid',
+            'midtrans.payment_status',
+            'digiflazz.topup_failed',
+            'digiflazz.status_sync_requested',
+            'digiflazz.status_sync_started',
+            'digiflazz.status_sync_failed',
+            'digiflazz.status_unknown',
+            'digiflazz.response_pending',
+            'digiflazz.late_result_ignored',
+            'order.fulfilled',
+            'order.failed',
+            'order.refunded',
+            'order.refunded_manual',
+            'order.storefront_refunded',
+            'order.storefront_refund_manual',
+            'order.storefront_refund_failed',
+        ], true))->sortBy('id')->values();
 
         return view('admin.transaction.show', [
             'order' => $order,
             'logs' => $logs,
+            'providerStatusConflict' => $providerStatusConflict,
+            'timelineLogs' => $timelineLogs,
         ]);
     }
 
@@ -72,17 +103,32 @@ class TransactionController extends Controller
         return view('orders.invoice', [
             'order' => $order->load(['user', 'product.brand', 'product.category']),
             'backUrl' => route('admin.transactions.show', $order),
+            'pdfUrl' => route('admin.transactions.invoice.pdf', $order),
         ]);
+    }
+
+    public function invoicePdf(Order $order): Response
+    {
+        $order->load(['user', 'product.brand', 'product.category']);
+
+        return Pdf::loadView('orders.invoice-pdf', ['order' => $order])
+            ->setPaper('a4')
+            ->download('invoice-'.$order->order_number.'.pdf');
     }
 
     public function refund(Order $order): RedirectResponse
     {
-        if ($order->status !== OrderStatus::Failed) {
-            return back()->with('error', 'Hanya transaksi gagal yang dapat direfund.');
+        $canRefund = $order->source === 'store_qris'
+            ? in_array($order->status, [OrderStatus::Failed, OrderStatus::Expired], true)
+                && $order->refund_status === 'manual_required'
+            : $order->status === OrderStatus::Failed;
+
+        if (! $canRefund) {
+            return back()->with('error', 'Refund manual hanya tersedia untuk transaksi gagal atau refund QRIS yang memerlukan tindakan admin.');
         }
 
         if (! OrderFulfillment::refundManually($order)) {
-            return back()->with('error', 'Transaksi ini sudah direfund sebelumnya.');
+            return back()->with('error', 'Refund sedang diproses otomatis atau transaksi ini sudah direfund.');
         }
 
         return back()->with('success', 'Refund berhasil diproses.');
@@ -103,6 +149,29 @@ class TransactionController extends Controller
         }
 
         return back()->with('success', 'Pesanan '.$order->order_number.' ditandai lunas dan diproses.');
+    }
+
+    /**
+     * Minta status terkini menggunakan Ref ID transaksi Digiflazz yang sama.
+     */
+    public function syncDigiflazz(Order $order, Request $request): RedirectResponse
+    {
+        $isDigiflazzOrder = $order->provider === Product::PROVIDER_DIGIFLAZZ
+            || $order->product?->provider === Product::PROVIDER_DIGIFLAZZ;
+
+        if ($order->status !== OrderStatus::Processing
+            || ! $isDigiflazzOrder
+            || blank($order->provider_ref)) {
+            return back()->with('error', 'Cek status hanya tersedia untuk pesanan Digiflazz yang masih diproses dan memiliki Ref ID.');
+        }
+
+        TransactionLogger::info('digiflazz.status_sync_requested', 'Admin meminta pemeriksaan ulang status Digiflazz menggunakan Ref ID yang sama.', [
+            'provider_ref' => $order->provider_ref,
+        ], $order, $request->user());
+
+        SyncDigiflazzTransactionStatus::dispatch($order->getKey());
+
+        return back()->with('success', 'Permintaan cek status dikirim. Pesanan tetap diproses sampai Digiflazz memberikan status akhir.');
     }
 
     /**

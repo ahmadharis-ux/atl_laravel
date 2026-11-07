@@ -743,6 +743,63 @@
     window.addEventListener('scroll', close, true);
   }
 
+  function initUserMenus() {
+    document.querySelectorAll('[data-user-menu]').forEach(function (root) {
+      var toggle = root.querySelector('[data-user-menu-toggle]');
+      var pop = root.querySelector('[data-user-menu-pop]');
+      if (!toggle || !pop) return;
+
+      function close(restoreFocus) {
+        pop.hidden = true;
+        toggle.setAttribute('aria-expanded', 'false');
+        if (restoreFocus) toggle.focus();
+      }
+
+      toggle.addEventListener('click', function () {
+        var isOpen = toggle.getAttribute('aria-expanded') === 'true';
+        pop.hidden = isOpen;
+        toggle.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+      });
+
+      document.addEventListener('click', function (event) {
+        if (!root.contains(event.target)) close(false);
+      });
+
+      root.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && !pop.hidden) close(true);
+      });
+
+      pop.addEventListener('click', function (event) {
+        if (event.target.closest('a, button')) close(false);
+      });
+    });
+  }
+
+  function focusFirstInvalidField() {
+    var fields = [...document.querySelectorAll('[aria-invalid="true"]')];
+    var field = fields.find(function (candidate) {
+      var enhancedSelect = candidate.tagName === 'SELECT'
+        && candidate.nextElementSibling?.querySelector('.ts-control');
+
+      return !candidate.disabled && (candidate.getClientRects().length > 0 || enhancedSelect);
+    });
+
+    if (!field) {
+      var error = document.querySelector('.err.show');
+      if (!error) return;
+      error.setAttribute('tabindex', '-1');
+      field = error;
+    }
+
+    var focusTarget = field;
+    if (field.tagName === 'SELECT' && field.getClientRects().length === 0) {
+      focusTarget = field.nextElementSibling?.querySelector('.ts-control') || field;
+    }
+
+    focusTarget.focus();
+    focusTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
   // ---------------- Modal + Confirm ----------------
   function showModal(el) {
     if (!el) return;
@@ -769,7 +826,10 @@
       '<div class="ap-modal-dialog ap-modal-sm" role="alertdialog" aria-modal="true">' +
         '<div class="ap-modal-head"><h3 class="ap-confirm-title">Konfirmasi</h3>' +
           '<button type="button" class="ap-icon-btn" data-modal-close data-tip="Tutup"><span class="ms ms-md">close</span></button></div>' +
-        '<div class="ap-modal-body"><p class="ap-confirm-msg m-0">Anda yakin?</p></div>' +
+        '<div class="ap-modal-body">' +
+          '<p class="ap-confirm-msg m-0">Anda yakin?</p>' +
+          '<div class="ap-checkout-confirm" hidden></div>' +
+        '</div>' +
         '<div class="ap-modal-foot">' +
           '<button type="button" class="btn-soft" data-modal-close>Batal</button>' +
           '<button type="button" class="btn-navy ap-confirm-ok">Ya, Lanjutkan</button>' +
@@ -777,17 +837,22 @@
       '</div>';
     document.body.appendChild(confirmEl);
     confirmEl.querySelector('.ap-confirm-ok').addEventListener('click', function () {
+      var pinInput = confirmEl.querySelector('[data-confirm-pin]');
+      if (pinInput && !pinInput.reportValidity()) {
+        pinInput.focus();
+        return;
+      }
       var cb = confirmCb;
-      closeModal(confirmEl);
+      var shouldClose = typeof cb !== 'function' || cb(true, pinInput ? pinInput.value : null) !== false;
       confirmCb = null;
-      if (cb) cb(true);
+      if (shouldClose) closeModal(confirmEl);
     });
     confirmEl.addEventListener('click', function (e) {
       if (e.target.closest('[data-modal-close]')) {
         var cb = confirmCb;
         closeModal(confirmEl);
         confirmCb = null;
-        if (cb) cb(false);
+        if (typeof cb === 'function') cb(false);
       }
     });
     return confirmEl;
@@ -796,19 +861,137 @@
     var el = ensureConfirm();
     var o = typeof opts === 'string' ? { message: opts } : (opts || {});
     el.querySelector('.ap-confirm-title').textContent = o.title || 'Konfirmasi';
-    el.querySelector('.ap-confirm-msg').textContent = o.message || 'Anda yakin?';
+    var message = el.querySelector('.ap-confirm-msg');
+    var checkoutSummary = el.querySelector('.ap-checkout-confirm');
+    var dialog = el.querySelector('.ap-modal-dialog');
+    message.textContent = o.message || 'Anda yakin?';
+    message.hidden = !!o.checkoutSummary;
+    checkoutSummary.hidden = !o.checkoutSummary;
+    checkoutSummary.replaceChildren();
+    dialog.classList.toggle('ap-checkout-confirm-dialog', !!o.checkoutSummary);
+    if (o.checkoutSummary) renderCheckoutConfirmation(checkoutSummary, o.checkoutSummary);
     var ok = el.querySelector('.ap-confirm-ok');
     ok.textContent = o.okLabel || 'Ya, Lanjutkan';
     ok.style.background = o.danger ? 'var(--err)' : '';
-    confirmCb = function () { if (typeof cb === 'function') { cb(true); } };
-    var cancelBtn = el.querySelector('[data-modal-close]');
-    var oldCancel = cancelBtn._apCancel;
-    if (oldCancel) cancelBtn.removeEventListener('click', oldCancel);
-    cancelBtn._apCancel = function () {
-      if (typeof cb === 'function') { cb(false); }
-    };
-    cancelBtn.addEventListener('click', cancelBtn._apCancel);
+    confirmCb = typeof cb === 'function' ? cb : function(){};
     showModal(el);
+  }
+
+  function showCheckoutConfirmError(message) {
+    var el = document.querySelector('.ap-checkout-confirm-dialog');
+    var summary = el ? el.querySelector('.ap-checkout-confirm') : null;
+    if (!summary || !message) return;
+
+    var error = summary.querySelector('[data-checkout-confirm-error]');
+    if (!error) {
+      error = document.createElement('div');
+      error.dataset.checkoutConfirmError = '';
+      error.className = 'alert-ap r-sm bg-errc-l tx-err fs-12 px-3 py-2 mt-3';
+      error.setAttribute('role', 'alert');
+      summary.appendChild(error);
+    }
+    error.textContent = message;
+  }
+
+  function renderCheckoutConfirmation(container, summary) {
+    var product = document.createElement('div');
+    product.className = 'ap-checkout-confirm-product';
+
+    var productIcon = document.createElement('span');
+    productIcon.className = 'ms ap-checkout-confirm-product-icon';
+    productIcon.textContent = 'shopping_bag';
+    productIcon.setAttribute('aria-hidden', 'true');
+    product.appendChild(productIcon);
+
+    var productDetails = document.createElement('div');
+    productDetails.className = 'ap-checkout-confirm-product-details';
+    var productLabel = document.createElement('span');
+    productLabel.className = 'ap-checkout-confirm-eyebrow';
+    productLabel.textContent = 'Produk';
+    var productName = document.createElement('strong');
+    productName.className = 'ap-checkout-confirm-product-name';
+    productName.textContent = summary.product;
+    productDetails.append(productLabel, productName);
+    product.appendChild(productDetails);
+    container.appendChild(product);
+
+    var rows = document.createElement('dl');
+    rows.className = 'ap-checkout-confirm-rows';
+    [
+      { label: summary.targetLabel || 'Tujuan', value: summary.target },
+      { label: 'Zone ID', value: summary.zone },
+    ].forEach(function (item) {
+      if (!item.value) return;
+      var row = document.createElement('div');
+      row.className = 'ap-checkout-confirm-row';
+      var label = document.createElement('dt');
+      label.textContent = item.label;
+      var value = document.createElement('dd');
+      value.textContent = item.value;
+      row.append(label, value);
+      rows.appendChild(row);
+    });
+
+    var totalRow = document.createElement('div');
+    totalRow.className = 'ap-checkout-confirm-row ap-checkout-confirm-total';
+    var totalLabel = document.createElement('dt');
+    totalLabel.textContent = 'Total pembayaran';
+    var totalValue = document.createElement('dd');
+    totalValue.textContent = summary.total;
+    totalRow.append(totalLabel, totalValue);
+    rows.appendChild(totalRow);
+    container.appendChild(rows);
+
+    var payment = document.createElement('div');
+    payment.className = 'ap-checkout-confirm-payment';
+    var paymentLabel = document.createElement('span');
+    paymentLabel.className = 'ap-checkout-confirm-eyebrow';
+    paymentLabel.textContent = 'Metode pembayaran';
+    var paymentMethod = document.createElement('span');
+    paymentMethod.className = 'ap-checkout-confirm-method';
+    paymentMethod.textContent = summary.method;
+    payment.append(paymentLabel, paymentMethod);
+    container.appendChild(payment);
+
+    var impact = document.createElement('p');
+    impact.className = 'ap-checkout-confirm-impact';
+    var impactIcon = document.createElement('span');
+    impactIcon.className = 'ms';
+    impactIcon.textContent = 'info';
+    impactIcon.setAttribute('aria-hidden', 'true');
+    var impactText = document.createElement('span');
+    impactText.textContent = summary.impact;
+    impact.append(impactIcon, impactText);
+    container.appendChild(impact);
+
+    if (!summary.requiresPin) return;
+
+    var pinField = document.createElement('div');
+    pinField.className = 'mt-3';
+    var pinLabel = document.createElement('label');
+    pinLabel.className = 'ui-label';
+    pinLabel.htmlFor = 'checkout-confirm-pin';
+    pinLabel.textContent = 'PIN transaksi';
+    var pinWrap = document.createElement('div');
+    pinWrap.className = 'ui-input-wrap';
+    var pinInput = document.createElement('input');
+    pinInput.className = 'ui-input';
+    pinInput.id = 'checkout-confirm-pin';
+    pinInput.type = 'password';
+    pinInput.inputMode = 'numeric';
+    pinInput.maxLength = 6;
+    pinInput.pattern = '[0-9]{6}';
+    pinInput.autocomplete = 'current-password';
+    pinInput.required = true;
+    pinInput.dataset.confirmPin = '';
+    pinInput.setAttribute('aria-describedby', 'checkout-confirm-pin-hint');
+    var pinHint = document.createElement('div');
+    pinHint.className = 'ui-hint';
+    pinHint.id = 'checkout-confirm-pin-hint';
+    pinHint.textContent = 'Masukkan 6 digit PIN untuk memotong saldo.';
+    pinWrap.appendChild(pinInput);
+    pinField.append(pinLabel, pinWrap, pinHint);
+    container.appendChild(pinField);
   }
 
   function initModals() {
@@ -852,6 +1035,31 @@
     // Modal dengan atribut data-modal-auto dibuka otomatis saat halaman dimuat.
     document.querySelectorAll('.ap-modal[data-modal-auto]').forEach(function (el) {
       setTimeout(function () { showModal(el); }, 250);
+    });
+  }
+
+  function initDepositProofZoom() {
+    document.querySelectorAll('[data-proof-zoom]').forEach(function (viewer) {
+      var image = viewer.querySelector('[data-proof-image]');
+      if (!image) return;
+
+      var zoom = 1;
+      function updateZoom() {
+        image.classList.toggle('is-zoomed', zoom > 1);
+        image.style.width = zoom === 1 ? '' : (zoom * 100) + '%';
+        image.style.maxWidth = zoom < 1 ? (zoom * 100) + '%' : '';
+      }
+
+      viewer.addEventListener('click', function (event) {
+        var button = event.target.closest('[data-proof-zoom-in], [data-proof-zoom-out], [data-proof-zoom-reset]');
+        if (!button) return;
+
+        if (button.hasAttribute('data-proof-zoom-in')) zoom = Math.min(3, zoom + 0.25);
+        else if (button.hasAttribute('data-proof-zoom-out')) zoom = Math.max(0.5, zoom - 0.25);
+        else zoom = 1;
+
+        updateZoom();
+      });
     });
   }
 
@@ -1080,16 +1288,30 @@
       var targetInput = root.querySelector('[data-nickname-target]');
       var zoneInput = root.querySelector('[data-nickname-zone]');
       var result = root.querySelector('[data-nickname-result]');
+      var buyBtn = document.querySelector('[data-nickname-buy]');
       if (!endpoint || !brand || !targetInput || !result) return;
 
       var timer = null;
       var seq = 0;
+      var valid = false;
+
+      function setBuyEnabled(enabled) {
+        if (!buyBtn) return;
+        buyBtn.disabled = !enabled;
+        if (enabled) {
+          buyBtn.classList.remove('opacity-50');
+        } else {
+          buyBtn.classList.add('opacity-50');
+        }
+      }
 
       function setResult(html) {
         result.innerHTML = html;
       }
 
       function message(text, tone) {
+        valid = false;
+        setBuyEnabled(false);
         setResult('<span class="' + (tone || 'tx-skyd') + '" style="opacity:.85">' + esc(text) + '</span>');
       }
 
@@ -1099,7 +1321,15 @@
         var id = ++seq;
 
         if (target === '') {
+          valid = false;
+          setBuyEnabled(false);
           message('Masukkan ID untuk melihat nama akun.');
+          return;
+        }
+        if (zoneInput && zone === '') {
+          valid = false;
+          setBuyEnabled(false);
+          message('Masukkan Zone ID untuk melanjutkan.', 'tx-err');
           return;
         }
 
@@ -1117,13 +1347,21 @@
           .then(function (data) {
             if (id !== seq) return;
             if (data && data.status && data.nickname) {
+              valid = true;
+              setBuyEnabled(true);
               setResult('<span class="tx-mintt fw-bold"><span class="ms ms-sm align-middle me-1">verified</span>' + esc(data.nickname) + '</span>');
             } else {
+              valid = false;
+              setBuyEnabled(false);
               message((data && data.message) || 'Nama akun tidak ditemukan.', 'tx-err');
             }
           })
           .catch(function () {
-            if (id === seq) message('Gagal memeriksa, silakan coba lagi.', 'tx-err');
+            if (id === seq) {
+              valid = false;
+              setBuyEnabled(false);
+              message('Gagal memeriksa, silakan coba lagi.', 'tx-err');
+            }
           });
       }
 
@@ -1138,6 +1376,24 @@
         zoneInput.addEventListener('input', schedule);
         zoneInput.addEventListener('blur', run);
       }
+      var form = root.closest('form[data-nickname-form]');
+      if (form) {
+        form.addEventListener('submit', function (e) {
+          if (!valid) {
+            e.preventDefault();
+            if (window.AP && window.AP.showToast) {
+              window.AP.showToast('ID/Zone belum terverifikasi atau belum lengkap.', 'error');
+            } else {
+              alert('ID/Zone belum terverifikasi atau belum lengkap.');
+            }
+            if (!targetInput.value.trim()) targetInput.focus();
+            else if (zoneInput && !zoneInput.value.trim()) zoneInput.focus();
+            run();
+            return;
+          }
+        });
+      }
+      setBuyEnabled(false);
     });
   }
 
@@ -1353,11 +1609,38 @@
     }, 3500);
   }
 
+  function claimNotificationToast(notificationId) {
+    if (!notificationId) return true;
+
+    var userId = window.ATL_PUSH && window.ATL_PUSH.userId ? window.ATL_PUSH.userId : 'guest';
+    var storageKey = 'ap_notif_announced:' + userId;
+
+    try {
+      var announced = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      if (!Array.isArray(announced)) announced = [];
+      notificationId = String(notificationId);
+      if (announced.indexOf(notificationId) !== -1) return false;
+      announced.push(notificationId);
+      localStorage.setItem(storageKey, JSON.stringify(announced.slice(-50)));
+    } catch (e) {}
+
+    return true;
+  }
+
+  function showNotificationToastOnce(notificationId, message, type) {
+    if (!message || !claimNotificationToast(notificationId)) return false;
+    showToast(message, type);
+    return true;
+  }
+
   window.AP = {
     openModal: openModal,
     closeModal: function (id) { closeModal(typeof id === 'string' ? document.getElementById(id) : id); },
+    closeConfirm: function () { if (confirmEl) closeModal(confirmEl); },
     confirm: confirmAction,
     showToast: showToast,
+    claimNotificationToast: claimNotificationToast,
+    showNotificationToastOnce: showNotificationToastOnce,
     initSelects: function (scope) {
       initSearchSelects(scope);
       initMultiSelects(scope);
@@ -1386,6 +1669,19 @@
           if (field) field.disabled = !on;
         });
 
+        document.querySelectorAll('[data-fee-row]').forEach(function (row) {
+          var isVisible = (row.dataset.method || '') === value;
+          row.classList.toggle('d-none', !isVisible);
+        });
+
+        var checkoutTotal = document.querySelector('[data-checkout-total]');
+        if (checkoutTotal) {
+          var baseAmount = parseInt(checkoutTotal.dataset.baseAmount, 10) || 0;
+          var qrisFee = parseInt(checkoutTotal.dataset.qrisFee, 10) || 0;
+          var total = baseAmount + (value === 'qris' ? qrisFee : 0);
+          checkoutTotal.textContent = 'Rp ' + total.toLocaleString('id-ID');
+        }
+
         var saldoWrap = document.querySelector('[data-checkout-saldo]');
         if (saldoWrap) {
           if (value === 'saldo') {
@@ -1394,6 +1690,20 @@
           } else {
             saldoWrap.classList.add('d-none');
             saldoWrap.classList.remove('d-flex');
+          }
+
+          var saldoStatus = saldoWrap.querySelector('[data-checkout-saldo-status]');
+          if (saldoStatus) {
+            var sufficient = saldoStatus.dataset.sufficient === '1';
+            var sufficientMessage = saldoStatus.querySelector('[data-saldo-sufficient-message]');
+            var insufficientMessage = saldoStatus.querySelector('[data-saldo-insufficient-message]');
+            var topupAction = saldoWrap.querySelector('[data-checkout-topup]');
+
+            if (sufficientMessage) sufficientMessage.classList.toggle('d-none', !sufficient);
+            if (insufficientMessage) insufficientMessage.classList.toggle('d-none', sufficient);
+            saldoStatus.classList.toggle('tx-mintt', sufficient);
+            saldoStatus.classList.toggle('tx-err', !sufficient);
+            if (topupAction) topupAction.classList.toggle('d-none', sufficient || value !== 'saldo');
           }
         }
       }
@@ -1410,39 +1720,112 @@
   function initMinLoaderForms() {
     document.querySelectorAll('form[data-min-loader]').forEach(function (form) {
       form.addEventListener('submit', function (e) {
+        if (form.dataset.nativeSubmit === '1') {
+          form.dataset.nativeSubmit = '';
+          return;
+        }
         if (form.dataset.submitting === '1') return;
         e.preventDefault();
         form.dataset.submitting = '1';
 
         var isCheckout = form.hasAttribute('data-checkout-form') || (form.action && form.action.indexOf('/checkout/') !== -1);
-        if (isCheckout) {
-          var targetInput = form.querySelector('input[name="target"]');
-          var targetVal = targetInput ? targetInput.value.trim() : '';
-          if (targetVal === '') {
-            if (window.AP && window.AP.showToast) {
-              window.AP.showToast('Isi tujuan terlebih dahulu.', 'error');
-            } else {
-              alert('Isi tujuan terlebih dahulu.');
-            }
+        var submitCheckoutNormally = function () {
+          if (!form.reportValidity()) {
             form.dataset.submitting = '';
-            var btns = form.querySelectorAll('button[type="submit"], input[type="submit"]');
-            btns.forEach(function (b) { b.disabled = false; });
-            if (targetInput) { targetInput.focus(); targetInput.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
             return;
           }
+
+          var buttons = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+          buttons.forEach(function (button) { button.disabled = true; });
+
+          if (window.AP && AP.showLoader) AP.showLoader();
+
+          var started = Date.now();
+          var data = new FormData(form);
+
+          fetch(form.action, {
+            method: (form.getAttribute('method') || 'post').toUpperCase(),
+            body: data,
+            credentials: 'same-origin',
+            headers: {
+              'Accept': 'application/json, text/html;q=0.9',
+              'X-Requested-With': 'XMLHttpRequest',
+            },
+          }).then(function (response) {
+            if (!response.ok && response.status >= 400 && response.status < 500) {
+              return response.text().then(function (body) {
+                var message = 'Pesanan tidak dapat diproses.';
+
+                try {
+                  var payload = JSON.parse(body);
+                  if (payload.errors && payload.errors.pin) {
+                    message = Array.isArray(payload.errors.pin) ? payload.errors.pin[0] : payload.errors.pin;
+                  } else if (payload.message) {
+                    message = payload.message;
+                  }
+                } catch (error) {
+                  var doc = new DOMParser().parseFromString(body, 'text/html');
+                  var serverError = doc.querySelector('.err.show, .alert-ap, .text-danger, .tx-err, .invalid-feedback, .alert-danger');
+                  if (serverError && serverError.textContent.trim()) message = serverError.textContent.trim();
+                }
+
+                if (window.AP && AP.hideLoader) AP.hideLoader();
+                form.dataset.submitting = '';
+                buttons.forEach(function (button) { button.disabled = false; });
+                showCheckoutConfirmError(message);
+              });
+            }
+
+            var wait = Math.max(0, 2000 - (Date.now() - started));
+            setTimeout(function () {
+              if (window.AP && AP.hideLoader) AP.hideLoader();
+              if (window.AP && AP.closeConfirm) AP.closeConfirm();
+              if (response.redirected && response.url) {
+                window.location.assign(response.url);
+              } else {
+                window.location.reload();
+              }
+            }, wait);
+          }).catch(function () {
+            if (window.AP && AP.hideLoader) AP.hideLoader();
+            form.dataset.submitting = '';
+            buttons.forEach(function (button) { button.disabled = false; });
+            showCheckoutConfirmError('Koneksi gagal. Silakan coba lagi.');
+          });
+        };
+        if (isCheckout) {
+          var targetInput = form.querySelector('input[name="target"]');
           var zoneInput = form.querySelector('input[name="zone"]');
-          if (zoneInput && zoneInput.closest('.d-none') === null) {
-            var zoneVal = zoneInput.value.trim();
+          var requiresZone = form.dataset.requiresZone === '1';
+          if (targetInput) {
+            var targetVal = (targetInput.value || '').trim();
+            if (targetVal === '') {
+              if (window.AP && window.AP.showToast) {
+                window.AP.showToast('ID Tujuan wajib diisi.', 'error');
+              } else {
+                alert('ID Tujuan wajib diisi.');
+              }
+              form.dataset.submitting = '';
+              var btns = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+              btns.forEach(function (b) { b.disabled = false; });
+              targetInput.focus();
+              targetInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              return;
+            }
+          }
+          if (requiresZone && zoneInput) {
+            var zoneVal = (zoneInput.value || '').trim();
             if (zoneVal === '') {
               if (window.AP && window.AP.showToast) {
-                window.AP.showToast('Zone wajib diisi.', 'error');
+                window.AP.showToast('Zone ID wajib diisi.', 'error');
               } else {
-                alert('Zone wajib diisi.');
+                alert('Zone ID wajib diisi.');
               }
               form.dataset.submitting = '';
               var btns2 = form.querySelectorAll('button[type="submit"], input[type="submit"]');
               btns2.forEach(function (b) { b.disabled = false; });
-              if (zoneInput) { zoneInput.focus(); zoneInput.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+              zoneInput.focus();
+              zoneInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
               return;
             }
           } else if (zoneInput && zoneInput.required) {
@@ -1465,7 +1848,19 @@
           if (methodChkVal === 'saldo') {
             var sisa = document.querySelector('[data-sisa-saldo]');
             if (sisa) {
-              var st = sisa.textContent.replace(/\D/g, '');
+              var stRaw = sisa.textContent || '';
+              if (stRaw.indexOf('-') !== -1 || stRaw.match(/Rp\s*-/)) {
+                if (window.AP && window.AP.showToast) {
+                  window.AP.showToast('Saldo tidak mencukupi.', 'error');
+                } else {
+                  alert('Saldo tidak mencukupi.');
+                }
+                form.dataset.submitting = '';
+                var btns3 = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+                btns3.forEach(function (b) { b.disabled = false; });
+                return;
+              }
+              var st = stRaw.replace(/\D/g, '');
               if (st !== '' && parseInt(st, 10) < 0) {
                 if (window.AP && window.AP.showToast) {
                   window.AP.showToast('Saldo tidak mencukupi.', 'error');
@@ -1479,19 +1874,16 @@
               }
             } else {
               var allText = document.body.innerText || '';
-              if (allText.match(/Sisa setelah transaksi.*Rp\s*[-]?\d/)) {
-                var mm = allText.match(/Rp\s*-\s*([0-9\.]+)/);
-                if (mm) {
-                  if (window.AP && window.AP.showToast) {
-                    window.AP.showToast('Saldo tidak mencukupi.', 'error');
-                  } else {
-                    alert('Saldo tidak mencukupi.');
-                  }
-                  form.dataset.submitting = '';
-                  var btns3b = form.querySelectorAll('button[type="submit"], input[type="submit"]');
-                  btns3b.forEach(function (b) { b.disabled = false; });
-                  return;
+              if (/Sisa setelah transaksi/.test(allText) && /Rp\s*-\s*[0-9.,]+/.test(allText)) {
+                if (window.AP && window.AP.showToast) {
+                  window.AP.showToast('Saldo tidak mencukupi.', 'error');
+                } else {
+                  alert('Saldo tidak mencukupi.');
                 }
+                form.dataset.submitting = '';
+                var btns3b = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+                btns3b.forEach(function (b) { b.disabled = false; });
+                return;
               }
             }
           }
@@ -1500,30 +1892,139 @@
         var methodVal = methodInput ? methodInput.value : '';
         var msg = isCheckout ? 'Apakah pesanan dilanjutkan?' : 'Apakah transaksi ini dilanjutkan?';
         var title = isCheckout ? 'Konfirmasi Pesanan' : 'Konfirmasi Transaksi';
+        var checkoutSummary = null;
+        if (isCheckout) {
+          var targetValue = targetInput ? (targetInput.value || '').trim() : '';
+          var zoneValue = zoneInput ? (zoneInput.value || '').trim() : '';
+          var totalElement = document.querySelector('[data-checkout-total]');
+
+          var checkoutPin = form.querySelector('[data-checkout-pin]');
+          if (checkoutPin) checkoutPin.value = '';
+
+          checkoutSummary = {
+            product: form.dataset.checkoutProduct || '',
+            targetLabel: form.dataset.checkoutTargetLabel || 'Tujuan',
+            target: targetValue,
+            zone: zoneValue,
+            total: totalElement ? totalElement.textContent.trim() : '',
+            method: methodVal === 'saldo' ? 'Saldo' : 'QRIS',
+            requiresPin: methodVal === 'saldo',
+            impact: methodVal === 'saldo'
+              ? 'Saldo akun langsung dipotong saat pesanan dibuat.'
+              : 'Instruksi QRIS tersedia setelah pesanan dibuat. Selesaikan pembayaran sebelum tagihan kedaluwarsa.',
+          };
+        }
         if (window.AP && typeof window.AP.confirm === 'function') {
-          window.AP.confirm({ message: msg, title: title, okLabel: 'Lanjutkan' }, function (ok) {
+          window.AP.confirm({ message: msg, title: title, okLabel: 'Lanjutkan', checkoutSummary: checkoutSummary }, function (ok, pin) {
             if (!ok) {
               form.dataset.submitting = '';
               var buttons = form.querySelectorAll('button[type="submit"], input[type="submit"]');
               buttons.forEach(function (b) { b.disabled = false; });
               return;
             }
+            var checkoutPin = form.querySelector('[data-checkout-pin]');
+            if (checkoutPin) checkoutPin.value = pin || '';
+            // Re-check saldo saat benar-benar mau lanjut
+            var methodChk2 = form.querySelector('input[name="payment_method"]:checked');
+            var methodChkVal2 = methodChk2 ? methodChk2.value : '';
+            if (methodChkVal2 === 'saldo') {
+              var sisa2 = document.querySelector('[data-sisa-saldo]');
+              if (sisa2) {
+                var stRaw2 = sisa2.textContent || '';
+                if (stRaw2.indexOf('-') !== -1) {
+                  if (window.AP && window.AP.showToast) {
+                    window.AP.showToast('Saldo tidak mencukupi. Silakan pilih metode QRIS untuk melanjutkan.', 'error');
+                  } else {
+                    alert('Saldo tidak mencukupi. Silakan pilih metode QRIS untuk melanjutkan.');
+                  }
+                  form.dataset.submitting = '';
+                  var buttonsBad = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+                  buttonsBad.forEach(function (b) { b.disabled = false; });
+                  return;
+                }
+              }
+            }
+            if (isCheckout) {
+              submitCheckoutNormally();
+              return false;
+            }
             var min = parseInt(form.dataset.minLoader, 10);
             if (isNaN(min) || min < 0) min = 2000;
             var started = Date.now();
             var data = new FormData(form);
 
-            var buttons = form.querySelectorAll('button[type="submit"], input[type="submit"]');
-            buttons.forEach(function (b) { b.disabled = true; });
+              var buttons = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+              buttons.forEach(function (b) { b.disabled = true; });
 
-            if (window.AP && AP.showLoader) AP.showLoader();
+              if (window.AP && AP.showLoader) AP.showLoader();
 
             fetch(form.action, {
               method: (form.getAttribute('method') || 'post').toUpperCase(),
               body: data,
               credentials: 'same-origin',
-              headers: { 'Accept': 'text/html' },
+              headers: { 'Accept': 'application/json, text/html;q=0.9', 'X-Requested-With': 'XMLHttpRequest' },
             }).then(function (response) {
+              if (!response.ok && response.status >= 400 && response.status < 500) {
+                return response.text().then(function (html) {
+                  if (window.AP && AP.hideLoader) AP.hideLoader();
+                  form.dataset.submitting = '';
+                  var buttonsErr = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+                  buttonsErr.forEach(function (b) { b.disabled = false; });
+                  var msg = 'Ada transaksi QRIS yang belum dibayar untuk produk & tujuan yang sama. Selesaikan atau tunggu kedaluwarsa.';
+                  try {
+                    // try json
+                    try {
+                      var j = JSON.parse(html);
+                      if (j && j.message) msg = j.message;
+                      else if (j && j.errors) {
+                        var keys = Object.keys(j.errors);
+                        if (keys.length) msg = Array.isArray(j.errors[keys[0]]) ? j.errors[keys[0]][0] : j.errors[keys[0]];
+                      }
+                    } catch(e) {
+                      var doc = new DOMParser().parseFromString(html, 'text/html');
+                      var err = doc.querySelector('.err.show, .alert-ap, .text-danger, .tx-err, .invalid-feedback, .alert-danger');
+                      if (err && err.textContent.trim()) {
+                        msg = err.textContent.trim();
+                      }
+                    }
+                  } catch (e) {}
+                  if (typeof confirmAction === 'function') {
+                    confirmAction({ title: 'Tidak bisa melanjutkan', message: msg, okLabel: 'Mengerti' }, function(){});
+                  } else if (window.AP && window.AP.showToast) {
+                    window.AP.showToast(msg, 'error');
+                  } else {
+                    alert(msg);
+                  }
+                  throw new Error('validation');
+                });
+              }
+              if (response.redirected && response.url) {
+                return fetch(response.url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                  .then(function(r){ return r.text(); })
+                  .then(function(html){
+                    try {
+                      var doc = new DOMParser().parseFromString(html, 'text/html');
+                      var err = doc.querySelector('.err.show, .alert-ap, .text-danger, .tx-err, .invalid-feedback, .alert-danger');
+                      if (err && err.textContent.trim()) {
+                        if (window.AP && AP.hideLoader) AP.hideLoader();
+                        form.dataset.submitting = '';
+                        var buttonsErr = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+                        buttonsErr.forEach(function (b) { b.disabled = false; });
+                        var msg2 = err.textContent.trim();
+                        if (typeof confirmAction === 'function') {
+                          confirmAction({ title: 'Tidak bisa melanjutkan', message: msg2, okLabel: 'Mengerti' }, function(){});
+                        } else if (window.AP && window.AP.showToast) {
+                          window.AP.showToast(msg2, 'error');
+                        } else {
+                          alert(msg2);
+                        }
+                        throw new Error('validation');
+                      }
+                    } catch(e){}
+                    var wait = Math.max(0, min - (Date.now() - started));
+                    setTimeout(function () { window.location.assign(response.url); }, wait);
+                  });
+              }
               var wait = Math.max(0, min - (Date.now() - started));
               setTimeout(function () {
                 if (response.redirected && response.url) {
@@ -1532,13 +2033,19 @@
                   window.location.reload();
                 }
               }, wait);
-            }).catch(function () {
+            }).catch(function (err) {
+              if (err && err.message === 'validation') return;
               if (window.AP && AP.hideLoader) AP.hideLoader();
               form.dataset.submitting = '';
               var buttons2f = form.querySelectorAll('button[type="submit"], input[type="submit"]');
               buttons2f.forEach(function (b) { b.disabled = false; });
             });
           });
+          return;
+        }
+
+        if (isCheckout) {
+          submitCheckoutNormally();
           return;
         }
 
@@ -1943,6 +2450,7 @@
       var pop = root.querySelector('[data-notif-pop]');
       var list = root.querySelector('[data-notif-list]');
       var url = root.dataset.notifUrl || '';
+      console.log('notif url', url, root);
       if (!toggle || !pop || !list || !url) return;
 
       var interval = parseInt(root.dataset.notifInterval, 10) || 15000;
@@ -1993,10 +2501,10 @@
         var hasBaseline = lastSeen !== null;
 
         if (announce && incoming !== null && incoming !== lastSeen && data.latest_unread) {
-          if (window.AP && window.AP.showToast) {
+          if (window.AP && window.AP.showNotificationToastOnce) {
             var message = data.latest_body || data.latest_title;
             if (message) {
-              window.AP.showToast(message, data.latest_level || 'info');
+              window.AP.showNotificationToastOnce(incoming, message, data.latest_level || 'info');
             }
           }
           if (!pop.hidden) renderList(data);
@@ -2138,6 +2646,7 @@
   }
 
   function boot() {
+    focusFirstInvalidField();
     initTables();
     initWizards();
     initCharts();
@@ -2159,7 +2668,9 @@
     initExpiryTimers();
     initTooltips();
     initActions();
+    initUserMenus();
     initModals();
+    initDepositProofZoom();
     initLoader();
     initPollers();
     initBreadcrumbs();

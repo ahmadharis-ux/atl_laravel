@@ -7,6 +7,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\User;
+use Database\Factories\UserFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -33,6 +34,7 @@ class CheckoutOperatorMismatchTest extends TestCase
         $response = $this->actingAs($user)->post(route('checkout.store', $product), [
             'target' => '085700001234', // INDOSAT prefix
             'payment_method' => PaymentMethod::Saldo->value,
+            'pin' => UserFactory::DEFAULT_PIN,
         ]);
 
         $response->assertSessionHasErrors('target');
@@ -53,6 +55,7 @@ class CheckoutOperatorMismatchTest extends TestCase
         $response = $this->actingAs($user)->post(route('checkout.store', $product), [
             'target' => '081200001234', // TELKOMSEL prefix
             'payment_method' => PaymentMethod::Saldo->value,
+            'pin' => UserFactory::DEFAULT_PIN,
         ]);
 
         $response->assertSessionHasNoErrors();

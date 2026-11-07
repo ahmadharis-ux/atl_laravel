@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\WalletTransactionType;
+use App\Jobs\RefundStorefrontOrder;
 use App\Jobs\SendDigiflazzTransaction;
 use App\Models\Order;
 use App\Models\Product;
@@ -74,17 +75,81 @@ final class OrderFulfillment
     }
 
     /**
+     * Check the provider result for an already-submitted transaction.
+     */
+    public static function syncStatus(Order $order): void
+    {
+        $order->refresh();
+        $product = $order->product()->first();
+        $isDigiflazzOrder = $order->provider === Product::PROVIDER_DIGIFLAZZ
+            || $product?->provider === Product::PROVIDER_DIGIFLAZZ;
+
+        if ($order->status !== OrderStatus::Processing
+            || ! $isDigiflazzOrder
+            || blank($order->provider_ref)) {
+            return;
+        }
+
+        if ($product === null) {
+            TransactionLogger::warning('digiflazz.status_sync_failed', 'Status Digiflazz tidak dapat diperiksa karena produk tidak ditemukan.', [
+                'provider_ref' => $order->provider_ref,
+            ], $order, $order->user);
+
+            return;
+        }
+
+        TransactionLogger::info('digiflazz.status_sync_started', 'Pemeriksaan status Digiflazz dimulai menggunakan Ref ID transaksi yang sama.', [
+            'provider_ref' => $order->provider_ref,
+        ], $order, $order->user);
+
+        try {
+            $data = Digiflazz::make()->checkTransactionStatus(
+                (string) $product->code,
+                $order->providerCustomerNo(),
+                (string) $order->provider_ref,
+                testing: Digiflazz::sandbox(),
+            );
+        } catch (Throwable $e) {
+            TransactionLogger::error('digiflazz.status_sync_failed', 'Gagal memeriksa status transaksi Digiflazz.', $e, [
+                'order_number' => $order->order_number,
+                'provider_ref' => $order->provider_ref,
+            ], $order, $order->user);
+
+            throw $e;
+        }
+
+        self::applyResult($order, $data);
+    }
+
+    /**
      * Simpan status terbaru dari provider (respons topup atau webhook).
      *
      * @param  array<string, mixed>  $data
      */
     public static function applyResult(Order $order, array $data): void
     {
-        DB::transaction(function () use ($order, $data): void {
+        $event = DB::transaction(function () use ($order, $data): ?string {
             $locked = Order::query()->whereKey($order->getKey())->lockForUpdate()->first();
 
             if ($locked === null) {
-                return;
+                return null;
+            }
+
+            if ($locked->status->isFinal()) {
+                $incomingStatus = self::normalizeStatus($data);
+
+                if ($incomingStatus === $locked->status) {
+                    return null;
+                }
+
+                TransactionLogger::warning('digiflazz.late_result_ignored', 'Respons Digiflazz diabaikan karena pesanan sudah berstatus akhir.', [
+                    'provider_ref' => $locked->provider_ref,
+                    'local_status' => $locked->status->value,
+                    'incoming_status' => $data['status'] ?? null,
+                    'incoming_rc' => $data['rc'] ?? null,
+                ], $locked, $locked->user);
+
+                return null;
             }
 
             $locked->forceFill([
@@ -95,31 +160,44 @@ final class OrderFulfillment
                 'provider_payload' => $data,
             ])->save();
 
-            if ($locked->status->isFinal()) {
-                return;
-            }
-
             $status = self::normalizeStatus($data);
 
             if ($status === OrderStatus::Success) {
                 self::markSuccess($locked, $data);
-            } elseif ($status === OrderStatus::Failed) {
-                self::markFailed($locked, (string) ($data['message'] ?? 'Transaksi gagal di provider.'));
+
+                return ResellerWebhook::EVENT_SUCCESS;
             }
+
+            if ($status === OrderStatus::Failed) {
+                self::markFailed($locked, (string) ($data['message'] ?? 'Transaksi gagal di provider.'));
+
+                return ResellerWebhook::EVENT_FAILED;
+            }
+
+            TransactionLogger::info('digiflazz.response_pending', 'Digiflazz belum memberikan status akhir; pesanan tetap menunggu hasil.', [
+                'provider_ref' => $locked->provider_ref,
+                'provider_status' => $data['status'] ?? null,
+                'rc' => $data['rc'] ?? null,
+            ], $locked, $locked->user);
+
+            return null;
         });
+
+        if ($event !== null) {
+            ResellerWebhook::dispatchForOrder($order, $event);
+        }
     }
 
     /**
-     * Tandai pesanan gagal (mis. antrean habis percobaan) tanpa hasil dari
-     * provider.
+     * Tandai pesanan gagal berdasarkan kegagalan definitif di sisi aplikasi.
      */
     public static function fail(Order $order, string $message, ?array $payload = null): void
     {
-        DB::transaction(function () use ($order, $message, $payload): void {
+        $event = DB::transaction(function () use ($order, $message, $payload): ?string {
             $locked = Order::query()->whereKey($order->getKey())->lockForUpdate()->first();
 
             if ($locked === null || $locked->status->isFinal()) {
-                return;
+                return null;
             }
 
             if ($payload !== null) {
@@ -127,7 +205,13 @@ final class OrderFulfillment
             }
 
             self::markFailed($locked, $message);
+
+            return ResellerWebhook::EVENT_FAILED;
         });
+
+        if ($event !== null) {
+            ResellerWebhook::dispatchForOrder($order, $event);
+        }
     }
 
     /**
@@ -135,11 +219,16 @@ final class OrderFulfillment
      */
     public static function expire(Order $order): void
     {
-        DB::transaction(function () use ($order): void {
+        $event = DB::transaction(function () use ($order): ?string {
             $locked = Order::query()->whereKey($order->getKey())->lockForUpdate()->first();
 
-            if ($locked === null || $locked->status->isFinal()) {
-                return;
+            if ($locked === null || $locked->status !== OrderStatus::Pending) {
+                return null;
+            }
+
+            if ($locked->source === 'store_cash'
+                && filled($locked->metadata['storefront']['cash_confirmed_at'] ?? null)) {
+                return null;
             }
 
             $locked->forceFill(['status' => OrderStatus::Expired])->save();
@@ -149,7 +238,14 @@ final class OrderFulfillment
             TransactionLogger::info('order.expired', 'Pesanan kedaluwarsa karena tidak dibayar.', [
                 'order_number' => $locked->order_number,
             ], $locked, $locked->user);
+
+            return ResellerWebhook::EVENT_EXPIRED;
         });
+
+        if ($event !== null) {
+            OrderNotifier::expired($order->refresh());
+            ResellerWebhook::dispatchForOrder($order, $event);
+        }
     }
 
     /**
@@ -165,7 +261,9 @@ final class OrderFulfillment
             'sn' => $data['sn'] ?? null,
         ], $order, $order->user);
 
-        $order->user?->addPoint();
+        ResellerCommissionLedger::creditForSuccessfulOrder($order);
+
+        OrderRewardLedger::award($order);
 
         OrderNotifier::success($order);
     }
@@ -185,9 +283,15 @@ final class OrderFulfillment
             'provider_status' => $order->provider_status,
         ], $order, $order->user);
 
-        OrderNotifier::failed($order, $order->payment_method === PaymentMethod::Saldo
-            ? 'Dana telah dikembalikan ke saldomu.'
-            : 'Silakan hubungi admin untuk pengembalian dana.');
+        if ($order->source === 'store_qris') {
+            RefundStorefrontOrder::dispatch($order->getKey())->afterCommit();
+        }
+
+        OrderNotifier::failed($order, match (true) {
+            $order->payment_method === PaymentMethod::Saldo => 'Dana telah dikembalikan ke saldomu.',
+            $order->source === 'store_qris' => 'Refund QRIS sedang diajukan ke Midtrans.',
+            default => 'Silakan hubungi admin untuk pengembalian dana.',
+        });
     }
 
     /**
@@ -202,7 +306,16 @@ final class OrderFulfillment
         return DB::transaction(function () use ($order): bool {
             $locked = Order::query()->whereKey($order->getKey())->lockForUpdate()->first();
 
-            if ($locked === null || $locked->status !== OrderStatus::Failed || $locked->refunded_at !== null) {
+            if ($locked === null) {
+                return false;
+            }
+
+            $canRefund = $locked->source === 'store_qris'
+                ? in_array($locked->status, [OrderStatus::Failed, OrderStatus::Expired], true)
+                    && $locked->refund_status === 'manual_required'
+                : $locked->status === OrderStatus::Failed;
+
+            if (! $canRefund || $locked->refunded_at !== null) {
                 return false;
             }
 
@@ -216,7 +329,19 @@ final class OrderFulfillment
                 }
             }
 
-            $locked->forceFill(['refunded_at' => now()])->save();
+            $metadata = $locked->metadata ?? [];
+            if ($locked->source === 'store_qris') {
+                $metadata['midtrans_refund'] = [
+                    'status' => 'completed',
+                    'refund_method' => 'manual',
+                ];
+            }
+
+            $locked->forceFill([
+                'refunded_at' => now(),
+                'refund_status' => $locked->source === 'store_qris' ? 'completed' : $locked->refund_status,
+                'metadata' => $metadata,
+            ])->save();
 
             TransactionLogger::info('order.refunded_manual', 'Refund manual diproses admin.', [
                 'order_number' => $locked->order_number,
@@ -295,9 +420,7 @@ final class OrderFulfillment
             'sukses', 'success' => OrderStatus::Success,
             'gagal', 'failed' => OrderStatus::Failed,
             'pending' => OrderStatus::Processing,
-            default => ($data['status'] ?? '') === '' && ($data['rc'] ?? '00') !== '00'
-                ? OrderStatus::Failed
-                : OrderStatus::Processing,
+            default => OrderStatus::Processing,
         };
     }
 }

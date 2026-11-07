@@ -30,12 +30,16 @@ class MerchandiseController extends Controller
             ->latest('id')
             ->limit(15)
             ->get();
+        $tier = $user->tier();
 
         return view('user.merchandise.index', [
             'items' => $items,
             'redemptions' => $redemptions,
             'pointHistory' => $pointHistory,
             'points' => (int) $user->points,
+            'lifetimePoints' => (int) $user->lifetime_points,
+            'tier' => $tier,
+            'nextTierThreshold' => $tier->nextThreshold(),
         ]);
     }
 

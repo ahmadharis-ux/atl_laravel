@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\HasPerPage;
 use App\Http\Controllers\Controller;
 use App\Models\DashboardBanner;
 use App\Support\BannerImageStorage;
@@ -12,6 +13,8 @@ use Illuminate\Http\Request;
 
 class DashboardBannerController extends Controller
 {
+    use HasPerPage;
+
     public function index(Request $request): View|JsonResponse
     {
         $banners = DashboardBanner::query()
@@ -26,7 +29,7 @@ class DashboardBannerController extends Controller
             ->when($request->filled('status'), fn ($query) => $query->where('is_active', $request->query('status') === 'active'))
             ->orderBy('sort_order')
             ->orderByDesc('id')
-            ->paginate(15)
+            ->paginate($this->perPage($request))
             ->withQueryString();
 
         $data = [

@@ -6,7 +6,8 @@
  *
  * - enable(): minta izin, daftar service worker, ambil token FCM, kirim ke server.
  * - disable(): hapus token di server + lokal.
- * - onMessage: tampilkan toast saat notifikasi tiba selagi aplikasi terbuka.
+ * - onMessage: tampilkan toast saat halaman aktif, atau notifikasi sistem saat
+ *   halaman berada di latar belakang.
  * Notifikasi saat aplikasi tertutup ditangani oleh service worker (firebase-messaging-sw.js).
  */
 (function () {
@@ -174,21 +175,26 @@
             var title = data.title || notification.title || 'Notifikasi baru';
             var body = data.body || notification.body || '';
             var url = data.url || (notification.click_action || '') || '/';
+            var notificationId = data.notification_id || '';
 
-            if (window.AP && window.AP.showToast) {
+            if (document.hidden) {
+                if (window.AP && window.AP.claimNotificationToast) {
+                    window.AP.claimNotificationToast(notificationId);
+                }
+            } else if (window.AP && window.AP.showNotificationToastOnce) {
+                window.AP.showNotificationToastOnce(notificationId, data.body || title, data.level || 'info');
+            } else if (window.AP && window.AP.showToast) {
                 window.AP.showToast(data.body || title, data.level || 'info');
             }
 
-            // Saat aplikasi terbuka, FCM tidak menampilkan notifikasi sistem
-            // otomatis; tampilkan manual agar tetap sampai ke perangkat.
-            if ('Notification' in window && Notification.permission === 'granted') {
+            if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
                 registration().then(function (reg) {
                     return reg.showNotification(title, {
                         body: body,
                         icon: '/assets/images/logo.png',
                         badge: '/assets/images/logo.png',
                         data: { url: url },
-                        tag: data.order_number || data.reference || ('atl-' + Date.now()),
+                        tag: notificationId ? 'atl-notif-' + notificationId : ('atl-' + Date.now()),
                     });
                 }).catch(function (err) { log('showNotification gagal:', err && err.message); });
             }

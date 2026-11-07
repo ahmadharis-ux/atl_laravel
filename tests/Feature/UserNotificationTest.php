@@ -2,12 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Enums\OrderStatus;
+use App\Enums\PaymentMethod;
 use App\Models\Deposit;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
 use App\Notifications\TransactionResult;
 use App\Support\DepositSettler;
+use App\Support\OrderFulfillment;
 use App\Support\OrderNotifier;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\DatabaseNotification;
@@ -25,7 +28,8 @@ class UserNotificationTest extends TestCase
         DepositSettler::settle($deposit);
 
         $notification = $user->notifications()->sole();
-        $this->assertSame('Top up berhasil', $notification->data['title']);
+        $this->assertSame('Isi saldo berhasil', $notification->data['title']);
+        $this->assertStringContainsString('Pengisian saldo '.$deposit->reference, $notification->data['body']);
         $this->assertSame('success', $notification->data['level']);
         $this->assertNull($notification->read_at);
     }
@@ -46,6 +50,27 @@ class UserNotificationTest extends TestCase
         $this->assertContains('Transaksi gagal', $titles);
     }
 
+    public function test_expiring_an_order_sends_one_actionable_warning_notification(): void
+    {
+        $user = User::factory()->create();
+        $order = Order::factory()->for($user)->create([
+            'status' => OrderStatus::Pending,
+            'payment_method' => PaymentMethod::Qris,
+        ]);
+
+        OrderFulfillment::expire($order);
+        OrderFulfillment::expire($order->fresh());
+
+        $notification = $user->notifications()->sole();
+
+        $this->assertSame('Batas pembayaran berakhir', $notification->data['title']);
+        $this->assertSame('warning', $notification->data['level']);
+        $this->assertSame('timer_off', $notification->data['icon']);
+        $this->assertSame(route('orders.show', $order), $notification->data['url']);
+        $this->assertSame('order', $notification->data['context']['type']);
+        $this->assertStringContainsString('kode pembayarannya tidak dapat digunakan lagi', $notification->data['body']);
+    }
+
     public function test_notification_dropdown_returns_json_with_unread_count(): void
     {
         $user = User::factory()->create();
@@ -60,6 +85,17 @@ class UserNotificationTest extends TestCase
             ->assertJsonPath('latest_unread', true);
         $this->assertStringContainsString('Halo', $response->json('html'));
         $this->assertNotNull($response->json('latest_id'));
+    }
+
+    public function test_warning_notifications_use_a_warning_icon_by_default(): void
+    {
+        $user = User::factory()->create();
+        $user->notify(new TransactionResult('Bukti perlu diperbaiki', 'Mohon unggah ulang.', 'warning'));
+
+        $notification = $user->notifications()->sole();
+
+        $this->assertSame('warning', $notification->data['level']);
+        $this->assertSame('warning', $notification->data['icon']);
     }
 
     public function test_opening_a_notification_marks_it_read_and_redirects(): void

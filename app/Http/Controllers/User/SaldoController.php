@@ -4,6 +4,7 @@ namespace App\Http\Controllers\User;
 
 use App\Enums\DepositStatus;
 use App\Http\Controllers\Controller;
+use App\Models\Deposit;
 use App\Models\Order;
 use App\Support\Wallet;
 use Illuminate\Http\Request;
@@ -18,6 +19,30 @@ class SaldoController extends Controller
             ->latest('id')
             ->limit(5)
             ->get();
+
+        $mutations = $request->user()->walletTransactions()
+            ->with('reference')
+            ->latest('id')
+            ->limit(5)
+            ->get()
+            ->map(function ($tx) {
+                $ref = $tx->reference;
+                $url = null;
+                if ($ref instanceof Deposit) {
+                    $url = route('deposits.show', $ref);
+                } elseif ($ref instanceof Order) {
+                    $url = route('orders.show', $ref);
+                }
+
+                return [
+                    'icon' => $tx->type->value === 'credit' ? 'add_circle' : 'remove_circle',
+                    'title' => $tx->description ?: $tx->type->label(),
+                    'detail' => $tx->created_at->locale('id')->translatedFormat('d M H:i'),
+                    'amount' => $tx->amount,
+                    'status' => 'Berhasil',
+                    'url' => $url ?: route('saldo.mutations'),
+                ];
+            });
 
         return view('user.saldo.index', [
             'balance' => (int) $request->user()->balance,
@@ -44,6 +69,7 @@ class SaldoController extends Controller
                 'status' => $order->status->label(),
                 'url' => route('orders.show', $order),
             ])->all(),
+            'saldos' => $mutations->take(5)->values()->all(),
         ]);
     }
 

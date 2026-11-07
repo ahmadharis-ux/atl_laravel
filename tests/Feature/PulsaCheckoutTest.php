@@ -11,6 +11,7 @@ use App\Models\Category;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
+use Database\Factories\UserFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
@@ -59,6 +60,7 @@ class PulsaCheckoutTest extends TestCase
             ->post(route('checkout.store', $product), [
                 'target' => '081234567890',
                 'payment_method' => PaymentMethod::Saldo->value,
+                'pin' => UserFactory::DEFAULT_PIN,
             ])
             ->assertRedirect();
 

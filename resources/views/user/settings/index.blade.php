@@ -5,11 +5,12 @@
 @section('content')
 <div class="d-flex flex-column gap-4">
 
-    <div class="d-flex align-items-center gap-2">
+    <div class="d-flex align-items-center justify-content-between gap-2">
         <div>
             <h1 class="fw-bold fs-4 m-0">Pengaturan</h1>
             <p class="tx-mute fs-12 m-0">Kelola profil, keamanan, dan perangkat akun Anda.</p>
         </div>
+        
     </div>
 
     @php
@@ -17,6 +18,7 @@
             ['label' => 'Profil', 'desc' => 'Nama, email & nomor HP', 'icon' => 'person', 'tone' => 'bg-sky-l tx-navy', 'url' => route('settings.profile')],
             ['label' => 'Rekening Bank', 'desc' => 'Tujuan pencairan saldo', 'icon' => 'account_balance', 'tone' => 'bg-mint-l tx-mintt', 'url' => route('settings.banks.index')],
             ['label' => 'Ubah Kata Sandi', 'desc' => 'Perbarui kata sandi akun', 'icon' => 'lock', 'tone' => 'bg-tealc-m tx-tealt', 'url' => route('settings.password')],
+            ['label' => 'PIN Transaksi', 'desc' => 'Keamanan pembayaran saldo', 'icon' => 'pin', 'tone' => 'bg-sky-l tx-navy', 'url' => route('settings.pin')],
             ['label' => 'Autentikasi Dua Faktor', 'desc' => 'Keamanan tambahan akun', 'icon' => 'verified_user', 'tone' => 'bg-gold tx-gold', 'url' => route('settings.two-factor')],
             ['label' => 'Perangkat Aktif', 'desc' => 'Kelola sesi login', 'icon' => 'devices', 'tone' => 'bg-errc-l tx-err', 'url' => route('settings.sessions')],
             ['label' => 'Notifikasi', 'desc' => 'Push notifikasi perangkat', 'icon' => 'notifications', 'tone' => 'bg-sky-l tx-navy', 'url' => route('settings.notifications')],
@@ -40,5 +42,11 @@
             </div>
         @endforeach
     </div>
+    <form action="{{ route('logout') }}" method="POST" class="d-flex flex-column gap-2">
+        @csrf
+        <button type="submit" class="btn btn-outline-danger justify-content-center  " aria-label="Keluar" title="Keluar" data-tip="Keluar">
+            <span class="ms align-middle">logout</span>  <span class="lbl">Keluar</span>
+        </button>
+    </form>
 </div>
 @endsection

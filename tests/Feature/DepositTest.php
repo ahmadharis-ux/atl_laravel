@@ -35,12 +35,14 @@ class DepositTest extends TestCase
         $this->actingAs($user)
             ->get(route('deposits.show', $deposit))
             ->assertOk()
+            ->assertSee('Isi Saldo')
+            ->assertSee('ID Transaksi')
             ->assertSee('BCA')
             ->assertSee('1234567890')
             ->assertSee('PT Atlantic Pedia');
     }
 
-    public function test_va_and_ewallet_deposit_page_waits_for_admin_confirmation(): void
+    public function test_va_and_ewallet_deposit_page_asks_for_proof_before_admin_review(): void
     {
         $user = User::factory()->create();
         $bank = MasterBank::factory()->create([
@@ -60,8 +62,9 @@ class DepositTest extends TestCase
         $this->actingAs($user)
             ->get(route('deposits.show', $deposit))
             ->assertOk()
-            ->assertSee('Menunggu konfirmasi admin')
-            ->assertSee('Pembayaran akan dikonfirmasi admin')
+            ->assertSee('Menunggu pembayaran')
+            ->assertSee('Kirim bukti untuk diverifikasi')
+            ->assertSee('Saldo belum ditambahkan')
             ->assertDontSee('Simulasikan Pembayaran');
     }
 
@@ -135,6 +138,54 @@ class DepositTest extends TestCase
             ->assertSee('Cek Status');
     }
 
+    public function test_pending_qris_deposit_explains_balance_credit_and_status_check(): void
+    {
+        $user = User::factory()->create();
+        $deposit = Deposit::factory()->create([
+            'user_id' => $user->getKey(),
+            'payment_method' => PaymentMethod::Qris,
+            'status' => DepositStatus::Pending,
+            'metadata' => ['midtrans' => ['qr_url' => 'https://api.sandbox.midtrans.com/v2/qris/qr.png']],
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('deposits.show', $deposit))
+            ->assertSee('Menunggu pembayaran. Saldo akun bertambah setelah pembayaran terkonfirmasi.')
+            ->assertSee('tekan Cek Status');
+    }
+
+    public function test_expired_deposit_explains_balance_was_not_credited_and_offers_retry(): void
+    {
+        $user = User::factory()->create();
+        $deposit = Deposit::factory()->create([
+            'user_id' => $user->getKey(),
+            'payment_method' => PaymentMethod::Qris,
+            'status' => DepositStatus::Expired,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('deposits.show', $deposit))
+            ->assertSee('Batas waktu pembayaran sudah lewat.')
+            ->assertSee('Saldo tidak ditambahkan')
+            ->assertSee('Bila kamu sudah membayar')
+            ->assertSee('Coba Isi Saldo Lagi');
+    }
+
+    public function test_failed_deposit_explains_that_the_balance_was_not_credited(): void
+    {
+        $user = User::factory()->create();
+        $deposit = Deposit::factory()->create([
+            'user_id' => $user->getKey(),
+            'status' => DepositStatus::Failed,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('deposits.show', $deposit))
+            ->assertSee('Permintaan isi saldo gagal.')
+            ->assertSee('Saldo tidak ditambahkan.')
+            ->assertSee('Coba Isi Saldo Lagi');
+    }
+
     public function test_deposit_qris_can_be_downloaded(): void
     {
         Http::fake(['*' => Http::response('PNG-BYTES', 200, ['Content-Type' => 'image/png'])]);
@@ -179,7 +230,7 @@ class DepositTest extends TestCase
 
         $this->actingAs(User::factory()->create())
             ->get(route('deposits.qris', $deposit))
-            ->assertForbidden();
+            ->assertNotFound();
     }
 
     public function test_deposit_sync_redirects_with_status_message(): void
@@ -207,7 +258,7 @@ class DepositTest extends TestCase
 
         $this->actingAs(User::factory()->create())
             ->post(route('deposits.sync', $deposit))
-            ->assertForbidden();
+            ->assertNotFound();
     }
 
     public function test_top_up_history_lists_all_deposits_for_the_user(): void
@@ -222,6 +273,11 @@ class DepositTest extends TestCase
             'user_id' => $user->getKey(),
             'payment_method' => PaymentMethod::VirtualAccount,
         ]);
+        $ewallet = Deposit::factory()->create([
+            'user_id' => $user->getKey(),
+            'payment_method' => PaymentMethod::EWallet,
+            'payment_channel' => 'dana',
+        ]);
         $expired = Deposit::factory()->create([
             'user_id' => $user->getKey(),
             'status' => DepositStatus::Expired,
@@ -232,11 +288,16 @@ class DepositTest extends TestCase
         $this->actingAs($user)
             ->get(route('deposits.index'))
             ->assertOk()
-            ->assertSee('Riwayat Top Up')
+            ->assertSee('Riwayat Isi Saldo')
+            ->assertSee('Semua permintaan untuk menambahkan saldo akun.')
+            ->assertSee('QRIS')
+            ->assertSee('Transfer Bank')
+            ->assertSee('E-Wallet')
             ->assertSee($pending->reference)
             ->assertSee($paid->reference)
+            ->assertSee($ewallet->reference)
             ->assertSee($expired->reference)
-            ->assertSee('Lanjutkan bayar')
+            ->assertSee(route('deposits.show', $pending), false)
             ->assertDontSee($foreign->reference);
     }
 
@@ -256,6 +317,7 @@ class DepositTest extends TestCase
         $this->actingAs($user)
             ->get(route('saldo.index'))
             ->assertOk()
+            ->assertSee('Isi Saldo')
             ->assertSee('menunggu pembayaran')
             ->assertSee($pending->reference)
             ->assertDontSee($stale->reference);
@@ -268,6 +330,9 @@ class DepositTest extends TestCase
         $this->actingAs($user)
             ->get(route('deposits.create'))
             ->assertOk()
+            ->assertSee('Ini bukan metode pembayaran produk; saat checkout, pilih Saldo atau QRIS.')
+            ->assertSee('Nominal Isi Saldo')
+            ->assertSee('Isi Saldo')
             ->assertSee('QRIS')
             ->assertSee('Transfer Bank')
             ->assertSee('E-Wallet')
@@ -448,7 +513,8 @@ class DepositTest extends TestCase
 
         $this->actingAs($user)
             ->post(route('deposits.pay', $deposit))
-            ->assertRedirect(route('deposits.show', $deposit));
+            ->assertRedirect(route('deposits.show', $deposit))
+            ->assertSessionHas('status', 'Isi saldo '.$deposit->reference.' berhasil. Saldo kamu sudah bertambah.');
 
         $deposit->refresh();
         $this->assertSame(DepositStatus::Paid, $deposit->status);
@@ -503,8 +569,8 @@ class DepositTest extends TestCase
         $user = User::factory()->create();
         $deposit = Deposit::factory()->create();
 
-        $this->actingAs($user)->get(route('deposits.show', $deposit))->assertForbidden();
-        $this->actingAs($user)->post(route('deposits.pay', $deposit))->assertForbidden();
+        $this->actingAs($user)->get(route('deposits.show', $deposit))->assertNotFound();
+        $this->actingAs($user)->post(route('deposits.pay', $deposit))->assertNotFound();
     }
 
     public function test_show_returns_json_status_for_polling(): void
@@ -542,8 +608,7 @@ class DepositTest extends TestCase
             ->get(route('deposits.show', $deposit))
             ->assertOk()
             ->assertSee('data-poll-url="'.route('deposits.show', $deposit).'"', false)
-            ->assertSee('data-poll-status="pending"', false)
-            ->assertSee('menyegarkan otomatis');
+            ->assertSee('data-poll-status="pending"', false);
     }
 
     public function test_paid_deposit_page_does_not_render_the_poll_hook(): void

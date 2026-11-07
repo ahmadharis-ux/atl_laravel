@@ -3,6 +3,7 @@
 @endphp
 @forelse ($notifications as $notification)
     @php
+        $rp = auth()->user()?->is_admin ? 'admin.' : '';
         $level = data_get($notification->data, 'level', 'info');
         $icon = data_get($notification->data, 'icon', 'notifications');
         $context = (array) data_get($notification->data, 'context', []);
@@ -19,7 +20,7 @@
             : null;
     @endphp
     <div class="notif-row {{ $notification->read_at === null ? 'is-unread' : '' }}">
-        <a href="{{ route('notifications.open', $notification->id) }}" class="notif-row-link">
+        <a href="{{ route($rp . 'notifications.open', $notification->id) }}" class="notif-row-link">
             <span class="ms notif-row-ic notif-{{ $level }}">{{ $icon }}</span>
             <span class="notif-row-tx">
                 <span class="notif-row-title">{{ data_get($notification->data, 'title', 'Notifikasi') }}</span>

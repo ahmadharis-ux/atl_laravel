@@ -59,7 +59,7 @@ class FeatureComingSoonTest extends TestCase
         $this->actingAs($user)
             ->get(route('merchandise.index'))
             ->assertOk()
-            ->assertSee('Tukar poin reward')
+            ->assertSee('Tukar saldo poin')
             ->assertDontSee('Merchandise segera hadir');
 
         $this->actingAs($user)

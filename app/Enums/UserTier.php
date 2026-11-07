@@ -57,6 +57,27 @@ enum UserTier: string
         };
     }
 
+    /**
+     * @return array{numerator: int, denominator: int}
+     */
+    public function rewardMultiplier(): array
+    {
+        return match ($this) {
+            self::Silver => ['numerator' => 1, 'denominator' => 1],
+            self::Gold => ['numerator' => 5, 'denominator' => 4],
+            self::Platinum => ['numerator' => 3, 'denominator' => 2],
+        };
+    }
+
+    public function rewardMultiplierLabel(): string
+    {
+        return match ($this) {
+            self::Silver => '1x',
+            self::Gold => '1,25x',
+            self::Platinum => '1,5x',
+        };
+    }
+
     public function icon(): string
     {
         return match ($this) {

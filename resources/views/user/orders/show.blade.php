@@ -11,10 +11,17 @@
     $channelLabel = $masterBank?->bank_name ?? $method?->channelLabel($order->payment_channel);
     $pending = $order->status === \App\Enums\OrderStatus::Pending;
     $processing = $order->status === \App\Enums\OrderStatus::Processing;
+    $refundComplete = $order->refunded_at !== null || $order->refund_status === 'completed';
     $midtrans = $order->metadata['midtrans'] ?? [];
     $qrUrl = $midtrans['qr_url'] ?? null;
     $fee = (int) $order->fee;
     $totalDue = $order->totalDue();
+    $rewardAward = $order->pointTransactions->first(
+        fn ($entry): bool => $entry->type === \App\Enums\PointTransactionType::OrderReward
+    );
+    $rewardReversal = $order->pointTransactions->first(
+        fn ($entry): bool => $entry->type === \App\Enums\PointTransactionType::OrderRewardReversed
+    );
 @endphp
 
 <div class="d-flex flex-column gap-3"
@@ -24,24 +31,106 @@
         <a href="{{ route('orders.index') }}" class="ap-icon-btn" data-tip="Kembali"><span class="ms ms-md">arrow_back</span></a>
         <div>
             <h1 class="fw-bold fs-5 m-0">Detail Pesanan</h1>
-            <p class="tx-mute fs-12 m-0">{{ $order->order_number }}</p>
+            <div class="d-flex align-items-center gap-2">
+                <p class="tx-mute fs-12 m-0">{{ $order->order_number }}</p>
+                <button type="button" class="ap-icon-btn" data-copy="{{ $order->order_number }}" data-copy-label="ID Pesanan" data-tip="Salin ID Pesanan"><span class="ms ms-sm">content_copy</span></button>
+                @if (in_array($order->source, ['store_cash', 'store_qris'], true))
+                    <span class="pill bg-sky-l tx-navy fs-11">Toko reseller</span>
+                @elseif ($order->source === 'api')
+                    <span class="pill bg-gold tx-gold fs-11">API reseller</span>
+                @endif
+            </div>
         </div>
         <a href="{{ route('orders.invoice', $order) }}" target="_blank" rel="noopener" class="ap-icon-btn ms-auto" data-tip="Cetak Invoice"><span class="ms ms-md">receipt_long</span></a>
         <span class="pill {{ $order->status->tone() }}">{{ $order->status->label() }}</span>
     </div>
 
     @if (session('status'))
-        <div class="alert-ap r-sm bg-mint-l tx-mintt d-flex align-items-center gap-2">
+        <div class="alert-ap r-sm bg-mint-l tx-mintt d-flex align-items-center gap-2" role="status" aria-live="polite">
             <span class="ms">check_circle</span>
             <span class="fs-13 fw-semibold">{{ session('status') }}</span>
         </div>
     @endif
 
+    @if (session('error'))
+        <div class="alert-ap r-sm bg-errc-l tx-err d-flex align-items-center gap-2" role="alert" aria-live="assertive">
+            <span class="ms">error</span>
+            <span class="fs-13 fw-semibold">{{ session('error') }}</span>
+        </div>
+    @endif
+
+    @if ($order->status === \App\Enums\OrderStatus::Success)
+        <div class="alert-ap r-sm bg-mint-l tx-mintt d-flex align-items-start gap-2" role="status">
+            <span class="ms">check_circle</span>
+            <div class="fs-13">
+                @if ($refundComplete)
+                    <div class="fw-semibold">Pengembalian dana telah selesai</div>
+                    <div>Pesanan sebelumnya berhasil diproses lalu direfund. Jika ada reward poin dari pesanan ini, poin tersebut sudah dibalik.</div>
+                @elseif ($order->refund_status === 'manual_required')
+                    <div class="fw-semibold">Refund memerlukan bantuan CS</div>
+                    <div>Refund belum dikonfirmasi selesai. Hubungi CS untuk memastikan pengembalian dana dan status reward poin.</div>
+                @elseif (in_array($order->refund_status, ['pending', 'requested'], true))
+                    <div class="fw-semibold">Refund sedang diproses</div>
+                    <div>Reward poin akan dibalik setelah refund dikonfirmasi selesai.</div>
+                @else
+                    <div class="fw-semibold">Transaksi berhasil</div>
+                    <div>Pesanan sudah diproses. Nomor seri, jika tersedia, ada di rincian pembayaran.</div>
+                @endif
+            </div>
+        </div>
+    @elseif ($order->status === \App\Enums\OrderStatus::Failed)
+        <div class="alert-ap r-sm bg-errc-l tx-err d-flex align-items-start gap-2" role="alert">
+            <span class="ms">error</span>
+            <div class="fs-13">
+                <div class="fw-semibold">Pesanan gagal diproses</div>
+                @if ($order->refunded_at !== null || $order->refund_status === 'completed')
+                    <div>Pengembalian dana telah selesai. Periksa saldo atau metode pembayaran yang digunakan.</div>
+                @elseif (in_array($order->refund_status, ['pending', 'requested'], true))
+                    <div>Pengembalian dana sedang diproses. Jika belum terlihat setelah proses selesai, hubungi CS.</div>
+                @elseif ($order->refund_status === 'manual_required')
+                    <div>Pengembalian dana memerlukan bantuan CS. Hubungi CS untuk memeriksa statusnya.</div>
+                @elseif ($order->payment_method === \App\Enums\PaymentMethod::Saldo)
+                    <div>Periksa mutasi saldo untuk memastikan pengembalian dana. Jika belum tercatat, hubungi CS.</div>
+                @else
+                    <div>Periksa status pembayaran dan hubungi CS jika dana sudah terpotong atau dibayarkan.</div>
+                @endif
+                @if ($product && $product->status)
+                    <div>Jika ingin mencoba kembali, gunakan tombol Beli Lagi di bawah.</div>
+                @else
+                    <div>Produk ini sedang tidak tersedia untuk dibeli kembali. Hubungi CS jika perlu bantuan.</div>
+                @endif
+            </div>
+        </div>
+    @elseif ($order->status === \App\Enums\OrderStatus::Expired)
+        <div class="alert-ap r-sm {{ $order->status->tone() }} d-flex align-items-start gap-2" role="status">
+            <span class="ms">timer_off</span>
+            <div class="fs-13">
+                <div class="fw-semibold">Batas pembayaran sudah berakhir</div>
+                <div>Kode pembayaran ini tidak dapat digunakan lagi.
+                    @if ($product && $product->status)
+                        Jika ingin membeli, buat pesanan baru melalui tombol Beli Lagi di bawah.
+                    @else
+                        Produk ini sedang tidak tersedia untuk dibeli kembali.
+                    @endif
+                    @if ($order->refunded_at !== null || $order->refund_status === 'completed')
+                        Pengembalian dana telah selesai.
+                    @elseif (in_array($order->refund_status, ['pending', 'requested'], true))
+                        Pengembalian dana sedang diproses.
+                    @elseif ($order->refund_status === 'manual_required')
+                        Pengembalian dana memerlukan bantuan CS.
+                    @else
+                        Jika sudah membayar, hubungi CS sebelum membuat pesanan baru.
+                    @endif
+                </div>
+            </div>
+        </div>
+    @endif
+
     @if ($pending)
-        <div class="alert-ap r-sm bg-glass d-flex align-items-center gap-2">
+        {{-- <div class="alert-ap r-sm bg-glass d-flex align-items-center gap-2">
             <span class="ms tx-teal">autorenew</span>
             <span class="fs-13">Halaman ini menyegarkan otomatis setelah pembayaran diterima.</span>
-        </div>
+        </div> --}}
 
         <x-ui.card title="Selesaikan Pembayaran">
             @if ($masterBank)
@@ -100,14 +189,31 @@
                             </div>
                         @endif
                     @endif
-                    <div class="num fw-bold fs-4 tx-tealc">{{ $order->payment_code }}</div>
+                    @if ($method !== \App\Enums\PaymentMethod::Qris && $order->payment_code)
+                        <div class="num fw-bold fs-4 tx-tealc">{{ $order->payment_code }}</div>
+                    @endif
                     <p class="fs-12 tx-mute m-0">{{ $method?->label() }}@if ($channelLabel) &middot; {{ $channelLabel }}@endif</p>
-                    <p class="fs-12 tx-mute m-0">Bayar tepat <b class="tx-tealt">Rp {{ number_format($order->amount, 0, ',', '.') }}</b>. Status pesanan akan otomatis diperbarui setelah pembayaran diterima.</p>
+                    <p class="fs-12 tx-mute m-0">Pesanan menunggu pembayaran. Bayar tepat <b class="tx-tealt">Rp {{ number_format($totalDue, 0, ',', '.') }}</b>; pesanan diproses setelah pembayaran diterima.</p>
+                    <p class="fs-12 tx-mute m-0">Halaman ini menyegarkan otomatis setelah pembayaran diterima.</p>
                     @if ($order->expires_at)
-                        <p class="fs-12 tx-mute m-0">Selesaikan pembayaran sebelum <span class="tx-err fw-semibold" data-expiry-timer="{{ $order->expires_at->toIso8601String() }}">(00:00)</span></p>
-                    @endif</p>
+                        <p class="fs-12 tx-mute m-0">
+                            @if ($method === \App\Enums\PaymentMethod::Qris)
+                                Batas waktu pesanan Atlantic:
+                                <time datetime="{{ $order->expires_at->toIso8601String() }}">{{ $order->expires_at->locale('id')->translatedFormat('d M Y, H:i') }}</time>
+                            @else
+                                Selesaikan pembayaran sebelum
+                            @endif
+                            <span class="tx-err fw-semibold" data-expiry-timer="{{ $order->expires_at->toIso8601String() }}">(00:00)</span>
+                        </p>
+                    @endif
 
                     @if ($method === \App\Enums\PaymentMethod::Qris)
+                        @unless ($qrUrl)
+                            <div class="alert-ap r-sm bg-gold d-flex flex-column align-items-center gap-1" role="alert" aria-live="assertive">
+                                <span class="fw-semibold fs-12">QRIS belum tersedia</span>
+                                <span class="fs-11">Jangan lakukan pembayaran sebelum kode QR tampil. Cek status pesanan atau hubungi CS.</span>
+                            </div>
+                        @endunless
                         <div class="d-flex flex-wrap gap-2 justify-content-center w-100 mt-1">
                             @if ($qrUrl)
                                 <a href="{{ route('orders.qris', $order) }}" class="btn-ap btn-ap-outline flex-fill" style="min-width:9rem">
@@ -128,14 +234,18 @@
     @endif
 
     @if ($processing)
-        <div class="alert-ap r-sm bg-glass d-flex align-items-center gap-2">
+        <div class="alert-ap r-sm bg-glass d-flex align-items-center gap-2" role="status" aria-live="polite">
             <span class="ms tx-teal">autorenew</span>
             <span class="fs-13">Pesanan kamu sedang diproses. Halaman ini menyegarkan otomatis saat pesanan selesai.</span>
         </div>
     @endif
 
     @php
+        $needsPaymentHelp = $pending
+            && $method === \App\Enums\PaymentMethod::Qris
+            && ! $qrUrl;
         $helpUrl = in_array($order->status, [\App\Enums\OrderStatus::Failed, \App\Enums\OrderStatus::Expired], true)
+            || $needsPaymentHelp
             ? \App\Support\SupportWhatsapp::orderIssueUrl($order)
             : null;
     @endphp
@@ -143,7 +253,7 @@
         @php
             $waFailedUrl = \App\Support\SupportWhatsapp::url(
                 "Halo Admin/CS Atlantic Pedia, saya ingin melaporkan transaksi yang GAGAL.\n\n".
-                "Link Transaksi: ".route('orders.show', $order)."\n\n".
+                "Link Transaksi: ".route('admin.transactions.show', $order)."\n\n".
                 "No. Pesanan: ".$order->order_number."\n".
                 "Keterangan Aduan: "
             );
@@ -178,7 +288,7 @@
         <div class="col-lg-7">
             <x-ui.card title="Produk">
                 <div class="fw-bold">{{ $product?->name ?? 'Produk tidak tersedia' }}</div>
-                <div class="d-flex flex-wrap align-items-center gap-2 mt-1">
+                <div class="d-flex flex-wrap align-items-center gap-2 mt-1 mb-2">
                     @if ($product)
                         <span class="pill bg-tealc-m tx-tealt">{{ $product->code }}</span>
                     @endif
@@ -189,7 +299,76 @@
                         <span class="pill bg-glass tx-mute">{{ $product->category->name }}</span>
                     @endif
                 </div>
-                @if ($product && $product->status)
+
+                <li class="d-flex align-items-center justify-content-between pt-2 border-top mb-2">
+                    <span class="fw-bold fs-10">Data Tujuan</span>
+                </li>
+                @include('user.product._field', ['label' => $targetLabel, 'value' => $order->target])
+                @if ($order->target_zone)
+                    @include('user.product._field', ['label' => 'Zone ID', 'value' => $order->target_zone])
+                @endif
+                
+            </x-ui.card>
+        </div>
+        <div class="col-lg-5">
+            <x-ui.card title="Pembayaran">
+                <ul class="list-unstyled m-0 d-flex flex-column gap-2 fs-13">
+                    <li class="d-flex align-items-center justify-content-between">
+                        <span class="tx-mute">Metode</span>
+                        <span class="fw-semibold">{{ $method?->label() }}@if ($channelLabel) &middot; {{ $channelLabel }}@endif</span>
+                    </li>
+                    @if ($method !== \App\Enums\PaymentMethod::Qris && $order->payment_code)
+                        <li class="d-flex align-items-center justify-content-between">
+                            <span class="tx-mute">Kode Pembayaran</span>
+                            <span class="num fw-semibold">{{ $order->payment_code }}</span>
+                        </li>
+                    @endif
+                    <li class="d-flex align-items-center justify-content-between">
+                        <span class="tx-mute">Waktu pesan</span>
+                        <span class="fw-semibold">{{ $order->created_at->format('d M Y, H:i') }}</span>
+                    </li>
+                    @if ($order->paid_at)
+                        <li class="d-flex align-items-center justify-content-between">
+                            <span class="tx-mute">Dibayar</span>
+                            <span class="fw-semibold">{{ $order->paid_at->format('d M Y, H:i') }}</span>
+                        </li>
+                    @endif
+                    @if ($rewardAward)
+                        <li class="d-flex align-items-center justify-content-between">
+                            <span class="tx-mute">Poin reward</span>
+                            <span class="num fw-semibold">+{{ number_format($rewardAward->points_change, 0, ',', '.') }} poin</span>
+                        </li>
+                    @endif
+                    @if ($rewardReversal)
+                        <li class="d-flex align-items-center justify-content-between">
+                            <span class="tx-mute">Reward dibalik karena refund</span>
+                            <span class="num fw-semibold">{{ number_format($rewardReversal->points_change, 0, ',', '.') }} poin</span>
+                        </li>
+                    @endif
+                    @if ($order->provider_sn)
+                        <li class="d-flex align-items-center justify-content-between">
+                            <span class="tx-mute">Serial Number</span>
+                            <span class="num fw-semibold">{{ $order->provider_sn }}</span>
+                        </li>
+                    @endif
+                    @if ($fee > 0)
+                        <li class="d-flex align-items-center justify-content-between">
+                            <span class="tx-mute">Biaya admin</span>
+                            <span class="num fw-semibold">Rp {{ number_format($fee, 0, ',', '.') }}</span>
+                        </li>
+                    @endif
+                    <li class="d-flex align-items-center justify-content-between pt-2 border-top">
+                        <span class="fw-bold">Total</span>
+                        <span class="num fw-bold tx-tealt">Rp {{ number_format($totalDue, 0, ',', '.') }}</span>
+                    </li>
+                </ul>
+            </x-ui.card>
+        </div>
+    </div>
+
+    
+</div>
+@if ($product && $product->status)
                     @php
                         $reorderQuery = array_filter([
                             'target' => $order->target,
@@ -201,58 +380,4 @@
                         <span class="ms ms-sm align-middle me-1" aria-hidden="true">refresh</span>Beli Lagi
                     </a>
                 @endif
-            </x-ui.card>
-        </div>
-
-        <div class="col-lg-5">
-            <x-ui.card title="Data Tujuan">
-                @include('user.product._field', ['label' => $targetLabel, 'value' => $order->target])
-                @if ($order->target_zone)
-                    @include('user.product._field', ['label' => 'Zone ID', 'value' => $order->target_zone])
-                @endif
-            </x-ui.card>
-        </div>
-    </div>
-
-    <x-ui.card title="Pembayaran">
-        <ul class="list-unstyled m-0 d-flex flex-column gap-2 fs-13">
-            <li class="d-flex align-items-center justify-content-between">
-                <span class="tx-mute">Metode</span>
-                <span class="fw-semibold">{{ $method?->label() }}@if ($channelLabel) &middot; {{ $channelLabel }}@endif</span>
-            </li>
-            @if ($order->payment_code)
-                <li class="d-flex align-items-center justify-content-between">
-                    <span class="tx-mute">Kode Pembayaran</span>
-                    <span class="num fw-semibold">{{ $order->payment_code }}</span>
-                </li>
-            @endif
-            <li class="d-flex align-items-center justify-content-between">
-                <span class="tx-mute">Waktu pesan</span>
-                <span class="fw-semibold">{{ $order->created_at->format('d M Y, H:i') }}</span>
-            </li>
-            @if ($order->paid_at)
-                <li class="d-flex align-items-center justify-content-between">
-                    <span class="tx-mute">Dibayar</span>
-                    <span class="fw-semibold">{{ $order->paid_at->format('d M Y, H:i') }}</span>
-                </li>
-            @endif
-            @if ($order->provider_sn)
-                <li class="d-flex align-items-center justify-content-between">
-                    <span class="tx-mute">Serial Number</span>
-                    <span class="num fw-semibold">{{ $order->provider_sn }}</span>
-                </li>
-            @endif
-            @if ($fee > 0)
-                <li class="d-flex align-items-center justify-content-between">
-                    <span class="tx-mute">Biaya admin</span>
-                    <span class="num fw-semibold">Rp {{ number_format($fee, 0, ',', '.') }}</span>
-                </li>
-            @endif
-            <li class="d-flex align-items-center justify-content-between pt-2 border-top">
-                <span class="fw-bold">Total</span>
-                <span class="num fw-bold tx-tealt">Rp {{ number_format($totalDue, 0, ',', '.') }}</span>
-            </li>
-        </ul>
-    </x-ui.card>
-</div>
 @endsection

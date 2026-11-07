@@ -59,7 +59,7 @@ class AdminFeatureSettingTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.features.index'))
             ->assertOk()
-            ->assertSee('Manajemen Halaman')
+            ->assertSee('Halaman & Pembayaran')
             ->assertSee('Reseller')
             ->assertSee('Ticket')
             ->assertSee('Merchandise');
@@ -75,7 +75,7 @@ class AdminFeatureSettingTest extends TestCase
                 'ticket_enabled' => '1',
             ])
             ->assertRedirect()
-            ->assertSessionHas('status', 'Pengaturan halaman berhasil diperbarui.');
+            ->assertSessionHas('status', 'Pengaturan halaman dan metode pembayaran berhasil diperbarui.');
 
         $setting = FeatureSetting::current();
 

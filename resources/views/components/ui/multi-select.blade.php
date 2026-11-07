@@ -12,6 +12,7 @@
     $selected = old($name, $value) ?? [];
     $selected = is_array($selected) ? $selected : [$selected];
     $selectedStrings = array_map('strval', $selected);
+    $hasError = $errors->has($name);
 
     // Gabungkan opsi terpilih (label tersimpan) dengan opsi yang diberikan.
     $rendered = $options;
@@ -29,6 +30,7 @@
         id="{{ $name }}"
         name="{{ $name }}[]"
         multiple
+        @if ($hasError) aria-invalid="true" aria-describedby="{{ $name }}-error" @endif
         data-placeholder="{{ $placeholder }}"
         @if ($remoteUrl) data-remote-url="{{ $remoteUrl }}" @endif
     >
@@ -37,5 +39,5 @@
         @endforeach
     </select>
     @if ($hint)<div class="ui-hint">{{ $hint }}</div>@endif
-    @error($name)<div class="err show">{{ $message }}</div>@enderror
+    @error($name)<div class="err show" id="{{ $name }}-error">{{ $message }}</div>@enderror
 </div>

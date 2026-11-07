@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\HasPerPage;
 use App\Http\Controllers\Controller;
 use App\Support\Rbac;
 use App\Support\Roles;
@@ -14,6 +15,8 @@ use Spatie\Permission\Models\Role;
 
 class RoleController extends Controller
 {
+    use HasPerPage;
+
     public function index(Request $request): View|JsonResponse
     {
         $roles = Role::query()
@@ -23,7 +26,7 @@ class RoleController extends Controller
                 $query->where('name', 'like', $term);
             })
             ->orderByDesc('id')
-            ->paginate(15)
+            ->paginate($this->perPage($request))
             ->withQueryString();
 
         $data = [
@@ -55,6 +58,8 @@ class RoleController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        Rbac::ensurePermissions();
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:50', 'alpha_dash', 'unique:roles,name'],
             'permissions' => ['array'],
@@ -86,6 +91,8 @@ class RoleController extends Controller
 
     public function update(Request $request, Role $role): RedirectResponse
     {
+        Rbac::ensurePermissions();
+
         $isSystem = in_array($role->name, Roles::all(), true);
         $locked = $role->name === Roles::SUPERADMIN;
 
