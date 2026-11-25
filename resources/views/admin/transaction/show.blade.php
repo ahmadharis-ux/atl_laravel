@@ -90,15 +90,8 @@
                         @endif
                     </dd>
 
-                    <dt class="col-sm-4 tx-mute fw-normal">
-                        {{ ($order->metadata['storefront']['payment_method'] ?? null) === 'cash' ? 'Potongan saldo reseller' : 'Jumlah' }}
-                    </dt>
+                    <dt class="col-sm-4 tx-mute fw-normal">Jumlah</dt>
                     <dd class="col-sm-8 m-0 fw-semibold">Rp {{ number_format($order->amount, 0, ',', '.') }}</dd>
-
-                    @if (($order->metadata['storefront']['payment_method'] ?? null) === 'cash')
-                        <dt class="col-sm-4 tx-mute fw-normal">Harga pelanggan</dt>
-                        <dd class="col-sm-8 m-0 fw-semibold">Rp {{ number_format((int) ($order->metadata['storefront']['selling_price'] ?? 0), 0, ',', '.') }}</dd>
-                    @endif
 
                     <dt class="col-sm-4 tx-mute fw-normal">Dibuat</dt>
                     <dd class="col-sm-8 m-0">{{ $order->created_at->locale('id')->translatedFormat('d F Y, H:i') }}</dd>
@@ -117,11 +110,6 @@
                 <dl class="row mb-0 fs-12 g-2">
                     <dt class="col-sm-5 tx-mute fw-normal">Metode</dt>
                     <dd class="col-sm-7 m-0 fw-semibold">{{ $order->payment_method->label() }}</dd>
-
-                    @if (($order->metadata['storefront']['payment_method'] ?? null) === 'cash')
-                        <dt class="col-sm-5 tx-mute fw-normal">Pembayaran pelanggan</dt>
-                        <dd class="col-sm-7 m-0 fw-semibold">Tunai kepada reseller</dd>
-                    @endif
 
                     <dt class="col-sm-5 tx-mute fw-normal">Kanal</dt>
                     <dd class="col-sm-7 m-0 fw-semibold text-uppercase">{{ $order->payment_channel ?: '—' }}</dd>
@@ -227,31 +215,20 @@
         @endif
     @endif
 
-    @if ($order->status === \App\Enums\OrderStatus::Failed
-        || ($order->source === 'store_qris' && $order->status === \App\Enums\OrderStatus::Expired))
+    @if ($order->status === \App\Enums\OrderStatus::Failed)
         <x-ui.card title="Pengembalian Dana">
             <dl class="row mb-0 fs-12 g-2">
                 <dt class="col-sm-4 tx-mute fw-normal">Refund saldo</dt>
                 <dd class="col-sm-8 m-0">{{ $order->refunded_at?->locale('id')->translatedFormat('d F Y, H:i') ?? '—' }}</dd>
 
-                @if ($order->source === 'store_qris')
-                    <dt class="col-sm-4 tx-mute fw-normal">Status Refund QRIS</dt>
-                    <dd class="col-sm-8 m-0">{{ match ($order->refund_status) { 'pending' => 'Sedang diajukan ke Midtrans', 'completed' => 'Selesai', 'manual_required' => 'Perlu tindakan manual', default => 'Belum diajukan' } }}</dd>
-                @endif
             </dl>
 
             <div class="pt-3 mt-3 border-top d-flex justify-content-end">
                 @if ($order->refunded_at !== null)
                     <span class="pill bg-mint-l tx-mintt">Sudah direfund</span>
-                @elseif ($order->refund_status === 'pending')
-                    <span class="pill bg-gold tx-gold">Refund otomatis berjalan</span>
-                @elseif (
-                    ($order->source === 'store_qris'
-                        && $order->refund_status === 'manual_required')
-                    || ($order->source !== 'store_qris' && $order->status === \App\Enums\OrderStatus::Failed)
-                )
+                @else
                     <form id="formRefund{{ $order->getKey() }}" method="POST" action="{{ route('admin.transactions.refund', $order) }}"
-                          data-confirm="Pastikan refund tidak sedang diproses Midtrans dan dana sudah dikembalikan secara manual. Proses refund ini?">
+                          data-confirm="Pastikan dana sudah dikembalikan ke pelanggan. Proses refund ini?">
                         @csrf
                         <button type="submit" class="btn-soft">
                             <span class="ms ms-sm align-middle me-1">currency_exchange</span>Proses Refund

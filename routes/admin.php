@@ -26,7 +26,6 @@ use App\Http\Controllers\Admin\Report\OverviewController;
 use App\Http\Controllers\Admin\Report\ProductReportController;
 use App\Http\Controllers\Admin\Report\ProviderReportController;
 use App\Http\Controllers\Admin\ResellerController;
-use App\Http\Controllers\Admin\ResellerPayoutController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SearchController;
 use App\Http\Controllers\Admin\TicketController;
@@ -80,10 +79,6 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/resellers', [ResellerController::class, 'index'])->middleware('permission:resellers.view')->name('resellers.index');
     Route::post('/resellers/{reseller}/status', [ResellerController::class, 'updateStatus'])
         ->middleware('permission:resellers.update')->name('resellers.status.update');
-    Route::get('/reseller-payouts', [ResellerPayoutController::class, 'index'])
-        ->middleware('permission:resellers.payouts.view')->name('reseller-payouts.index');
-    Route::post('/reseller-payouts/{payout}', [ResellerPayoutController::class, 'update'])
-        ->middleware('permission:resellers.payouts.update')->name('reseller-payouts.update');
 
     Route::prefix('tickets')->name('tickets.')->group(function () {
         Route::get('/', [TicketController::class, 'index'])->middleware('permission:tickets.view')->name('index');

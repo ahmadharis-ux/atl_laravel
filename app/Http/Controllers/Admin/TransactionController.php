@@ -85,9 +85,6 @@ class TransactionController extends Controller
             'order.failed',
             'order.refunded',
             'order.refunded_manual',
-            'order.storefront_refunded',
-            'order.storefront_refund_manual',
-            'order.storefront_refund_failed',
         ], true))->sortBy('id')->values();
 
         return view('admin.transaction.show', [
@@ -118,13 +115,8 @@ class TransactionController extends Controller
 
     public function refund(Order $order): RedirectResponse
     {
-        $canRefund = $order->source === 'store_qris'
-            ? in_array($order->status, [OrderStatus::Failed, OrderStatus::Expired], true)
-                && $order->refund_status === 'manual_required'
-            : $order->status === OrderStatus::Failed;
-
-        if (! $canRefund) {
-            return back()->with('error', 'Refund manual hanya tersedia untuk transaksi gagal atau refund QRIS yang memerlukan tindakan admin.');
+        if ($order->status !== OrderStatus::Failed) {
+            return back()->with('error', 'Refund manual hanya tersedia untuk transaksi gagal.');
         }
 
         if (! OrderFulfillment::refundManually($order)) {

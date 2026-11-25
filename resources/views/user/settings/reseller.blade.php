@@ -34,24 +34,18 @@
     @endif
 
     @if (! $user->is_reseller)
-        @if ($user->reseller_since !== null)
-            <x-ui.card title="Komisi dan Pencairan">
-                <p class="fs-12 tx-mute">Keanggotaan toko sedang nonaktif, tetapi komisi yang sudah diperoleh tetap dapat dipantau dan dicairkan.</p>
-                <a href="{{ route('settings.reseller.store') }}" class="btn-soft">Buka riwayat komisi &amp; pencairan</a>
-            </x-ui.card>
-        @endif
 
         @if ($user->reseller_status === 'pending')
             <x-ui.card title="Permohonan Sedang Ditinjau">
                 <div class="d-flex align-items-start gap-2">
                     <span class="ms tx-gold">pending</span>
-                    <p class="fs-12 mb-0">Data dan persetujuan ketentuan sudah diterima. Toko dan API akan tersedia setelah admin menyetujui permohonan.</p>
+                    <p class="fs-12 mb-0">Data dan persetujuan ketentuan sudah diterima. Akses API akan tersedia setelah admin menyetujui permohonan.</p>
                 </div>
                 <p class="fs-11 tx-mute mt-2 mb-0">Dikirim {{ $user->reseller_terms_accepted_at?->locale('id')->translatedFormat('d M Y, H:i') }} · Ketentuan versi {{ $user->reseller_terms_version }}</p>
             </x-ui.card>
         @elseif ($user->reseller_status === 'suspended')
             <x-ui.card title="Keanggotaan Ditangguhkan">
-                <p class="fs-12 mb-1">Akses toko dan API dinonaktifkan sementara. Riwayat transaksi, komisi, dan pencairan tetap tersimpan.</p>
+                <p class="fs-12 mb-1">Akses API dinonaktifkan sementara. Riwayat transaksi tetap tersimpan.</p>
                 @if ($user->reseller_status_reason)
                     <p class="fs-12 tx-err mb-0"><span class="fw-semibold">Alasan:</span> {{ $user->reseller_status_reason }}</p>
                 @endif
@@ -70,29 +64,22 @@
                 <p class="fs-13 mb-3">
                     Ajukan keanggotaan reseller Atlantic Pedia untuk mendapatkan harga khusus
                     <span class="fw-semibold">{{ rtrim(rtrim(number_format($discountPercent, 0, ',', '.'), '0'), '.') }}% lebih murah</span>
-                    melalui API. Kamu juga dapat menggunakan toko hosted tanpa integrasi API.
+                    untuk setiap pesanan melalui API.
                 </p>
 
                 <div class="row g-3 mb-3">
-                    <div class="col-sm-4">
+                    <div class="col-sm-6">
                         <div class="card-ap r-sm p-3 h-100">
                             <span class="ibox ibox-48 bg-mint-l tx-mintt mb-2">{{ rtrim(rtrim(number_format($discountPercent, 0, ',', '.'), '0'), '.') }}%</span>
                             <div class="fw-semibold fs-12">Harga Lebih Murah</div>
-                            <div class="tx-mute fs-11">Harga reseller berlaku untuk pesanan API atau konfirmasi tunai toko hosted.</div>
+                            <div class="tx-mute fs-11">Harga reseller berlaku untuk setiap pesanan melalui API.</div>
                         </div>
                     </div>
-                    <div class="col-sm-4">
+                    <div class="col-sm-6">
                         <div class="card-ap r-sm p-3 h-100">
                             <span class="ibox ibox-48 bg-sky-l tx-navy mb-2"><span class="ms">api</span></span>
                             <div class="fw-semibold fs-12">Akses API & API Key</div>
-                            <div class="tx-mute fs-11">Opsional. API key baru dibuat setelah permohonan disetujui.</div>
-                        </div>
-                    </div>
-                    <div class="col-sm-4">
-                        <div class="card-ap r-sm p-3 h-100">
-                            <span class="ibox ibox-48 bg-gold tx-gold mb-2"><span class="ms">payments</span></span>
-                            <div class="fw-semibold fs-12">Toko Hosted</div>
-                            <div class="tx-mute fs-11">Pelanggan membayar harga publik; komisi QRIS dapat diminta pencairannya.</div>
+                            <div class="tx-mute fs-11">API key dibuat setelah permohonan disetujui.</div>
                         </div>
                     </div>
                 </div>
@@ -101,20 +88,20 @@
                     <h2 class="fw-semibold fs-13 mb-2">Aturan penting sebelum aktivasi</h2>
                     <ul class="fs-12 tx-mute mb-2 ps-3">
                         <li>Pesanan melalui API dibayar dari saldo akun menggunakan harga reseller.</li>
-                        <li>Menonaktifkan reseller mencabut API key serta menutup akses API dan toko untuk pesanan baru.</li>
-                        <li>Domain wajib untuk integrasi API; toko hosted dapat digunakan tanpa domain sendiri.</li>
+                        <li>Menonaktifkan reseller mencabut API key serta menutup akses API untuk pesanan baru.</li>
+                        <li>Domain/website wajib diisi untuk integrasi API.</li>
                         <li>IP server bersifat opsional. Jika diisi, hanya alamat tersebut yang boleh mengakses API.</li>
                     </ul>
 
                     <h2 class="fw-semibold fs-13 mb-2">Ketentuan Reseller · Versi {{ $termsVersion }}</h2>
                     <ul class="fs-12 tx-mute mb-0 ps-3">
                         <li>Data usaha dan kontak harus benar serta dapat digunakan admin untuk menghubungi kamu.</li>
-                        <li>Domain wajib untuk integrasi API; toko hosted dapat digunakan tanpa domain sendiri.</li>
+                        <li>Domain/website wajib diisi untuk integrasi API.</li>
                         <li>IP server bersifat opsional. Jika diisi, hanya alamat tersebut yang boleh mengakses API.</li>
                         <li>Jaga API key secara rahasia. Membuat ulang key langsung mencabut key sebelumnya.</li>
-                        <li>Harga API memakai harga reseller dan dibayar dari saldo; toko hosted memakai harga publik.</li>
+                        <li>Pesanan API memakai harga reseller dan dibayar dari saldo.</li>
                         <li>Atlantic Pedia dapat menolak atau menangguhkan akses bila ditemukan penyalahgunaan atau pelanggaran.</li>
-                        <li>Penangguhan menghentikan pesanan API dan toko baru, tetapi tidak menghapus riwayat transaksi dan komisi.</li>
+                        <li>Penangguhan menghentikan pesanan API baru, tetapi tidak menghapus riwayat transaksi.</li>
                     </ul>
                     <a href="{{ route('pages.terms') }}" class="fs-11">Baca syarat dan ketentuan umum</a>
                 </div>
@@ -122,24 +109,15 @@
                 <form method="POST" action="{{ route('settings.reseller.activate') }}" class="d-flex flex-column gap-3">
                     @csrf
                     <div class="row g-3">
-                        <div class="col-md-6">
-                            <x-ui.select
-                                name="sales_channel"
-                                label="Cara berjualan *"
-                                placeholder="Pilih kanal penjualan"
-                                :options="['hosted' => 'Toko hosted Atlantic', 'api' => 'Website sendiri dengan API', 'both' => 'Keduanya']"
-                                :value="old('sales_channel', $user->reseller_sales_channel)"
-                                required
-                            />
-                        </div>
-                        <div class="col-md-6">
+                        <div class="col-12">
                             <x-ui.input
                                 name="website"
                                 type="url"
-                                label="Domain / website"
+                                label="Domain / website *"
                                 :value="old('website', $user->reseller_website)"
                                 placeholder="https://contoh.com"
-                                hint="Wajib untuk integrasi API; opsional jika hanya memakai toko hosted."
+                                hint="Website atau aplikasi yang akan memakai API."
+                                required
                             />
                         </div>
                         <div class="col-md-6">
@@ -202,16 +180,14 @@
                 </div>
             </div>
             <div class="d-flex flex-wrap gap-2">
-                <a href="{{ route('settings.reseller.store') }}" class="btn-ap btn-mint">Kelola Toko &amp; Komisi</a>
                 <a href="{{ route('settings.reseller.docs') }}" class="btn-soft">Dokumentasi API</a>
             </div>
         </div>
 
         <x-ui.card id="reseller-start" title="Langkah berikutnya">
-            <p class="fs-12 tx-mute mb-3">Pilih langkah sesuai kanal penjualanmu. Status hanya ditampilkan untuk hal yang dapat dipastikan sistem; halaman ini tidak melacak apakah dokumentasi sudah dibaca atau key sudah disalin.</p>
+            <p class="fs-12 tx-mute mb-3">Status hanya ditampilkan untuk hal yang dapat dipastikan sistem; halaman ini tidak melacak apakah dokumentasi sudah dibaca atau key sudah disalin.</p>
             <div class="row g-3">
-                @if ($usesApi)
-                    <div class="col-lg-6">
+                    <div class="col-12">
                         <x-ui.card title="Mulai dengan API" pad="p-3 h-100">
                             <ol class="fs-12 mb-3 ps-3">
                                 <li class="mb-2">
@@ -232,23 +208,9 @@
                             <a href="{{ route('settings.reseller.docs') }}" class="btn-soft">Buka Dokumentasi API</a>
                         </x-ui.card>
                     </div>
-                @endif
-
-                @if ($usesHostedStore)
-                    <div class="col-lg-6">
-                        <x-ui.card title="Mulai dengan Toko Hosted" pad="p-3 h-100">
-                            <p class="fs-12 tx-mute">Bagikan toko Atlantic agar pelanggan dapat memilih produk dan membayar langsung. Pantau pesanan tunai dan komisi QRIS dari halaman kelola toko.</p>
-                            <div class="d-flex flex-wrap gap-2">
-                                <a href="{{ route('storefront.index', $user) }}" class="btn-navy" target="_blank" rel="noopener">Lihat Toko</a>
-                                <a href="{{ route('settings.reseller.store') }}" class="btn-soft">Kelola Toko &amp; Komisi</a>
-                            </div>
-                        </x-ui.card>
-                    </div>
-                @endif
             </div>
         </x-ui.card>
 
-        @if ($usesApi)
         <x-ui.card id="api-key" title="API Key">
             <x-slot:header>
                 <span class="pill bg-sky-l tx-navy">Kredensial API</span>
@@ -297,9 +259,7 @@
                 </form>
             </div>
         </x-ui.card>
-        @endif
 
-        @if ($usesApi)
         <x-ui.card id="webhook" title="Webhook Status Pesanan">
             <p class="fs-12 tx-mute mb-3">
                 Notifikasi otomatis untuk perubahan status pesanan API. Gunakan URL HTTPS publik;
@@ -354,9 +314,7 @@
                 </button>
             </form>
         </x-ui.card>
-        @endif
 
-        @if ($usesApi)
         <x-ui.card title="Cara Pakai Singkat">
             <ol class="fs-12 mb-3 ps-3">
                 <li>Ambil daftar produk &amp; harga reseller lewat <code>GET {{ url('/api/v1/reseller/products') }}</code>.</li>
@@ -366,7 +324,6 @@
             </ol>
             <a href="{{ route('settings.reseller.docs') }}" class="btn-navy">Buka Dokumentasi API Lengkap</a>
         </x-ui.card>
-        @endif
     @endif
 </div>
 @endsection

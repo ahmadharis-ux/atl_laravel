@@ -23,15 +23,10 @@ class ResellerController extends Controller
      */
     public function show(Request $request): Response
     {
-        $salesChannel = $request->user()->reseller_sales_channel;
-        $salesChannel ??= 'both';
-
         return response()->view('user.settings.reseller', [
             'user' => $request->user(),
             'discountPercent' => FeatureSetting::resellerDiscountPercent(),
             'termsVersion' => (string) config('reseller.terms_version'),
-            'usesApi' => in_array($salesChannel, ['api', 'both'], true),
-            'usesHostedStore' => in_array($salesChannel, ['hosted', 'both'], true),
         ])->header('Cache-Control', 'private, no-store');
     }
 
@@ -67,21 +62,14 @@ class ResellerController extends Controller
         }
 
         $validated = $request->validate([
-            'website' => [
-                in_array($request->input('sales_channel'), ['api', 'both'], true) ? 'required' : 'nullable',
-                'url:http,https',
-                'max:255',
-            ],
-            'sales_channel' => ['required', Rule::in(['hosted', 'api', 'both'])],
+            'website' => ['required', 'url:http,https', 'max:255'],
             'contact_channel' => ['required', Rule::in(['telegram', 'whatsapp', 'other'])],
             'contact' => ['required', 'string', 'max:255'],
             'allowed_ips' => ['nullable', 'string', 'max:1000'],
             'accept_terms' => ['accepted'],
         ], [
-            'website.required' => 'Domain wajib diisi jika kamu memilih integrasi API.',
+            'website.required' => 'Domain/website wajib diisi untuk integrasi API.',
             'website.url' => 'Masukkan domain dengan format URL yang valid, misalnya https://contoh.com.',
-            'sales_channel.required' => 'Pilih cara berjualan.',
-            'sales_channel.in' => 'Cara berjualan yang dipilih tidak valid.',
             'contact_channel.required' => 'Pilih kanal kontak.',
             'contact_channel.in' => 'Kanal kontak yang dipilih tidak valid.',
             'contact.required' => 'Username, nomor, atau tautan kontak wajib diisi.',
@@ -122,8 +110,7 @@ class ResellerController extends Controller
             $account->forceFill([
                 'is_reseller' => false,
                 'reseller_status' => 'pending',
-                'reseller_website' => $validated['website'] ?? null,
-                'reseller_sales_channel' => $validated['sales_channel'],
+                'reseller_website' => $validated['website'],
                 'reseller_contact_channel' => $validated['contact_channel'],
                 'reseller_contact' => trim($validated['contact']),
                 'reseller_allowed_ips' => $allowedIps,
@@ -150,7 +137,7 @@ class ResellerController extends Controller
         return back()->with(
             'status',
             $submitted
-                ? 'Permohonan reseller terkirim. Akses toko dan API akan aktif setelah ditinjau admin.'
+                ? 'Permohonan reseller terkirim. Akses API akan aktif setelah ditinjau admin.'
                 : 'Permohonan reseller kamu sedang menunggu peninjauan admin.'
         );
     }

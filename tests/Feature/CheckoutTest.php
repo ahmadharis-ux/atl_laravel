@@ -396,7 +396,7 @@ class CheckoutTest extends TestCase
         $user = User::factory()->create(['balance' => 1_000_000]);
         $mine = Order::factory()->create([
             'user_id' => $user->getKey(),
-            'source' => 'store_cash',
+            'source' => 'api',
         ]);
         $other = Order::factory()->create();
 
@@ -404,8 +404,7 @@ class CheckoutTest extends TestCase
             ->get(route('orders.index'))
             ->assertOk()
             ->assertSee($mine->order_number)
-            ->assertSee('Toko reseller')
-            ->assertSee('Tunai customer')
+            ->assertSee('Pesanan API reseller')
             ->assertDontSee($other->order_number);
     }
 

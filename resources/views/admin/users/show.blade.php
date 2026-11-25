@@ -50,9 +50,8 @@
     </div>
 
     @if ($isReseller)
-        <div class="row g-3 row-cols-1 row-cols-md-3">
+        <div class="row g-3 row-cols-1 row-cols-md-2">
             <div class="col"><x-ui.stat-card label="Status reseller" value="{{ str($user->reseller_status ?? 'active')->headline() }}" icon="storefront" tone="bg-mint-l tx-mintt" /></div>
-            <div class="col"><x-ui.stat-card label="Total komisi" value="Rp {{ number_format((int) $commissions->sum('amount'), 0, ',', '.') }}" icon="payments" tone="bg-tealc-m tx-tealt" /></div>
             <div class="col"><x-ui.stat-card label="Transaksi" value="{{ number_format($user->orders()->count(), 0, ',', '.') }}" icon="receipt_long" tone="bg-gold tx-gold" /></div>
         </div>
     @endif
@@ -69,7 +68,7 @@
         ]"
     >
         @forelse ($orders as $order)
-            @php($source = match ($order->source) { 'api' => 'API reseller', 'store_cash' => 'Toko · Tunai', 'store_qris' => 'Toko · QRIS', default => ucfirst((string) $order->source) })
+            @php($source = match ($order->source) { 'api' => 'API reseller', default => ucfirst((string) $order->source) })
             <tr>
                 <td><div class="fw-semibold">{{ $order->order_number }}</div><div class="tx-mute fs-11">{{ $order->product?->name ?? 'Produk tidak tersedia' }}</div></td>
                 <td><span class="pill bg-sky-l tx-navy fs-11">{{ $source }}</span></td>
@@ -86,28 +85,5 @@
         </x-slot:footer>
     </x-ui.data-table>
 
-    @if ($isReseller)
-        <x-ui.data-table
-            id="tblUserCommissions"
-            title="Riwayat Komisi Reseller"
-            :columns="[
-                ['label' => 'Pesanan'],
-                ['label' => 'Produk'],
-                ['label' => 'Komisi', 'class' => 'text-end'],
-                ['label' => 'Tanggal'],
-            ]"
-        >
-            @forelse ($commissions as $commission)
-                <tr>
-                    <td>{{ $commission->order?->order_number ?? '-' }}</td>
-                    <td>{{ $commission->order?->product?->name ?? 'Produk tidak tersedia' }}</td>
-                    <td class="num text-end fw-semibold tx-mintt">+Rp {{ number_format((int) $commission->amount, 0, ',', '.') }}</td>
-                    <td class="tx-mute fs-12">{{ $commission->created_at->locale('id')->translatedFormat('d M Y, H:i') }}</td>
-                </tr>
-            @empty
-                <tr><td colspan="4"><x-ui.empty-state icon="payments" title="Belum ada komisi" description="Komisi reseller akan tampil setelah transaksi QRIS berhasil." /></td></tr>
-            @endforelse
-        </x-ui.data-table>
-    @endif
 </div>
 @endsection

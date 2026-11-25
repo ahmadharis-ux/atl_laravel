@@ -32,8 +32,6 @@ final class OrderPaymentSettler
                 'paid_at' => now(),
             ]);
 
-            ResellerCommissionLedger::creditForSuccessfulOrder($locked);
-
             if ($locked->status === OrderStatus::Success) {
                 OrderRewardLedger::award($locked);
             }

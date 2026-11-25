@@ -27,7 +27,6 @@
             @else
                 <span class="tx-mute">Tidak dicantumkan</span>
             @endif
-            <div class="tx-mute">{{ ['hosted' => 'Toko hosted', 'api' => 'Website + API', 'both' => 'Hosted + API'][$item->reseller_sales_channel] ?? '-' }}</div>
         </td>
         <td class="fs-12">
             <div>{{ $contactChannel ? $contactChannel.' · ' : '' }}{{ $item->reseller_contact ?? '-' }}</div>
@@ -121,7 +120,7 @@
                                 </form>
                             @elseif ($status === 'active')
                                 <form method="POST" action="{{ route('admin.resellers.status.update', $item) }}" class="d-flex flex-column gap-2"
-                                      data-confirm="Tangguhkan reseller ini? API key akan dicabut dan pesanan baru dari API serta toko hosted akan dihentikan."
+                                      data-confirm="Tangguhkan reseller ini? API key akan dicabut dan pesanan API baru akan dihentikan."
                                       data-confirm-title="Tangguhkan Reseller" data-confirm-ok="Tangguhkan" data-confirm-danger>
                                     @csrf
                                     <input type="hidden" name="action" value="suspend">

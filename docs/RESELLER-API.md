@@ -22,7 +22,7 @@ Authorization: Bearer ap_XXXXXXXX...
 - Ajukan keanggotaan di **Pengaturan → Reseller** dan setujui ketentuannya. API key baru dapat dibuat setelah admin menyetujui permohonan.
 - Key ditampilkan **satu kali** saat dibuat/disimpan ulang; yang tersimpan di server hanya hash SHA-256.
 - "Buat ulang API key" langsung mencabut key lama.
-- Bila reseller dinonaktifkan atau ditangguhkan, semua API key dicabut (401) dan pesanan baru dari toko hosted dihentikan.
+- Bila reseller dinonaktifkan atau ditangguhkan, semua API key dicabut (401) sehingga pesanan API baru dihentikan.
 - IP server dapat dibatasi melalui allowlist opsional pada pengajuan. Request dari IP yang tidak diizinkan mendapat balasan `403`.
 - Aktivitas dicatat sebagai waktu pemakaian API terakhir (pembaruan paling banyak sekali per menit), bukan indikator reseller sedang online.
 - Endpoint H2H kompatibilitas di root domain juga menerima `api_key` pada body form-urlencoded; cara ini hanya untuk ketiga endpoint lama yang didaftarkan.
@@ -64,30 +64,6 @@ Pesanan API **tidak** memakai QRIS/VA dan tidak menerapkan `reseller_price` di c
 5. Jika pesanan gagal dan di-refund, saldo dikembalikan lewat ledger (bukan pembayaran ulang).
 
 Catatan: checkout web biasa memakai `selling_price` publik — harga reseller hanya berlaku untuk pesanan lewat API reseller.
-
-## Toko hosted reseller dan alur uang
-
-Toko hosted dapat dibuka dari halaman **Pengaturan → Reseller → Toko**. Customer membayar dengan harga publik, sedangkan harga reseller dipakai sebagai biaya pemenuhan pesanan.
-
-### Pembayaran tunai
-
-1. Customer menyerahkan uang sebesar harga publik langsung kepada reseller.
-2. Pesanan menunggu konfirmasi reseller.
-3. Reseller mengonfirmasi penerimaan tunai dan memasukkan PIN transaksi.
-4. Saldo reseller dipotong sebesar `reseller_price` untuk membayar biaya produk.
-5. Selisih `selling_price - reseller_price` menjadi keuntungan reseller secara langsung.
-
-Jika reseller tidak mengonfirmasi, saldo tidak dipotong dan pesanan dapat kedaluwarsa.
-
-### Pembayaran QRIS
-
-1. Customer membayar `selling_price` melalui halaman pembayaran Midtrans, ditambah biaya QRIS bila ada.
-2. Saldo reseller tidak dipotong.
-3. Setelah pembayaran berhasil, pesanan diproses dan selisih `selling_price - reseller_price` dicatat sebagai komisi reseller.
-4. Komisi dapat dilihat di halaman toko reseller dan diajukan untuk pencairan sesuai proses admin.
-
-Pembayaran tunai dan QRIS pada toko hosted berbeda dari `POST /orders` API: pesanan API selalu menggunakan saldo reseller dan memerlukan header `X-Transaction-PIN`.
-
 
 ## Endpoints
 

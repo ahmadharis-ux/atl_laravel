@@ -87,8 +87,6 @@ final class Rbac
             'Reseller' => [
                 'resellers.view' => 'Melihat laporan reseller',
                 'resellers.update' => 'Meninjau dan mengelola status reseller',
-                'resellers.payouts.view' => 'Melihat permintaan pencairan reseller',
-                'resellers.payouts.update' => 'Memproses pencairan reseller',
             ],
             'Laporan' => [
                 'reports.view' => 'Melihat laporan & analitik',
@@ -176,7 +174,6 @@ final class Rbac
                 'loyalty.view', 'loyalty.update',
                 'resellers.view',
                 'resellers.update',
-                'resellers.payouts.view', 'resellers.payouts.update',
                 'reports.view',
                 'search.view',
             ],
@@ -196,7 +193,6 @@ final class Rbac
                 'redemptions.view', 'redemptions.update',
                 'loyalty.view', 'loyalty.update',
                 'resellers.view',
-                'resellers.payouts.view',
                 'reports.view',
                 'search.view',
             ],
@@ -214,7 +210,6 @@ final class Rbac
                 'redemptions.view',
                 'loyalty.view',
                 'resellers.view',
-                'resellers.payouts.view',
                 'reports.view',
                 'search.view',
             ],

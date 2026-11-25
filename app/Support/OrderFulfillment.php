@@ -5,7 +5,6 @@ namespace App\Support;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\WalletTransactionType;
-use App\Jobs\RefundStorefrontOrder;
 use App\Jobs\SendDigiflazzTransaction;
 use App\Models\Order;
 use App\Models\Product;
@@ -226,11 +225,6 @@ final class OrderFulfillment
                 return null;
             }
 
-            if ($locked->source === 'store_cash'
-                && filled($locked->metadata['storefront']['cash_confirmed_at'] ?? null)) {
-                return null;
-            }
-
             $locked->forceFill(['status' => OrderStatus::Expired])->save();
 
             self::restoreStock($locked);
@@ -261,8 +255,6 @@ final class OrderFulfillment
             'sn' => $data['sn'] ?? null,
         ], $order, $order->user);
 
-        ResellerCommissionLedger::creditForSuccessfulOrder($order);
-
         OrderRewardLedger::award($order);
 
         OrderNotifier::success($order);
@@ -283,15 +275,9 @@ final class OrderFulfillment
             'provider_status' => $order->provider_status,
         ], $order, $order->user);
 
-        if ($order->source === 'store_qris') {
-            RefundStorefrontOrder::dispatch($order->getKey())->afterCommit();
-        }
-
-        OrderNotifier::failed($order, match (true) {
-            $order->payment_method === PaymentMethod::Saldo => 'Dana telah dikembalikan ke saldomu.',
-            $order->source === 'store_qris' => 'Refund QRIS sedang diajukan ke Midtrans.',
-            default => 'Silakan hubungi admin untuk pengembalian dana.',
-        });
+        OrderNotifier::failed($order, $order->payment_method === PaymentMethod::Saldo
+            ? 'Dana telah dikembalikan ke saldomu.'
+            : 'Silakan hubungi admin untuk pengembalian dana.');
     }
 
     /**
@@ -310,12 +296,7 @@ final class OrderFulfillment
                 return false;
             }
 
-            $canRefund = $locked->source === 'store_qris'
-                ? in_array($locked->status, [OrderStatus::Failed, OrderStatus::Expired], true)
-                    && $locked->refund_status === 'manual_required'
-                : $locked->status === OrderStatus::Failed;
-
-            if (! $canRefund || $locked->refunded_at !== null) {
+            if ($locked->status !== OrderStatus::Failed || $locked->refunded_at !== null) {
                 return false;
             }
 
@@ -329,19 +310,7 @@ final class OrderFulfillment
                 }
             }
 
-            $metadata = $locked->metadata ?? [];
-            if ($locked->source === 'store_qris') {
-                $metadata['midtrans_refund'] = [
-                    'status' => 'completed',
-                    'refund_method' => 'manual',
-                ];
-            }
-
-            $locked->forceFill([
-                'refunded_at' => now(),
-                'refund_status' => $locked->source === 'store_qris' ? 'completed' : $locked->refund_status,
-                'metadata' => $metadata,
-            ])->save();
+            $locked->forceFill(['refunded_at' => now()])->save();
 
             TransactionLogger::info('order.refunded_manual', 'Refund manual diproses admin.', [
                 'order_number' => $locked->order_number,

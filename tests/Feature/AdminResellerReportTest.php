@@ -144,7 +144,6 @@ class AdminResellerReportTest extends TestCase
         $reseller = User::factory()->create([
             'is_reseller' => false,
             'reseller_status' => 'pending',
-            'reseller_sales_channel' => 'api',
             'reseller_terms_version' => '1.0',
             'reseller_terms_accepted_at' => now(),
         ]);

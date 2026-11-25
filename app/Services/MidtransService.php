@@ -4,23 +4,18 @@ namespace App\Services;
 
 use App\Enums\DepositStatus;
 use App\Enums\OrderStatus;
-use App\Enums\PaymentMethod;
-use App\Jobs\RefundStorefrontOrder;
 use App\Models\Deposit;
 use App\Models\Order;
 use App\Models\User;
 use App\Support\DepositSettler;
 use App\Support\OrderFulfillment;
 use App\Support\OrderPaymentSettler;
-use App\Support\OrderRewardLedger;
 use App\Support\TransactionLogger;
 use Closure;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Midtrans\Config as MidtransConfig;
 use Midtrans\CoreApi;
-use Midtrans\Snap;
 use Midtrans\Transaction;
 use Throwable;
 
@@ -75,102 +70,6 @@ class MidtransService
                 ])->save();
             },
         );
-    }
-
-    /**
-     * Buat transaksi QRIS melalui halaman hosted Midtrans Snap.
-     */
-    public function chargeStorefrontOrder(Order $order, string $statusUrl): ?string
-    {
-        if (! $this->isConfigured()) {
-            return null;
-        }
-
-        $this->boot();
-        $product = $order->product;
-        $items = [[
-            'id' => (string) $order->product_id,
-            'price' => (int) $order->amount,
-            'quantity' => 1,
-            'name' => Str::limit($product?->name ?? 'Produk Atlantic Pedia', 50, ''),
-        ]];
-
-        if ($order->fee > 0) {
-            $items[] = [
-                'id' => 'qris-fee',
-                'price' => (int) $order->fee,
-                'quantity' => 1,
-                'name' => 'Biaya QRIS',
-            ];
-        }
-
-        try {
-            $response = Snap::createTransaction([
-                'transaction_details' => [
-                    'order_id' => $order->order_number,
-                    'gross_amount' => (int) $order->totalDue(),
-                ],
-                'item_details' => $items,
-                'enabled_payments' => ['qris'],
-                'callbacks' => [
-                    'finish' => $statusUrl,
-                    'error' => $statusUrl,
-                    'pending' => $statusUrl,
-                ],
-            ]);
-        } catch (Throwable $exception) {
-            report($exception);
-
-            return null;
-        }
-
-        $redirectUrl = $response->redirect_url ?? null;
-
-        if (! is_string($redirectUrl) || ! filter_var($redirectUrl, FILTER_VALIDATE_URL)) {
-            report(new \UnexpectedValueException('Midtrans Snap tidak mengembalikan redirect_url yang valid.'));
-
-            return null;
-        }
-
-        $metadata = $order->metadata ?? [];
-        $metadata['midtrans'] = [
-            'snap_token' => $response->token ?? null,
-            'redirect_url' => $redirectUrl,
-        ];
-
-        $order->forceFill(['metadata' => $metadata])->save();
-
-        return $redirectUrl;
-    }
-
-    /**
-     * Ajukan refund penuh untuk QRIS yang dibuat melalui toko reseller.
-     */
-    public function requestStorefrontRefund(Order $order): object
-    {
-        if (! $this->isConfigured()) {
-            throw new \RuntimeException('Kredensial Midtrans belum dikonfigurasi.');
-        }
-
-        if ($order->source !== 'store_qris' || $order->payment_method !== PaymentMethod::Qris) {
-            throw new \InvalidArgumentException('Refund Midtrans hanya berlaku untuk pesanan QRIS toko reseller.');
-        }
-
-        $this->boot();
-
-        $currentStatus = Transaction::status($order->order_number);
-        if ((string) ($currentStatus->transaction_status ?? '') === 'refund'
-            && (float) ($currentStatus->refund_amount ?? 0) >= $order->totalDue()) {
-            return is_object($currentStatus) ? $currentStatus : (object) $currentStatus;
-        }
-
-        $response = Transaction::refund($order->order_number, [
-            'refund_key' => 'store-refund-'.$order->order_number,
-            'amount' => (int) $order->totalDue(),
-            'reason' => 'Pesanan toko reseller gagal diproses',
-        ]);
-
-        return is_object($response) ? $response : (object) $response;
     }
 
     /**
@@ -364,43 +263,13 @@ class MidtransService
             $order->refresh();
 
             if ($settled && in_array($order->status, [OrderStatus::Expired, OrderStatus::Failed], true)) {
-                if ($order->source === 'store_qris') {
-                    RefundStorefrontOrder::dispatch($order->getKey())->afterCommit();
-                } else {
-                    OrderFulfillment::refundLatePayment($order);
-                }
+                OrderFulfillment::refundLatePayment($order);
 
                 return $order->refresh();
             }
 
             if ($status === 'expire' && $order->status === OrderStatus::Pending) {
                 OrderFulfillment::expire($order);
-
-                return $order->refresh();
-            }
-
-            if (in_array($status, ['refund', 'partial_refund'], true) && $order->source === 'store_qris') {
-                DB::transaction(function () use ($order, $status, $refundAmount, $transactionId): void {
-                    $lockedOrder = Order::query()->whereKey($order->getKey())->lockForUpdate()->firstOrFail();
-                    $isFullRefund = $status === 'refund'
-                        || ($refundAmount !== null && (float) $refundAmount >= $lockedOrder->totalDue());
-                    $metadata = $lockedOrder->metadata ?? [];
-                    $metadata['midtrans_refund'] = [
-                        'status' => $isFullRefund ? 'completed' : 'manual_required',
-                        'transaction_id' => $transactionId,
-                    ];
-
-                    $lockedOrder->forceFill([
-                        'refund_status' => $isFullRefund ? 'completed' : 'manual_required',
-                        'refund_transaction_id' => $transactionId,
-                        'refunded_at' => $isFullRefund ? ($lockedOrder->refunded_at ?? now()) : $lockedOrder->refunded_at,
-                        'metadata' => $metadata,
-                    ])->save();
-
-                    if ($isFullRefund) {
-                        OrderRewardLedger::reverseForRefund($lockedOrder);
-                    }
-                });
 
                 return $order->refresh();
             }

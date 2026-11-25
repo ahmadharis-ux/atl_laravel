@@ -72,11 +72,6 @@ class UserController extends Controller
                 ->latest('id')
                 ->paginate(10, ['*'], 'orders_page')
                 ->withQueryString(),
-            'commissions' => $user->resellerCommissions()
-                ->with('order.product')
-                ->latest('id')
-                ->limit(20)
-                ->get(),
         ]);
     }
 

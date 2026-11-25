@@ -11,7 +11,7 @@
     $channelLabel = $masterBank?->bank_name ?? $method?->channelLabel($order->payment_channel);
     $pending = $order->status === \App\Enums\OrderStatus::Pending;
     $processing = $order->status === \App\Enums\OrderStatus::Processing;
-    $refundComplete = $order->refunded_at !== null || $order->refund_status === 'completed';
+    $refundComplete = $order->refunded_at !== null;
     $midtrans = $order->metadata['midtrans'] ?? [];
     $qrUrl = $midtrans['qr_url'] ?? null;
     $fee = (int) $order->fee;
@@ -34,9 +34,7 @@
             <div class="d-flex align-items-center gap-2">
                 <p class="tx-mute fs-12 m-0">{{ $order->order_number }}</p>
                 <button type="button" class="ap-icon-btn" data-copy="{{ $order->order_number }}" data-copy-label="ID Pesanan" data-tip="Salin ID Pesanan"><span class="ms ms-sm">content_copy</span></button>
-                @if (in_array($order->source, ['store_cash', 'store_qris'], true))
-                    <span class="pill bg-sky-l tx-navy fs-11">Toko reseller</span>
-                @elseif ($order->source === 'api')
+                @if ($order->source === 'api')
                     <span class="pill bg-gold tx-gold fs-11">API reseller</span>
                 @endif
             </div>
@@ -66,12 +64,6 @@
                 @if ($refundComplete)
                     <div class="fw-semibold">Pengembalian dana telah selesai</div>
                     <div>Pesanan sebelumnya berhasil diproses lalu direfund. Jika ada reward poin dari pesanan ini, poin tersebut sudah dibalik.</div>
-                @elseif ($order->refund_status === 'manual_required')
-                    <div class="fw-semibold">Refund memerlukan bantuan CS</div>
-                    <div>Refund belum dikonfirmasi selesai. Hubungi CS untuk memastikan pengembalian dana dan status reward poin.</div>
-                @elseif (in_array($order->refund_status, ['pending', 'requested'], true))
-                    <div class="fw-semibold">Refund sedang diproses</div>
-                    <div>Reward poin akan dibalik setelah refund dikonfirmasi selesai.</div>
                 @else
                     <div class="fw-semibold">Transaksi berhasil</div>
                     <div>Pesanan sudah diproses. Nomor seri, jika tersedia, ada di rincian pembayaran.</div>
@@ -83,12 +75,8 @@
             <span class="ms">error</span>
             <div class="fs-13">
                 <div class="fw-semibold">Pesanan gagal diproses</div>
-                @if ($order->refunded_at !== null || $order->refund_status === 'completed')
+                @if ($refundComplete)
                     <div>Pengembalian dana telah selesai. Periksa saldo atau metode pembayaran yang digunakan.</div>
-                @elseif (in_array($order->refund_status, ['pending', 'requested'], true))
-                    <div>Pengembalian dana sedang diproses. Jika belum terlihat setelah proses selesai, hubungi CS.</div>
-                @elseif ($order->refund_status === 'manual_required')
-                    <div>Pengembalian dana memerlukan bantuan CS. Hubungi CS untuk memeriksa statusnya.</div>
                 @elseif ($order->payment_method === \App\Enums\PaymentMethod::Saldo)
                     <div>Periksa mutasi saldo untuk memastikan pengembalian dana. Jika belum tercatat, hubungi CS.</div>
                 @else
@@ -112,12 +100,8 @@
                     @else
                         Produk ini sedang tidak tersedia untuk dibeli kembali.
                     @endif
-                    @if ($order->refunded_at !== null || $order->refund_status === 'completed')
+                    @if ($refundComplete)
                         Pengembalian dana telah selesai.
-                    @elseif (in_array($order->refund_status, ['pending', 'requested'], true))
-                        Pengembalian dana sedang diproses.
-                    @elseif ($order->refund_status === 'manual_required')
-                        Pengembalian dana memerlukan bantuan CS.
                     @else
                         Jika sudah membayar, hubungi CS sebelum membuat pesanan baru.
                     @endif

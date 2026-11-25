@@ -46,7 +46,7 @@ class ResellerTest extends TestCase
             ->assertSee('Kirim Permohonan Reseller')
             ->assertSee('Aturan penting sebelum aktivasi')
             ->assertSee('Pesanan melalui API dibayar dari saldo akun menggunakan harga reseller.')
-            ->assertSee('Menonaktifkan reseller mencabut API key serta menutup akses API dan toko untuk pesanan baru.')
+            ->assertSee('Menonaktifkan reseller mencabut API key serta menutup akses API untuk pesanan baru.')
             ->assertSee('Akses API & API Key', false)
             ->assertSee(route('settings.reseller.docs'));
     }
@@ -57,20 +57,18 @@ class ResellerTest extends TestCase
 
         $this->actingAs($user)
             ->post(route('settings.reseller.activate'), [
-                'sales_channel' => 'api',
                 'website' => 'https://reseller.example.test',
                 'contact_channel' => 'whatsapp',
                 'contact' => '08123456789',
                 'accept_terms' => '1',
             ])
             ->assertRedirect()
-            ->assertSessionHas('status', 'Permohonan reseller terkirim. Akses toko dan API akan aktif setelah ditinjau admin.');
+            ->assertSessionHas('status', 'Permohonan reseller terkirim. Akses API akan aktif setelah ditinjau admin.');
 
         $user->refresh();
 
         $this->assertFalse($user->is_reseller);
         $this->assertSame('pending', $user->reseller_status);
-        $this->assertSame('api', $user->reseller_sales_channel);
         $this->assertSame('1.0', $user->reseller_terms_version);
         $this->assertNotNull($user->reseller_terms_accepted_at);
         $this->assertNull($user->reseller_api_key);
@@ -82,7 +80,6 @@ class ResellerTest extends TestCase
     {
         $user = User::factory()->create([
             'reseller_status' => 'pending',
-            'reseller_sales_channel' => 'api',
             'reseller_terms_accepted_at' => now(),
             'reseller_terms_version' => '1.0',
         ]);
@@ -90,7 +87,7 @@ class ResellerTest extends TestCase
         $this->actingAs($user)
             ->get(route('settings.reseller'))
             ->assertSee('Permohonan Sedang Ditinjau')
-            ->assertSee('Toko dan API akan tersedia setelah admin menyetujui permohonan.')
+            ->assertSee('Akses API akan tersedia setelah admin menyetujui permohonan.')
             ->assertDontSee('Kirim Permohonan Reseller')
             ->assertDontSee('API Key');
     }
@@ -124,7 +121,6 @@ class ResellerTest extends TestCase
 
         $this->actingAs($user)
             ->post(route('settings.reseller.activate'), [
-                'sales_channel' => 'hosted',
                 'contact_channel' => 'whatsapp',
                 'contact' => '08123456789',
                 'accept_terms' => '1',
@@ -139,7 +135,7 @@ class ResellerTest extends TestCase
 
         $this->actingAs($user)
             ->post(route('settings.reseller.activate'))
-            ->assertSessionHasErrors(['sales_channel', 'contact_channel', 'contact', 'accept_terms']);
+            ->assertSessionHasErrors(['website', 'contact_channel', 'contact', 'accept_terms']);
 
         $user->refresh();
 
@@ -153,7 +149,7 @@ class ResellerTest extends TestCase
         $user = User::factory()->create();
 
         $this->actingAs($user)->post(route('settings.reseller.activate'), [
-            'sales_channel' => 'hosted',
+            'website' => 'https://first.example.test',
             'contact_channel' => 'whatsapp',
             'contact' => '08123456789',
             'accept_terms' => '1',
@@ -162,7 +158,6 @@ class ResellerTest extends TestCase
 
         $this->actingAs($user->fresh())
             ->post(route('settings.reseller.activate'), [
-                'sales_channel' => 'api',
                 'website' => 'https://changed.example.test',
                 'contact_channel' => 'telegram',
                 'contact' => '@changed',
@@ -172,7 +167,7 @@ class ResellerTest extends TestCase
             ->assertSessionHas('status');
 
         $this->assertNull(session('api_key'));
-        $this->assertSame('hosted', $user->fresh()->reseller_sales_channel);
+        $this->assertSame('https://first.example.test', $user->fresh()->reseller_website);
         $this->assertSame('1.0', $user->fresh()->reseller_terms_version);
         $this->assertSame($submittedTermsAt->toISOString(), $user->fresh()->reseller_terms_accepted_at->toISOString());
         $this->assertNull($user->fresh()->reseller_api_key);
@@ -277,7 +272,7 @@ class ResellerTest extends TestCase
 
     public function test_active_api_reseller_sees_contextual_api_onboarding_steps(): void
     {
-        [$user] = $this->activeReseller(['reseller_sales_channel' => 'api']);
+        [$user] = $this->activeReseller();
 
         $this->actingAs($user)
             ->get(route('settings.reseller'))
@@ -289,7 +284,7 @@ class ResellerTest extends TestCase
             ->assertSee(route('settings.reseller.docs').'#doc-pesanan', false)
             ->assertSee(route('deposits.create'), false)
             ->assertSee('id="api-key"', false)
-            ->assertDontSee('Mulai dengan Toko Hosted');
+            ->assertDontSee('Toko Hosted');
     }
 
     public function test_active_reseller_can_save_a_public_webhook_url(): void
@@ -369,7 +364,6 @@ class ResellerTest extends TestCase
     {
         $user = User::factory()->create([
             'is_reseller' => true,
-            'reseller_sales_channel' => 'api',
             'reseller_since' => now(),
         ]);
 
@@ -378,17 +372,5 @@ class ResellerTest extends TestCase
             ->assertSee('API key belum dibuat')
             ->assertSee('Buat API key')
             ->assertSee('href="#api-key"', false);
-    }
-
-    public function test_active_hosted_reseller_sees_store_and_commission_steps(): void
-    {
-        [$user] = $this->activeReseller(['reseller_sales_channel' => 'hosted']);
-
-        $this->actingAs($user)
-            ->get(route('settings.reseller'))
-            ->assertSee('Mulai dengan Toko Hosted')
-            ->assertSee(route('storefront.index', $user), false)
-            ->assertSee(route('settings.reseller.store'), false)
-            ->assertDontSee('Mulai dengan API');
     }
 }

@@ -10,15 +10,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 #[Fillable([
     'user_id', 'product_id', 'order_number', 'idempotency_key', 'target', 'target_zone', 'amount', 'fee', 'status',
     'payment_method', 'payment_channel', 'payment_code', 'master_bank_id', 'paid_at', 'expires_at', 'metadata', 'notes',
     'provider', 'provider_ref', 'provider_sn', 'provider_status', 'provider_price',
-    'provider_admin', 'provider_payload', 'processed_at', 'refunded_at', 'source', 'storefront_key',
-    'refund_status', 'refund_requested_at', 'refund_transaction_id', 'supplier_cost_snapshot',
+    'provider_admin', 'provider_payload', 'processed_at', 'refunded_at', 'source',
+    'supplier_cost_snapshot',
     'company_cost_snapshot', 'reward_eligible',
 ])]
 class Order extends Model
@@ -58,11 +57,6 @@ class Order extends Model
         return $this->morphMany(PointTransaction::class, 'reference');
     }
 
-    public function resellerCommission(): HasOne
-    {
-        return $this->hasOne(ResellerCommission::class);
-    }
-
     public function isPending(): bool
     {
         return $this->status === OrderStatus::Pending;
@@ -70,7 +64,7 @@ class Order extends Model
 
     /**
      * Hanya transfer VA/e-wallet checkout biasa yang dilunasi manual oleh admin.
-     * QRIS lewat Midtrans; pesanan toko tunai dikonfirmasi reseller.
+     * QRIS dilunasi lewat Midtrans.
      */
     public function canBeSettledManually(): bool
     {
@@ -137,7 +131,6 @@ class Order extends Model
             'provider_payload' => 'array',
             'processed_at' => 'datetime',
             'refunded_at' => 'datetime',
-            'refund_requested_at' => 'datetime',
         ];
     }
 }
