@@ -94,4 +94,25 @@ class LegacyMigrationTest extends TestCase
 
         $this->assertDatabaseCount('users', 0);
     }
+
+    public function test_legacy_2a_bcrypt_hash_can_migrate(): void
+    {
+        LegacyUser::query()->create([
+            'legacy_user_id' => 78,
+            'username' => 'old2a',
+            'email' => 'old2a@example.test',
+            'password_hash' => str_replace('$2y$', '$2a$', password_hash('old-password', PASSWORD_BCRYPT)),
+            'balance' => 0,
+            'points' => 0,
+            'imported_at' => now(),
+        ]);
+
+        $this->post(route('legacy-migration.verify'), ['identifier' => 'old2a', 'password' => 'old-password'])
+            ->assertRedirect(route('legacy-migration.confirm'));
+
+        $this->post(route('legacy-migration.complete'), ['agree' => '1'])->assertRedirect();
+
+        $user = User::query()->where('email', 'old2a@example.test')->sole();
+        $this->assertTrue(Hash::check('old-password', $user->password));
+    }
 }

@@ -5,13 +5,15 @@
             ['label' => 'Invoice', 'icon' => 'receipt_long', 'href' => route('admin.transactions.invoice', $order), 'target' => '_blank'],
         ];
         if ($order->isPending() && auth()->user()->can('transactions.update')) {
-            $actions[] = [
-                'label' => 'Tandai Lunas',
-                'icon' => 'check_circle',
-                'tone' => 'tx-mintt',
-                'form' => 'order-settle-'.$order->id,
-                'confirm' => 'Tandai pesanan '.$order->order_number.' (Rp '.number_format($order->totalDue(), 0, ',', '.').') sebagai lunas dan proses pesanan?',
-            ];
+            if ($order->canBeSettledManually()) {
+                $actions[] = [
+                    'label' => 'Tandai Lunas',
+                    'icon' => 'check_circle',
+                    'tone' => 'tx-mintt',
+                    'form' => 'order-settle-'.$order->id,
+                    'confirm' => 'Tandai pesanan '.$order->order_number.' (Rp '.number_format($order->totalDue(), 0, ',', '.').') sebagai lunas dan proses pesanan?',
+                ];
+            }
             $actions[] = [
                 'label' => 'Batalkan',
                 'icon' => 'cancel',

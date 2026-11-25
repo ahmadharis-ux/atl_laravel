@@ -125,7 +125,7 @@
             <div class="row align-items-center g-3">
                 <div class="col-lg-6">
                     <span class="pill bg-mint-l tx-mintt">Tentang Kami</span>
-                    <h2 class="landing-section-title mt-3">{!! $settings->about_title ?: 'Kenapa Atlantic Pedia?' !!}</h2>
+                    <h2 class="landing-section-title mt-3">{{ $settings->about_title ?: 'Kenapa Atlantic Pedia?' }}</h2>
                     <p class="landing-section-desc mt-3">{{ $settings->about_body }}</p>
 
                     <ul class="landing-benefits">

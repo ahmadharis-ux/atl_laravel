@@ -144,6 +144,7 @@ class AdminBannerTest extends TestCase
     {
         $admin = $this->admin([
             'dashboard.view',
+            'search.view',
             'users.view',
             'transactions.view',
             'products.view',
@@ -160,7 +161,7 @@ class AdminBannerTest extends TestCase
 
     public function test_admin_search_requires_minimum_characters(): void
     {
-        $this->actingAs($this->admin())
+        $this->actingAs($this->admin(['dashboard.view', 'search.view']))
             ->getJson(route('admin.search', ['q' => 'a']))
             ->assertOk()
             ->assertExactJson(['groups' => []]);

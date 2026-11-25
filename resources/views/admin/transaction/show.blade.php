@@ -156,9 +156,11 @@
                         <button type="button" class="btn-soft tx-err" data-confirm="Batalkan pesanan {{ $order->order_number }} dan kembalikan stok?" data-confirm-danger data-submit-form="formExpire{{ $order->getKey() }}">
                             <span class="ms ms-sm align-middle me-1">cancel</span>Batalkan
                         </button>
+                        @if ($order->canBeSettledManually())
                         <button type="button" class="btn-navy" data-confirm="Tandai pesanan {{ $order->order_number }} (Rp {{ number_format($order->totalDue(), 0, ',', '.') }}) sebagai lunas dan proses pesanan?" data-submit-form="formSettle{{ $order->getKey() }}">
                             <span class="ms ms-sm align-middle me-1">check_circle</span>Tandai Lunas
                         </button>
+                        @endif
                     </div>
                 @endif
             </x-ui.card>

@@ -22,6 +22,8 @@ use Illuminate\Validation\ValidationException;
 
 class StorefrontController extends Controller
 {
+    private const MAX_PENDING_STOREFRONT_ORDERS_PER_PRODUCT = 5;
+
     public function index(User $reseller): View
     {
         abort_unless($reseller->is_reseller, 404);
@@ -108,6 +110,17 @@ class StorefrontController extends Controller
             if (! $item->status || (! $item->unlimited_stock && $item->stock < 1)) {
                 throw ValidationException::withMessages([
                     'product' => 'Produk tidak tersedia atau stoknya habis.',
+                ]);
+            }
+
+            // Pesanan toko tanpa login memesan stok; batasi yang belum dibayar agar stok tidak bisa dikunci massal.
+            if (! $item->unlimited_stock && Order::query()
+                ->where('product_id', $item->getKey())
+                ->whereIn('source', ['store_qris', 'store_cash'])
+                ->where('status', OrderStatus::Pending)
+                ->count() >= self::MAX_PENDING_STOREFRONT_ORDERS_PER_PRODUCT) {
+                throw ValidationException::withMessages([
+                    'product' => 'Produk ini sedang banyak dipesan. Silakan coba beberapa saat lagi.',
                 ]);
             }
 

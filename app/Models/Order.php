@@ -69,6 +69,17 @@ class Order extends Model
     }
 
     /**
+     * Hanya transfer VA/e-wallet checkout biasa yang dilunasi manual oleh admin.
+     * QRIS lewat Midtrans; pesanan toko tunai dikonfirmasi reseller.
+     */
+    public function canBeSettledManually(): bool
+    {
+        return $this->isPending()
+            && in_array($this->source, [null, 'web'], true)
+            && in_array($this->payment_method, [PaymentMethod::VirtualAccount, PaymentMethod::EWallet], true);
+    }
+
+    /**
      * Total yang harus ditransfer user: harga produk + biaya admin kanal
      * (VA/e-wallet manual). Untuk metode lain fee selalu 0.
      */

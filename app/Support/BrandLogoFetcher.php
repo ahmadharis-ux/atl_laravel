@@ -186,8 +186,9 @@ final class BrandLogoFetcher
      */
     private function extensionFor(string $bytes): ?string
     {
+        // SVG bisa membawa script yang berjalan di domain aplikasi; logo SVG pihak ketiga ditolak.
         if (str_contains(Str::lower(substr($bytes, 0, 300)), '<svg')) {
-            return 'svg';
+            return null;
         }
 
         $info = @getimagesizefromstring($bytes);
@@ -201,7 +202,6 @@ final class BrandLogoFetcher
             'image/jpeg' => 'jpg',
             'image/gif' => 'gif',
             'image/webp' => 'webp',
-            'image/svg+xml' => 'svg',
             'image/vnd.microsoft.icon', 'image/x-icon' => 'ico',
             default => null,
         };

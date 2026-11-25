@@ -123,7 +123,7 @@ class ResellerStorefrontController extends Controller
     public function confirmCash(Request $request, Order $order, PinService $pinService): RedirectResponse
     {
         $user = $request->user();
-        abort_unless($user !== null && $user->reseller_since !== null, 403);
+        abort_unless($user !== null && $user->is_reseller, 403);
 
         $validated = $request->validate([
             'pin' => ['required', 'digits:6'],
@@ -162,7 +162,7 @@ class ResellerStorefrontController extends Controller
                 ]);
             }
 
-            if ($account->reseller_since === null) {
+            if (! $account->is_reseller) {
                 throw ValidationException::withMessages([
                     'order' => 'Akun reseller tidak aktif.',
                 ]);
@@ -217,7 +217,8 @@ class ResellerStorefrontController extends Controller
         ]);
 
         $user = $request->user();
-        abort_unless($user !== null && $user->reseller_since !== null, 403);
+        // Reseller yang ditangguhkan tidak boleh mencairkan komisi sampai ditinjau admin.
+        abort_unless($user !== null && $user->reseller_since !== null && $user->reseller_status !== 'suspended', 403);
 
         DB::transaction(function () use ($user, $validated): void {
             $account = User::query()->whereKey($user->getKey())->lockForUpdate()->firstOrFail();

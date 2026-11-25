@@ -40,7 +40,8 @@ class LegacyMigrationController extends Controller
             })
             ->first();
 
-        if ($legacyUser === null || ! Hash::check($validated['password'], $legacyUser->password_hash)) {
+        // password_verify menerima semua format hash lama ($2a$/$2y$/argon) tanpa melempar error seperti Hash::check.
+        if ($legacyUser === null || ! password_verify($validated['password'], (string) $legacyUser->password_hash)) {
             throw ValidationException::withMessages([
                 'identifier' => 'Data akun lama tidak cocok atau akun sudah dimigrasikan.',
             ]);
@@ -59,6 +60,8 @@ class LegacyMigrationController extends Controller
         }
 
         $request->session()->put('legacy_migration_id', $legacyUser->getKey());
+        // Hash ulang dengan hasher aplikasi: hash lama bisa berformat yang ditolak cast `hashed`.
+        $request->session()->put('legacy_migration_password', Hash::make($validated['password']));
 
         return redirect()->route('legacy-migration.confirm');
     }
@@ -84,7 +87,8 @@ class LegacyMigrationController extends Controller
         ]);
 
         $legacyId = $request->session()->get('legacy_migration_id');
-        $user = DB::transaction(function () use ($legacyId): User {
+        $passwordHash = (string) $request->session()->get('legacy_migration_password', '');
+        $user = DB::transaction(function () use ($legacyId, $passwordHash): User {
             $legacyUser = LegacyUser::query()->lockForUpdate()->find($legacyId);
 
             if ($legacyUser === null || $legacyUser->migrated_at !== null) {
@@ -104,7 +108,7 @@ class LegacyMigrationController extends Controller
                 'name' => filled($legacyUser->username) ? $legacyUser->username : $legacyUser->email,
                 'email' => $legacyUser->email,
                 'is_admin' => false,
-                'password' => $legacyUser->password_hash,
+                'password' => $passwordHash !== '' ? $passwordHash : $legacyUser->password_hash,
                 'email_verified_at' => now(),
                 'balance' => (int) round((float) $legacyUser->balance),
                 'points' => (int) $legacyUser->points,
@@ -125,7 +129,7 @@ class LegacyMigrationController extends Controller
             return $user;
         });
 
-        $request->session()->forget('legacy_migration_id');
+        $request->session()->forget(['legacy_migration_id', 'legacy_migration_password']);
         Auth::login($user);
         $request->session()->regenerate();
 

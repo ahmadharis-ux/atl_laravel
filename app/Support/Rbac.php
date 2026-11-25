@@ -259,7 +259,38 @@ final class Rbac
             return true;
         }
 
+        // Level role custom tidak diketahui, jadi hanya superadmin yang boleh mengelolanya.
+        if ($target->getRoleNames()->contains(fn (string $role): bool => ! in_array($role, Roles::all(), true))) {
+            return false;
+        }
+
         return self::actorLevel($target) < self::actorLevel($actor);
+    }
+
+    /**
+     * Permission yang boleh diberikan $actor ke sebuah role: tidak lebih dari miliknya sendiri.
+     *
+     * @return array<int, string>
+     */
+    public static function grantablePermissions(User $actor): array
+    {
+        if ($actor->hasRole(Roles::SUPERADMIN)) {
+            return self::all();
+        }
+
+        return array_values(array_intersect(self::all(), $actor->getAllPermissions()->pluck('name')->all()));
+    }
+
+    /**
+     * Role sistem hanya boleh diubah oleh aktor dengan level lebih tinggi.
+     */
+    public static function canEditRole(User $actor, string $role): bool
+    {
+        if ($actor->hasRole(Roles::SUPERADMIN)) {
+            return true;
+        }
+
+        return ! in_array($role, Roles::all(), true) || self::level($role) < self::actorLevel($actor);
     }
 
     public static function actorLevel(User $user): int

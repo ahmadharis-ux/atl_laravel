@@ -88,7 +88,7 @@ class TopupController extends Controller
             ? $deposit->fee + 1
             : 0;
         $validated = $request->validate([
-            'received_amount' => ['nullable', 'integer', 'min:'.$minimumReceived, 'max:1000000000'],
+            'received_amount' => ['nullable', 'integer', 'min:'.$minimumReceived, 'max:'.$deposit->totalDue()],
         ]);
 
         $settled = DepositSettler::settle($deposit, $request->user(), $validated['received_amount'] ?? null);

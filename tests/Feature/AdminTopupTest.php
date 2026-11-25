@@ -217,4 +217,23 @@ class AdminTopupTest extends TestCase
 
         $this->assertSame(DepositStatus::Pending, $deposit->fresh()->status);
     }
+
+    public function test_admin_cannot_credit_more_than_the_amount_due(): void
+    {
+        $admin = $this->admin();
+        $user = User::factory()->create(['balance' => 0]);
+        $deposit = Deposit::factory()->create([
+            'user_id' => $user->getKey(),
+            'amount' => 50_000,
+            'fee' => 2_500,
+            'status' => DepositStatus::Pending,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.topup.settle', $deposit), ['received_amount' => 1_000_000_000])
+            ->assertSessionHasErrors('received_amount');
+
+        $this->assertSame(DepositStatus::Pending, $deposit->fresh()->status);
+        $this->assertSame(0, $user->fresh()->balance);
+    }
 }

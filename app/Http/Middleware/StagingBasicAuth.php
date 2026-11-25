@@ -22,8 +22,11 @@ class StagingBasicAuth
         $expectedUsername = (string) config('app.staging_basic_auth_username');
         $expectedPassword = (string) config('app.staging_basic_auth_password');
 
+        // Kredensial kosong berarti salah konfigurasi: tolak, jangan biarkan semua orang lewat.
         if (
-            hash_equals($expectedUsername, (string) $request->getUser())
+            $expectedUsername !== ''
+            && $expectedPassword !== ''
+            && hash_equals($expectedUsername, (string) $request->getUser())
             && hash_equals($expectedPassword, (string) $request->getPassword())
         ) {
             return $next($request);

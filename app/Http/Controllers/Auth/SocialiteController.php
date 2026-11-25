@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Support\Roles;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
 use Symfony\Component\HttpFoundation\RedirectResponse as SymfonyRedirectResponse;
@@ -34,7 +35,17 @@ class SocialiteController extends Controller
 
         if ($user) {
             if ($user->email_verified_at === null) {
-                $user->forceFill(['email_verified_at' => now()])->save();
+                // Akun belum terverifikasi bisa dibuat orang lain memakai email ini:
+                // cabut password & sesi lama sebelum diserahkan ke pemilik Google.
+                $user->forceFill([
+                    'email_verified_at' => now(),
+                    'password' => Str::random(32),
+                    'remember_token' => null,
+                ])->save();
+
+                if (config('session.driver') === 'database') {
+                    DB::table('sessions')->where('user_id', $user->getKey())->delete();
+                }
             }
         } else {
             $user = User::create([
@@ -46,6 +57,13 @@ class SocialiteController extends Controller
 
             $user->forceFill(['email_verified_at' => now()])->save();
             $user->assignRole(Roles::USER);
+        }
+
+        if ($user->two_factor_confirmed_at !== null) {
+            request()->session()->put('auth.two_factor.id', $user->getKey());
+            request()->session()->put('auth.two_factor.remember', true);
+
+            return redirect()->route('two-factor.challenge');
         }
 
         Auth::login($user, true);

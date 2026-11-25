@@ -65,4 +65,15 @@ class SecurityHeadersTest extends TestCase
             ->get('/login')
             ->assertOk();
     }
+
+    public function test_staging_basic_auth_with_empty_credentials_blocks_everyone(): void
+    {
+        config([
+            'app.staging_basic_auth' => true,
+            'app.staging_basic_auth_username' => '',
+            'app.staging_basic_auth_password' => '',
+        ]);
+
+        $this->get('/login')->assertUnauthorized();
+    }
 }

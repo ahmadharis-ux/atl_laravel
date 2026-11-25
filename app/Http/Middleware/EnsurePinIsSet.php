@@ -12,7 +12,7 @@ class EnsurePinIsSet
     {
         $user = $request->user();
 
-        if ($user === null || $user->is_admin || ! $user->hasVerifiedEmail()) {
+        if ($user === null || $user->canAccessAdmin() || ! $user->hasVerifiedEmail()) {
             return $next($request);
         }
 

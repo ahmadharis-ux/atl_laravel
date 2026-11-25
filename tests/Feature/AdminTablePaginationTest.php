@@ -144,7 +144,7 @@ class AdminTablePaginationTest extends TestCase
 
     public function test_component_showcase_table_still_uses_client_side_search(): void
     {
-        $admin = $this->admin(['dashboard.view']);
+        $admin = $this->admin(['dashboard.view', 'components.view']);
 
         $this->actingAs($admin)
             ->get(route('admin.components'))

@@ -24,21 +24,20 @@ class OrderPaymentSettlerTest extends TestCase
     {
         parent::setUp();
 
-        config(['reseller.discount_percent' => 10]);
+        config(['reseller.discount_percent' => 10, 'midtrans.server_key' => 'SB-Mid-server-test']);
     }
 
     public function test_successful_qris_settlement_credits_commission_once(): void
     {
         $reseller = $this->reseller();
         $order = $this->storefrontOrder($reseller);
-        $midtrans = app(MidtransService::class);
         $notification = [
             'order_id' => $order->order_number,
             'transaction_status' => 'settlement',
         ];
 
-        $midtrans->handleNotification($notification);
-        $midtrans->handleNotification($notification);
+        $this->notify($notification);
+        $this->notify($notification);
 
         $this->assertSame(OrderStatus::Success, $order->fresh()->status);
         $this->assertSame(1, ResellerCommission::query()->where('order_id', $order->getKey())->count());
@@ -53,8 +52,8 @@ class OrderPaymentSettlerTest extends TestCase
             'transaction_status' => 'refund',
             'refund_amount' => (string) $order->totalDue(),
         ];
-        $midtrans->handleNotification($refundNotification);
-        $midtrans->handleNotification($refundNotification);
+        $this->notify($refundNotification);
+        $this->notify($refundNotification);
 
         $this->assertSame(0, (int) $reseller->fresh()->points);
         $this->assertSame(0, (int) $reseller->fresh()->lifetime_points);
@@ -73,7 +72,7 @@ class OrderPaymentSettlerTest extends TestCase
         $order = $this->storefrontOrder($reseller, ['provider' => 'digiflazz']);
         Queue::fake([SendDigiflazzTransaction::class]);
 
-        app(MidtransService::class)->handleNotification([
+        $this->notify([
             'order_id' => $order->order_number,
             'transaction_status' => 'settlement',
         ]);
@@ -93,13 +92,12 @@ class OrderPaymentSettlerTest extends TestCase
     {
         $reseller = $this->reseller();
         $order = $this->storefrontOrder($reseller);
-        $midtrans = app(MidtransService::class);
 
-        $midtrans->handleNotification([
+        $this->notify([
             'order_id' => $order->order_number,
             'transaction_status' => 'settlement',
         ]);
-        $midtrans->handleNotification([
+        $this->notify([
             'order_id' => $order->order_number,
             'transaction_status' => 'partial_refund',
             'refund_amount' => '5000',
@@ -114,6 +112,17 @@ class OrderPaymentSettlerTest extends TestCase
             ->get(route('orders.show', $order))
             ->assertSee('Refund memerlukan bantuan CS')
             ->assertDontSee('Pengembalian dana telah selesai');
+    }
+
+    /**
+     * @param  array<string, string>  $payload
+     */
+    private function notify(array $payload): void
+    {
+        $payload += ['status_code' => '200', 'gross_amount' => '0'];
+        $payload['signature_key'] = hash('sha512', $payload['order_id'].$payload['status_code'].$payload['gross_amount'].'SB-Mid-server-test');
+
+        app(MidtransService::class)->handleNotification($payload);
     }
 
     private function reseller(): User

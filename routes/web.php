@@ -60,8 +60,6 @@ Route::get('/firebase-messaging-sw.js', FirebaseServiceWorkerController::class)-
 
 Route::get('/', LandingController::class)->name('landing');
 
-Route::get('/', LandingController::class)->name('landing');
-
 Route::get('/toko/{reseller}', [StorefrontController::class, 'index'])
     ->whereNumber('reseller')->name('storefront.index');
 Route::get('/toko/{reseller}/produk/{product}', [StorefrontController::class, 'product'])
@@ -81,15 +79,15 @@ Route::middleware('guest')->group(function () {
     Route::get('/login/user-lama/konfirmasi', [LegacyMigrationController::class, 'confirm'])->name('legacy-migration.confirm');
     Route::post('/login/user-lama/konfirmasi', [LegacyMigrationController::class, 'complete'])->middleware('throttle:5,1')->name('legacy-migration.complete');
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1');
 
     Route::get('/forgot-password', [PasswordResetController::class, 'request'])->name('password.request');
-    Route::post('/forgot-password', [PasswordResetController::class, 'email'])->name('password.email');
+    Route::post('/forgot-password', [PasswordResetController::class, 'email'])->middleware('throttle:5,1')->name('password.email');
     Route::get('/reset-password/{token}', [PasswordResetController::class, 'reset'])->name('password.reset');
-    Route::post('/reset-password', [PasswordResetController::class, 'update'])->name('password.update');
+    Route::post('/reset-password', [PasswordResetController::class, 'update'])->middleware('throttle:5,1')->name('password.update');
 
     Route::get('/two-factor-challenge', [TwoFactorController::class, 'challenge'])->name('two-factor.challenge');
-    Route::post('/two-factor-challenge', [TwoFactorController::class, 'verifyChallenge'])->name('two-factor.challenge.verify');
+    Route::post('/two-factor-challenge', [TwoFactorController::class, 'verifyChallenge'])->middleware('throttle:10,1')->name('two-factor.challenge.verify');
 
     Route::get('/auth/google/redirect', [SocialiteController::class, 'redirect'])->name('auth.google.redirect');
     Route::get('/auth/google/callback', [SocialiteController::class, 'callback'])->name('auth.google.callback');
@@ -106,7 +104,6 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::middleware(['auth', 'non-admin', 'verified', 'pin.set'])->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/saldo', [UserSaldoController::class, 'index'])->name('saldo.index');
@@ -125,7 +122,7 @@ Route::middleware(['auth', 'non-admin', 'verified', 'pin.set'])->group(function 
     Route::post('/saldo/topup/{deposit}/cek-status', [UserDepositController::class, 'sync'])
         ->middleware('throttle:10,1')->name('deposits.sync');
 
-    if (! app()->environment('production')) {
+    if (app()->environment(['local', 'testing'])) {
         Route::post('/saldo/topup/{deposit}/bayar', [UserDepositController::class, 'pay'])->name('deposits.pay');
     }
     Route::post('/saldo/ewallet/link', [UserEwalletTokenizationController::class, 'link'])->name('ewallet.link');
@@ -151,7 +148,7 @@ Route::middleware(['auth', 'non-admin', 'verified', 'pin.set'])->group(function 
 
     Route::get('/transaksi', [UserOrderController::class, 'index'])->name('orders.index');
     Route::get('/transaksi/{order}', [UserOrderController::class, 'show'])->name('orders.show');
-    if (! app()->environment('production')) {
+    if (app()->environment(['local', 'testing'])) {
         Route::post('/transaksi/{order}/bayar', [UserOrderController::class, 'pay'])->name('orders.pay');
     }
     Route::post('/transaksi/{order}/cek-status', [UserOrderController::class, 'sync'])
@@ -160,11 +157,11 @@ Route::middleware(['auth', 'non-admin', 'verified', 'pin.set'])->group(function 
     Route::get('/transaksi/{order}/invoice', [UserOrderController::class, 'invoice'])->name('orders.invoice');
     Route::get('/transaksi/{order}/invoice/pdf', [UserOrderController::class, 'invoicePdf'])->name('orders.invoice.pdf');
 
-    Route::get('/bantuan', [UserTicketController::class, 'index'])->name('tickets.index');
-    Route::get('/bantuan/baru', [UserTicketController::class, 'create'])->name('tickets.create');
-    Route::post('/bantuan', [UserTicketController::class, 'store'])->name('tickets.store');
-    Route::get('/bantuan/{ticket}', [UserTicketController::class, 'show'])->name('tickets.show');
-    Route::post('/bantuan/{ticket}/balas', [UserTicketController::class, 'reply'])->name('tickets.reply');
+    Route::get('/bantuan', [UserTicketController::class, 'index'])->middleware('feature:ticket')->name('tickets.index');
+    Route::get('/bantuan/baru', [UserTicketController::class, 'create'])->middleware('feature:ticket')->name('tickets.create');
+    Route::post('/bantuan', [UserTicketController::class, 'store'])->middleware('feature:ticket')->name('tickets.store');
+    Route::get('/bantuan/{ticket}', [UserTicketController::class, 'show'])->middleware('feature:ticket')->name('tickets.show');
+    Route::post('/bantuan/{ticket}/balas', [UserTicketController::class, 'reply'])->middleware('feature:ticket')->name('tickets.reply');
 
     Route::get('/notifikasi', [NotificationController::class, 'index'])->name('notifications.index');
     Route::get('/notifikasi/daftar', [NotificationController::class, 'list'])->name('notifications.list');
@@ -190,25 +187,25 @@ Route::middleware(['auth', 'non-admin', 'verified', 'pin.set'])->group(function 
     Route::post('/pengaturan/pin/ubah/reset', [UserPinController::class, 'resetStore'])
         ->name('settings.pin.change.reset.store');
 
-    Route::get('/pengaturan/reseller', [UserResellerController::class, 'show'])->name('settings.reseller');
-    Route::get('/pengaturan/reseller/dokumentasi', [UserResellerController::class, 'docs'])->name('settings.reseller.docs');
+    Route::get('/pengaturan/reseller', [UserResellerController::class, 'show'])->middleware('feature:reseller')->name('settings.reseller');
+    Route::get('/pengaturan/reseller/dokumentasi', [UserResellerController::class, 'docs'])->middleware('feature:reseller')->name('settings.reseller.docs');
     Route::post('/pengaturan/reseller/aktifkan', [UserResellerController::class, 'activate'])
-        ->middleware('throttle:5,1')->name('settings.reseller.activate');
-    Route::post('/pengaturan/reseller/buat-ulang', [UserResellerController::class, 'regenerate'])->name('settings.reseller.regenerate');
+        ->middleware('feature:reseller')->middleware('throttle:5,1')->name('settings.reseller.activate');
+    Route::post('/pengaturan/reseller/buat-ulang', [UserResellerController::class, 'regenerate'])->middleware('feature:reseller')->name('settings.reseller.regenerate');
     Route::put('/pengaturan/reseller/webhook', [UserResellerController::class, 'updateWebhook'])
-        ->name('settings.reseller.webhook.update');
+        ->middleware('feature:reseller')->name('settings.reseller.webhook.update');
     Route::post('/pengaturan/reseller/webhook/secret', [UserResellerController::class, 'regenerateWebhookSecret'])
-        ->middleware('throttle:5,1')->name('settings.reseller.webhook.secret');
-    Route::post('/pengaturan/reseller/nonaktifkan', [UserResellerController::class, 'deactivate'])->name('settings.reseller.deactivate');
-    Route::get('/pengaturan/reseller/toko', [ResellerStorefrontController::class, 'index'])->name('settings.reseller.store');
+        ->middleware('feature:reseller')->middleware('throttle:5,1')->name('settings.reseller.webhook.secret');
+    Route::post('/pengaturan/reseller/nonaktifkan', [UserResellerController::class, 'deactivate'])->middleware('feature:reseller')->name('settings.reseller.deactivate');
+    Route::get('/pengaturan/reseller/toko', [ResellerStorefrontController::class, 'index'])->middleware('feature:reseller')->name('settings.reseller.store');
     Route::get('/pengaturan/reseller/toko/transaksi', [ResellerStorefrontController::class, 'transactions'])
-        ->name('settings.reseller.store.transactions');
+        ->middleware('feature:reseller')->name('settings.reseller.store.transactions');
     Route::get('/pengaturan/reseller/toko/transaksi/{order}', [ResellerStorefrontController::class, 'transactionShow'])
-        ->name('settings.reseller.store.transactions.show');
+        ->middleware('feature:reseller')->name('settings.reseller.store.transactions.show');
     Route::post('/pengaturan/reseller/toko/pesanan/{order}/konfirmasi-tunai', [ResellerStorefrontController::class, 'confirmCash'])
-        ->name('settings.reseller.store.cash.confirm');
+        ->middleware('feature:reseller')->name('settings.reseller.store.cash.confirm');
     Route::post('/pengaturan/reseller/toko/pencairan', [ResellerStorefrontController::class, 'requestPayout'])
-        ->name('settings.reseller.store.payouts.store');
+        ->middleware('feature:reseller')->name('settings.reseller.store.payouts.store');
 
     Route::get('/pengaturan/profil', [UserSettingsController::class, 'profile'])->name('settings.profile');
     Route::put('/pengaturan/profil', [UserSettingsController::class, 'updateProfile'])->name('settings.profile.update');
@@ -225,7 +222,7 @@ Route::middleware(['auth', 'non-admin', 'verified', 'pin.set'])->group(function 
 
     Route::get('/pengaturan/keamanan', [TwoFactorController::class, 'show'])->name('settings.two-factor');
     Route::post('/pengaturan/2fa/aktifkan', [TwoFactorController::class, 'enable'])->name('settings.two-factor.enable');
-    Route::post('/pengaturan/2fa/konfirmasi', [TwoFactorController::class, 'confirm'])->name('settings.two-factor.confirm');
+    Route::post('/pengaturan/2fa/konfirmasi', [TwoFactorController::class, 'confirm'])->middleware('throttle:10,1')->name('settings.two-factor.confirm');
     Route::delete('/pengaturan/2fa', [TwoFactorController::class, 'disable'])->name('settings.two-factor.disable');
 
     Route::get('/pengaturan/perangkat', [UserSettingsController::class, 'sessions'])->name('settings.sessions');

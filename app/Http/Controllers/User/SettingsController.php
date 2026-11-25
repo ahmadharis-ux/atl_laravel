@@ -87,6 +87,14 @@ class SettingsController extends Controller
 
         $request->user()->update(['password' => $data['password']]);
 
+        // Sesi lain (mungkin milik pencuri sesi) tidak boleh bertahan setelah ganti kata sandi.
+        if (config('session.driver') === 'database') {
+            DB::table('sessions')
+                ->where('user_id', $request->user()->getKey())
+                ->where('id', '!=', $request->session()->getId())
+                ->delete();
+        }
+
         return back()->with('status', 'Kata sandi berhasil diubah.');
     }
 

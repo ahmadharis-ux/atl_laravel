@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
@@ -56,6 +57,10 @@ class PasswordResetController extends Controller
                 'password' => Hash::make($password),
                 'remember_token' => Str::random(60),
             ])->save();
+
+            if (config('session.driver') === 'database') {
+                DB::table('sessions')->where('user_id', $user->getKey())->delete();
+            }
 
             event(new PasswordReset($user));
         });

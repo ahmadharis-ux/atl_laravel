@@ -25,6 +25,9 @@ class MidtransWebhookController extends Controller
             TransactionLogger::error('deposit.failed', 'Gagal memproses notifikasi Midtrans.', $e, [
                 'order_id' => $request->input('order_id'),
             ]);
+
+            // Non-2xx membuat Midtrans mengirim ulang notifikasi, jadi pembayaran tidak hilang.
+            return response()->json(['message' => 'Error'], 500);
         }
 
         return response()->json(['message' => 'OK']);

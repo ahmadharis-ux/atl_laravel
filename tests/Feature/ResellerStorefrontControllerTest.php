@@ -180,4 +180,21 @@ class ResellerStorefrontControllerTest extends TestCase
 
         return $order;
     }
+
+    public function test_suspended_reseller_cannot_request_a_payout(): void
+    {
+        $reseller = $this->reseller();
+        $this->commission($reseller, 5_000);
+        $reseller->forceFill(['is_reseller' => false, 'reseller_status' => 'suspended'])->save();
+        $bankAccount = BankAccount::factory()->for($reseller)->create();
+
+        $this->actingAs($reseller)
+            ->post(route('settings.reseller.store.payouts.store'), [
+                'bank_account_id' => $bankAccount->getKey(),
+                'amount' => 3_000,
+            ])
+            ->assertForbidden();
+
+        $this->assertSame(0, ResellerPayout::query()->count());
+    }
 }

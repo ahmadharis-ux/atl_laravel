@@ -92,6 +92,8 @@ class CheckoutController extends Controller
             'pin.digits' => 'PIN transaksi harus terdiri dari 6 angka.',
         ]);
 
+        OrderTarget::ensureOperatorMatches($product, $validated['target']);
+
         $user = $request->user();
         $pendingSame = Order::query()
             ->where('user_id', $user->getKey())

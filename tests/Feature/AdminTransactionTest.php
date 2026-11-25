@@ -523,4 +523,23 @@ class AdminTransactionTest extends TestCase
 
         $this->assertSame(OrderStatus::Pending, $order->fresh()->status);
     }
+
+    public function test_admin_cannot_manually_settle_a_qris_or_storefront_order(): void
+    {
+        $admin = $this->admin(['dashboard.view', 'transactions.view', 'transactions.update']);
+        $qris = Order::factory()->create(['status' => OrderStatus::Pending, 'payment_method' => PaymentMethod::Qris]);
+        $storeCash = Order::factory()->create([
+            'status' => OrderStatus::Pending,
+            'payment_method' => PaymentMethod::VirtualAccount,
+            'source' => 'store_cash',
+        ]);
+
+        foreach ([$qris, $storeCash] as $order) {
+            $this->actingAs($admin)
+                ->post(route('admin.transactions.settle', $order))
+                ->assertSessionHas('error');
+
+            $this->assertSame(OrderStatus::Pending, $order->fresh()->status);
+        }
+    }
 }

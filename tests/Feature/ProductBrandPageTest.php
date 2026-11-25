@@ -169,7 +169,7 @@ class ProductBrandPageTest extends TestCase
             ->assertDontSee('Weekly Pass');
     }
 
-    public function test_brand_page_filter_uses_modal_like_product_index(): void
+    public function test_brand_page_shows_the_inline_filter_fields(): void
     {
         $user = $this->user();
         $brand = Brand::factory()->create();
@@ -183,8 +183,8 @@ class ProductBrandPageTest extends TestCase
         $this->actingAs($user)
             ->get(route('products.brand', $brand))
             ->assertOk()
-            ->assertSee('data-modal-open="modalFilter"', false)
-            ->assertSeeInOrder(['id="modalFilter"', 'name="region"', 'name="category"', 'name="min_price"', 'name="max_price"'], false);
+            ->assertSee('Filter Produk')
+            ->assertSeeInOrder(['data-ajax-form', 'name="region"', 'name="min_price"', 'name="max_price"'], false);
     }
 
     public function test_brand_page_filters_by_category(): void

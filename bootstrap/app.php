@@ -41,6 +41,9 @@ return Application::configure(basePath: dirname(__DIR__))
                 Request::HEADER_X_FORWARDED_PROTO,
         );
 
+        // Tolak Host/X-Forwarded-Host selain domain APP_URL (cegah link reset password palsu).
+        $middleware->trustHosts();
+
         $middleware->web(prepend: [
             EnsureComingSoonMode::class,
             ForceHttps::class,

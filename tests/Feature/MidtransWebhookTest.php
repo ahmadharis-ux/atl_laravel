@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Enums\DepositStatus;
+use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Models\Deposit;
+use App\Models\Order;
 use App\Models\User;
 use App\Services\MidtransService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -75,6 +77,26 @@ class MidtransWebhookTest extends TestCase
         $this->assertSame(0, $user->fresh()->balance);
     }
 
+    public function test_a_notification_is_ignored_when_midtrans_is_not_configured(): void
+    {
+        $user = User::factory()->create(['balance' => 0]);
+        $deposit = Deposit::factory()->create([
+            'user_id' => $user->getKey(),
+            'amount' => 75_000,
+            'payment_method' => PaymentMethod::Qris,
+        ]);
+
+        $this->postJson(route('webhook.midtrans'), [
+            'order_id' => $deposit->reference,
+            'status_code' => '200',
+            'gross_amount' => '75000',
+            'transaction_status' => 'settlement',
+        ])->assertOk();
+
+        $this->assertSame(DepositStatus::Pending, $deposit->fresh()->status);
+        $this->assertSame(0, $user->fresh()->balance);
+    }
+
     public function test_an_expire_notification_marks_the_deposit_expired(): void
     {
         $this->configureMidtrans();
@@ -101,5 +123,36 @@ class MidtransWebhookTest extends TestCase
 
         $this->assertFalse($service->isConfigured());
         $this->assertNull($service->chargeQris($deposit));
+    }
+
+    public function test_qris_paid_after_the_order_expired_is_refunded_to_saldo_once(): void
+    {
+        $this->configureMidtrans();
+
+        $user = User::factory()->create(['balance' => 0]);
+        $order = Order::factory()->create([
+            'user_id' => $user->getKey(),
+            'status' => OrderStatus::Expired,
+            'payment_method' => PaymentMethod::Qris,
+            'amount' => 20_000,
+            'fee' => 140,
+            'paid_at' => null,
+        ]);
+        $gross = (string) $order->totalDue();
+        $payload = [
+            'order_id' => $order->order_number,
+            'status_code' => '200',
+            'gross_amount' => $gross,
+            'transaction_status' => 'settlement',
+            'fraud_status' => 'accept',
+            'signature_key' => hash('sha512', $order->order_number.'200'.$gross.'SB-Mid-server-test'),
+        ];
+
+        $this->postJson(route('webhook.midtrans'), $payload)->assertOk();
+        $this->postJson(route('webhook.midtrans'), $payload)->assertOk();
+
+        $this->assertSame(20_140, $user->fresh()->balance);
+        $this->assertSame(OrderStatus::Expired, $order->fresh()->status);
+        $this->assertNotNull($order->fresh()->refunded_at);
     }
 }

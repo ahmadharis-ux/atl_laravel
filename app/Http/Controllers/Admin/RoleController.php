@@ -63,7 +63,9 @@ class RoleController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:50', 'alpha_dash', 'unique:roles,name'],
             'permissions' => ['array'],
-            'permissions.*' => ['string', Rule::in(Rbac::all())],
+            'permissions.*' => ['string', Rule::in(Rbac::grantablePermissions($request->user()))],
+        ], [
+            'permissions.*.in' => 'Anda tidak dapat memberikan permission yang tidak Anda miliki.',
         ]);
 
         $role = Role::create([
@@ -93,6 +95,8 @@ class RoleController extends Controller
     {
         Rbac::ensurePermissions();
 
+        abort_unless(Rbac::canEditRole($request->user(), $role->name), 403, 'Anda tidak berwenang mengubah peran ini.');
+
         $isSystem = in_array($role->name, Roles::all(), true);
         $locked = $role->name === Roles::SUPERADMIN;
 
@@ -100,8 +104,12 @@ class RoleController extends Controller
             'name' => $isSystem
                 ? ['nullable']
                 : ['required', 'string', 'max:50', 'alpha_dash', Rule::unique('roles', 'name')->ignore($role->id)],
-            'permissions' => ['array'],
-            'permissions.*' => ['string', Rule::in(Rbac::all())],
+            // Role pelanggan tidak boleh punya permission: semuanya membuka area admin.
+            'permissions' => $role->name === Roles::USER ? ['nullable', 'array', 'max:0'] : ['array'],
+            'permissions.*' => ['string', Rule::in(Rbac::grantablePermissions($request->user()))],
+        ], [
+            'permissions.max' => 'Peran pengguna tidak boleh diberi permission admin.',
+            'permissions.*.in' => 'Anda tidak dapat memberikan permission yang tidak Anda miliki.',
         ]);
 
         if (! $isSystem) {

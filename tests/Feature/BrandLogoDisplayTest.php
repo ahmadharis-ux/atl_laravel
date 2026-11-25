@@ -40,6 +40,6 @@ class BrandLogoDisplayTest extends TestCase
         $html = view('user.product._card', ['p' => $product->load('brand', 'category')])->render();
 
         $this->assertStringNotContainsString('pcard-logo', $html);
-        $this->assertStringContainsString('<span class="ms ', $html);
+        $this->assertStringContainsString('class="place-icon"', $html);
     }
 }

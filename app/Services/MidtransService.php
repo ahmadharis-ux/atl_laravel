@@ -209,7 +209,7 @@ class MidtransService
             return null;
         }
 
-        if ($this->isConfigured() && ! $this->verifySignature($payload)) {
+        if (! $this->verifySignature($payload)) {
             return null;
         }
 
@@ -284,12 +284,16 @@ class MidtransService
      */
     public function fetchQrImage(?string $url): ?string
     {
-        if (blank($url)) {
+        // URL berasal dari respons Midtrans, tapi tetap dibatasi ke host Midtrans agar tidak jadi proxy SSRF.
+        $host = Str::lower((string) parse_url((string) $url, PHP_URL_HOST));
+
+        if (blank($url) || parse_url((string) $url, PHP_URL_SCHEME) !== 'https'
+            || ($host !== 'midtrans.com' && ! str_ends_with($host, '.midtrans.com'))) {
             return null;
         }
 
         try {
-            $response = Http::timeout(20)->get($url);
+            $response = Http::timeout(20)->withoutRedirecting()->get($url);
         } catch (Throwable $e) {
             report($e);
 
@@ -352,15 +356,19 @@ class MidtransService
                 'refund_amount' => $refundAmount,
             ], $order, $order->user);
 
-            if ($settled && $order->status === OrderStatus::Pending) {
-                OrderPaymentSettler::settle($order);
-
+            if ($settled && $order->status === OrderStatus::Pending && OrderPaymentSettler::settle($order)) {
                 return $order->refresh();
             }
 
-            if ($settled && in_array($order->source, ['store_qris'], true)
-                && in_array($order->status, [OrderStatus::Expired, OrderStatus::Failed], true)) {
-                RefundStorefrontOrder::dispatch($order->getKey())->afterCommit();
+            // Bisa jadi cron baru saja meng-expire pesanan sebelum settle mengunci barisnya.
+            $order->refresh();
+
+            if ($settled && in_array($order->status, [OrderStatus::Expired, OrderStatus::Failed], true)) {
+                if ($order->source === 'store_qris') {
+                    RefundStorefrontOrder::dispatch($order->getKey())->afterCommit();
+                } else {
+                    OrderFulfillment::refundLatePayment($order);
+                }
 
                 return $order->refresh();
             }
@@ -408,10 +416,17 @@ class MidtransService
      */
     public function verifySignature(array $payload): bool
     {
+        $serverKey = (string) config('midtrans.server_key');
+
+        // Tanpa server key notifikasi tidak bisa diverifikasi, jadi selalu ditolak.
+        if ($serverKey === '') {
+            return false;
+        }
+
         $signature = hash('sha512', ($payload['order_id'] ?? '')
             .($payload['status_code'] ?? '')
             .($payload['gross_amount'] ?? '')
-            .(string) config('midtrans.server_key'));
+            .$serverKey);
 
         return hash_equals($signature, (string) ($payload['signature_key'] ?? ''));
     }

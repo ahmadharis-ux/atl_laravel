@@ -144,6 +144,10 @@ class TransactionController extends Controller
             return back()->with('error', 'Hanya pesanan berstatus Menunggu Pembayaran yang dapat ditandai lunas.');
         }
 
+        if (! $order->canBeSettledManually()) {
+            return back()->with('error', 'Hanya pesanan transfer VA/e-wallet yang dapat ditandai lunas manual.');
+        }
+
         if (! OrderPaymentSettler::settle($order, $request->user())) {
             return back()->with('error', 'Pesanan '.$order->order_number.' sudah lunas atau tidak dapat diproses.');
         }

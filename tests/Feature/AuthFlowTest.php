@@ -11,6 +11,10 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\URL;
+use Laravel\Socialite\Contracts\Provider;
+use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Two\User as SocialiteUser;
+use Mockery;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -221,6 +225,83 @@ class AuthFlowTest extends TestCase
             ->assertSessionHasErrors('code');
 
         $this->assertGuest();
+    }
+
+    public function test_two_factor_challenge_is_cleared_after_too_many_invalid_codes(): void
+    {
+        $user = User::factory()->create([
+            'password' => 'password',
+            'two_factor_secret' => TwoFactorAuthentication::generateSecret(),
+            'two_factor_confirmed_at' => now(),
+        ]);
+
+        $this->post(route('login'), ['email' => $user->email, 'password' => 'password']);
+
+        for ($attempt = 1; $attempt < 5; $attempt++) {
+            $this->post(route('two-factor.challenge.verify'), ['code' => 'WRONG'])
+                ->assertSessionHasErrors('code');
+        }
+
+        $this->post(route('two-factor.challenge.verify'), ['code' => 'WRONG'])
+            ->assertRedirect(route('login'));
+
+        $this->assertFalse(session()->has('auth.two_factor.id'));
+        $this->assertGuest();
+    }
+
+    public function test_a_two_factor_code_cannot_be_used_twice(): void
+    {
+        $secret = TwoFactorAuthentication::generateSecret();
+        $user = User::factory()->create([
+            'password' => 'password',
+            'two_factor_secret' => $secret,
+            'two_factor_confirmed_at' => now(),
+        ]);
+        $code = TwoFactorAuthentication::currentCode($secret);
+
+        $this->post(route('login'), ['email' => $user->email, 'password' => 'password']);
+        $this->post(route('two-factor.challenge.verify'), ['code' => $code]);
+        $this->assertAuthenticatedAs($user);
+
+        auth()->logout();
+
+        $this->post(route('login'), ['email' => $user->email, 'password' => 'password']);
+        $this->post(route('two-factor.challenge.verify'), ['code' => $code])
+            ->assertSessionHasErrors('code');
+        $this->assertGuest();
+    }
+
+    public function test_google_login_requires_two_factor_when_enabled(): void
+    {
+        $user = User::factory()->create([
+            'two_factor_secret' => TwoFactorAuthentication::generateSecret(),
+            'two_factor_confirmed_at' => now(),
+        ]);
+        $this->fakeGoogleUser($user->email);
+
+        $this->get(route('auth.google.callback'))->assertRedirect(route('two-factor.challenge'));
+
+        $this->assertGuest();
+    }
+
+    public function test_google_login_revokes_the_password_of_an_unverified_account(): void
+    {
+        $user = User::factory()->unverified()->create(['password' => 'attacker-password']);
+        $this->fakeGoogleUser($user->email);
+
+        $this->get(route('auth.google.callback'));
+
+        $user->refresh();
+        $this->assertNotNull($user->email_verified_at);
+        $this->assertFalse(Hash::check('attacker-password', $user->password));
+    }
+
+    private function fakeGoogleUser(string $email): void
+    {
+        $googleUser = (new SocialiteUser)->map(['id' => '123', 'name' => 'Google User', 'email' => $email]);
+        $provider = Mockery::mock(Provider::class);
+        $provider->shouldReceive('user')->andReturn($googleUser);
+        Socialite::shouldReceive('driver')->with('google')->andReturn($provider);
     }
 
     public function test_google_redirect_returns_to_login_when_not_configured(): void

@@ -46,7 +46,6 @@ class DigiflazzController extends Controller
                 $input['scraper_config'] = $decoded;
             } else {
                 Log::warning('Store Digiflazz Config - Gagal decode JSON scraper_config', [
-                    'raw_scraper_config' => $input['scraper_config'],
                     'json_error' => json_last_error_msg(),
                 ]);
                 $input['scraper_config'] = null;
@@ -74,11 +73,6 @@ class DigiflazzController extends Controller
 
         // Konversi is_active ke boolean murni (true/false) untuk database
         $validated['is_active'] = filter_var($validated['is_active'] ?? false, FILTER_VALIDATE_BOOLEAN);
-
-        // --- TAMBAHAN LOG DEBUG: Data setelah lolos validasi ---
-        Log::info('Store Digiflazz Config - Validated Data:', [
-            'validated' => $validated,
-        ]);
 
         // Jika is_active true, nonaktifkan yang lain
         if ($validated['is_active']) {
@@ -117,7 +111,8 @@ class DigiflazzController extends Controller
             }
         }
 
-        $validated = $request->validate([
+        // Validasi $input (scraper_config sudah di-decode), bukan request mentah yang masih string JSON.
+        $validated = Validator::make($input, [
             'name' => ['required', 'string', 'max:100'],
             'cookies_content' => ['required', 'string'],
             'csrf_token' => ['required', 'string', 'max:255'],
@@ -125,7 +120,7 @@ class DigiflazzController extends Controller
             'xsrf_token' => ['nullable', 'string', 'max:255'],
             'is_active' => ['boolean'],
             'scraper_config' => ['nullable', 'array'],
-        ]);
+        ])->validate();
 
         if ($validated['is_active'] ?? false) {
             BotDigiflazzConfig::where('id', '!=', $digiflazz->id)

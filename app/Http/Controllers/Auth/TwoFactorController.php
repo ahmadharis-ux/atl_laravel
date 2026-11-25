@@ -8,10 +8,13 @@ use App\Support\TwoFactorAuthentication;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
 class TwoFactorController extends Controller
 {
+    private const MAX_CHALLENGE_ATTEMPTS = 5;
+
     public function show(Request $request): View
     {
         $user = $request->user();
@@ -98,11 +101,22 @@ class TwoFactorController extends Controller
         $user = $userId ? User::find($userId) : null;
 
         if (! $user || ! $this->validCode($user, (string) $request->input('code'))) {
+            $attempts = (int) $request->session()->get('auth.two_factor.attempts', 0) + 1;
+
+            if ($attempts >= self::MAX_CHALLENGE_ATTEMPTS) {
+                $request->session()->forget(['auth.two_factor.id', 'auth.two_factor.remember', 'auth.two_factor.attempts']);
+
+                return redirect()->route('login')
+                    ->withErrors(['email' => 'Terlalu banyak kode 2FA salah. Silakan masuk ulang.']);
+            }
+
+            $request->session()->put('auth.two_factor.attempts', $attempts);
+
             return back()->withErrors(['code' => 'Kode verifikasi tidak valid.']);
         }
 
         $remember = (bool) $request->session()->pull('auth.two_factor.remember', false);
-        $request->session()->forget('auth.two_factor.id');
+        $request->session()->forget(['auth.two_factor.id', 'auth.two_factor.attempts']);
 
         Auth::login($user, $remember);
         $request->session()->regenerate();
@@ -115,7 +129,8 @@ class TwoFactorController extends Controller
     private function validCode(User $user, string $code): bool
     {
         if ($user->two_factor_secret && TwoFactorAuthentication::verify($user->two_factor_secret, $code)) {
-            return true;
+            // Kode TOTP hanya boleh dipakai sekali selama masa berlakunya (±90 detik).
+            return Cache::add('two-factor-used:'.$user->getKey().':'.trim($code), true, 120);
         }
 
         return $this->consumeRecoveryCode($user, $code);

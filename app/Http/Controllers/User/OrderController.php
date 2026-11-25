@@ -7,6 +7,7 @@ use App\Enums\PaymentMethod;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Services\MidtransService;
+use App\Support\OrderFulfillment;
 use App\Support\OrderPaymentSettler;
 use App\Support\TransactionLogger;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -88,7 +89,7 @@ class OrderController extends Controller
         }
 
         if ($order->isExpired()) {
-            $order->update(['status' => OrderStatus::Expired]);
+            OrderFulfillment::expire($order);
 
             return redirect()
                 ->route('orders.show', $order)

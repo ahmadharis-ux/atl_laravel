@@ -11,6 +11,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class UserController extends Controller
@@ -139,8 +140,20 @@ class UserController extends Controller
             'phone' => $data['phone'] ?? null,
         ]);
 
+        $emailChanged = $user->wasChanged('email');
+
         if (! empty($data['password'])) {
             $user->update(['password' => $data['password']]);
+        }
+
+        // Ganti email/kata sandi orang lain setara pengambilalihan akun: catat siapa pelakunya.
+        if (! $isSelf && ($emailChanged || ! empty($data['password']))) {
+            Log::notice('admin.user_credentials_changed', [
+                'actor_id' => $request->user()->getKey(),
+                'target_id' => $user->getKey(),
+                'email_changed' => $emailChanged,
+                'password_changed' => ! empty($data['password']),
+            ]);
         }
 
         if (! $isSelf && ! empty($data['role'])) {

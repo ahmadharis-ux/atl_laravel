@@ -354,6 +354,48 @@ final class OrderFulfillment
     }
 
     /**
+     * QRIS checkout biasa yang baru dibayar setelah pesanan kedaluwarsa/gagal:
+     * pesanan tidak diproses, jadi dana yang masuk dikembalikan ke saldo (sekali saja).
+     *
+     * @return bool true bila saldo dikreditkan
+     */
+    public static function refundLatePayment(Order $order): bool
+    {
+        return DB::transaction(function () use ($order): bool {
+            $locked = Order::query()->whereKey($order->getKey())->lockForUpdate()->first();
+
+            // paid_at terisi berarti pesanan pernah dibayar & diproses: notifikasi ganda, bukan pembayaran baru.
+            if ($locked === null
+                || ! in_array($locked->source, [null, 'web'], true)
+                || $locked->payment_method !== PaymentMethod::Qris
+                || ! in_array($locked->status, [OrderStatus::Expired, OrderStatus::Failed], true)
+                || $locked->paid_at !== null
+                || $locked->refunded_at !== null) {
+                return false;
+            }
+
+            $user = $locked->user()->first();
+
+            if ($user === null) {
+                return false;
+            }
+
+            WalletLedger::credit($user, $locked->totalDue(), WalletTransactionType::Refund, $locked, 'Refund pembayaran terlambat '.$locked->order_number, [
+                'reason' => 'late_qris_payment',
+            ]);
+
+            $locked->forceFill(['paid_at' => now(), 'refunded_at' => now()])->save();
+
+            TransactionLogger::info('order.refunded_late_payment', 'Pembayaran QRIS masuk setelah pesanan kedaluwarsa; dana dikembalikan ke saldo.', [
+                'order_number' => $locked->order_number,
+                'amount' => $locked->totalDue(),
+            ], $locked, $user);
+
+            return true;
+        });
+    }
+
+    /**
      * Kembalikan saldo user (sekali saja) bila pesanan dibayar dari saldo.
      */
     private static function refund(Order $order): void
