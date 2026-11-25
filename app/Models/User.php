@@ -85,6 +85,14 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Diskon harga sesuai tier akun; dihitung sekali per request karena dipakai di setiap kartu produk.
+     */
+    public function priceDiscountPercent(): float
+    {
+        return once(fn (): float => $this->tier()->discountPercent());
+    }
+
+    /**
      * Ubah saldo poin user dan catat ledger point_transactions (dipanggil
      * di dalam transaksi DB oleh pemanggil bila perlu atomik).
      */

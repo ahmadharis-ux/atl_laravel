@@ -24,6 +24,9 @@ class LoyaltySettingController extends Controller
         $validated = $request->validate([
             'gold_points' => ['required', 'integer', 'min:1', 'max:1000000'],
             'platinum_points' => ['required', 'integer', 'min:1', 'max:1000000'],
+            'silver_discount_percent' => ['sometimes', 'numeric', 'min:0', 'max:100'],
+            'gold_discount_percent' => ['sometimes', 'numeric', 'min:0', 'max:100'],
+            'platinum_discount_percent' => ['sometimes', 'numeric', 'min:0', 'max:100'],
         ], [
             'gold_points.min' => 'Threshold Gold minimal 1 poin.',
             'platinum_points.min' => 'Threshold Platinum minimal 1 poin.',
@@ -35,9 +38,18 @@ class LoyaltySettingController extends Controller
                 ->withErrors(['platinum_points' => 'Threshold Platinum harus lebih besar dari Gold.']);
         }
 
-        LoyaltySetting::current()->update($validated);
+        $current = LoyaltySetting::current();
+        $discount = fn (string $tier): float => (float) ($validated[$tier.'_discount_percent'] ?? $current->{$tier.'_discount_percent'});
+
+        if ($discount('gold') < $discount('silver') || $discount('platinum') < $discount('gold')) {
+            return back()
+                ->withInput()
+                ->withErrors(['platinum_discount_percent' => 'Diskon tier yang lebih tinggi tidak boleh lebih kecil dari tier di bawahnya.']);
+        }
+
+        $current->update($validated);
         LoyaltySetting::flushCache();
 
-        return back()->with('status', 'Pengaturan tier berhasil diperbarui.');
+        return back()->with('status', 'Pengaturan tier dan harga berhasil diperbarui.');
     }
 }

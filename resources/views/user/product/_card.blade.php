@@ -35,7 +35,7 @@
         </div>
         <div class="pcard-body">
             <div class="pcard-name clamp-2">{{ $p->name }}</div>
-            <div class="pcard-price num">Rp {{ number_format($p->selling_price, 0, ',', '.') }}</div>
+            <div class="pcard-price num">Rp {{ number_format($p->priceFor(auth()->user()), 0, ',', '.') }}</div>
             <div class="pcard-sold">{{ number_format($p->sold_count, 0, ',', '.') }} terjual</div>
         </div>
     </a>

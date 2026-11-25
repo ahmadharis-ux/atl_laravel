@@ -55,7 +55,6 @@ class ProductController extends Controller
             'description' => ['nullable', 'string'],
             'markup_type' => ['required', Rule::enum(MarkupType::class)],
             'markup_value' => ['required', 'numeric', 'min:0'],
-            'reseller_price_override' => ['nullable', 'integer', 'min:0'],
             'max_price' => ['required', 'integer', 'min:0'],
             'sort_order' => ['required', 'integer', 'min:0'],
             'status' => ['boolean'],

@@ -22,7 +22,8 @@ class AccountController extends Controller
                 'is_reseller' => (bool) $user->is_reseller,
                 'reseller_since' => $user->reseller_since?->toIso8601String(),
                 'balance' => (int) $user->balance,
-                'discount_percent' => (float) config('reseller.discount_percent', 0),
+                'tier' => $user->tier()->value,
+                'discount_percent' => $user->priceDiscountPercent(),
                 'api_key_hint' => $user->reseller_api_key_hint,
             ],
         ]);

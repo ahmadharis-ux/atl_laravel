@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
-use App\Models\FeatureSetting;
 use App\Models\User;
 use App\Support\ResellerKey;
 use App\Support\ResellerWebhook;
@@ -25,7 +24,8 @@ class ResellerController extends Controller
     {
         return response()->view('user.settings.reseller', [
             'user' => $request->user(),
-            'discountPercent' => FeatureSetting::resellerDiscountPercent(),
+            'tier' => $request->user()->tier(),
+            'discountPercent' => $request->user()->priceDiscountPercent(),
             'termsVersion' => (string) config('reseller.terms_version'),
         ])->header('Cache-Control', 'private, no-store');
     }
@@ -37,7 +37,8 @@ class ResellerController extends Controller
     {
         return view('user.settings.reseller-docs', [
             'user' => $request->user(),
-            'discountPercent' => FeatureSetting::resellerDiscountPercent(),
+            'tier' => $request->user()->tier(),
+            'discountPercent' => $request->user()->priceDiscountPercent(),
             'apiBase' => url('/api/v1/reseller'),
         ]);
     }

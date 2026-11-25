@@ -37,6 +37,7 @@ class CheckoutController extends Controller
         $this->ensurePurchasable($product);
         $user = $request->user();
         $rewardTier = $user->tier();
+        $price = $product->priceFor($user);
         $paymentMethods = FeatureSetting::availablePaymentMethods('transaction');
         $paymentMethodValues = $this->paymentMethodValues($paymentMethods);
         $selectedMethod = old('payment_method', PaymentMethod::Saldo->value);
@@ -60,14 +61,15 @@ class CheckoutController extends Controller
             'target' => (string) $request->query('target', ''),
             'zone' => (string) $request->query('zone', ''),
             'balance' => (int) $user->balance,
+            'price' => $price,
             'rewardEstimate' => OrderRewardLedger::estimate(
-                (int) $product->selling_price,
+                $price,
                 (int) $product->cost_price,
                 0,
                 $rewardTier,
             ),
             'rewardTier' => $rewardTier,
-            'qrisFee' => $midtrans->qrisFee($product->selling_price),
+            'qrisFee' => $midtrans->qrisFee($price),
             'paymentMethods' => $paymentMethods,
             'bankTargets' => $targets->where('type', MasterBank::TYPE_BANK)->values(),
             'ewalletTargets' => $targets->where('type', MasterBank::TYPE_EWALLET)->values(),
@@ -114,7 +116,7 @@ class CheckoutController extends Controller
 
         $method = PaymentMethod::from($validated['payment_method']);
         $masterBank = $this->resolveMasterBank($method, $validated['master_bank_id'] ?? null);
-        $amount = $product->selling_price;
+        $amount = $product->priceFor($user);
         $pinResult = null;
 
         if ($method->isInstant()) {
@@ -148,7 +150,7 @@ class CheckoutController extends Controller
                     throw ValidationException::withMessages(['product' => 'Stok produk habis.']);
                 }
 
-                $amount = (int) $item->selling_price;
+                $amount = $item->priceFor($account);
                 $fee = match ($method) {
                     PaymentMethod::Qris => $midtrans->qrisFee($amount),
                     PaymentMethod::VirtualAccount, PaymentMethod::EWallet => $masterBank?->admin_fee ?? 0,

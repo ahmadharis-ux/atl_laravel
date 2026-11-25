@@ -3,6 +3,7 @@
 @section('title', 'Reseller - Atlantic Pedia Tab')
 
 @section('content')
+@php($discountLabel = rtrim(rtrim(number_format($discountPercent, 2, ',', '.'), '0'), ',').'%')
 <div class="d-flex flex-column gap-4">
     <div class="d-flex align-items-center gap-2">
         <a href="{{ route('settings.index') }}" class="ap-icon-btn" data-tip="Kembali"><span class="ms ms-md">arrow_back</span></a>
@@ -62,17 +63,17 @@
         @if (! in_array($user->reseller_status, ['pending', 'suspended'], true))
             <x-ui.card title="Menjadi Reseller">
                 <p class="fs-13 mb-3">
-                    Ajukan keanggotaan reseller Atlantic Pedia untuk mendapatkan harga khusus
-                    <span class="fw-semibold">{{ rtrim(rtrim(number_format($discountPercent, 0, ',', '.'), '0'), '.') }}% lebih murah</span>
-                    untuk setiap pesanan melalui API.
+                    Ajukan keanggotaan reseller untuk memesan produk Atlantic Pedia lewat API.
+                    Harga mengikuti level akunmu: saat ini <span class="fw-semibold">{{ $tier->label() }}</span>
+                    dengan diskon <span class="fw-semibold">{{ $discountLabel }}</span> dari harga jual.
                 </p>
 
                 <div class="row g-3 mb-3">
                     <div class="col-sm-6">
                         <div class="card-ap r-sm p-3 h-100">
-                            <span class="ibox ibox-48 bg-mint-l tx-mintt mb-2">{{ rtrim(rtrim(number_format($discountPercent, 0, ',', '.'), '0'), '.') }}%</span>
-                            <div class="fw-semibold fs-12">Harga Lebih Murah</div>
-                            <div class="tx-mute fs-11">Harga reseller berlaku untuk setiap pesanan melalui API.</div>
+                            <span class="ibox ibox-48 bg-mint-l tx-mintt mb-2">{{ $discountLabel }}</span>
+                            <div class="fw-semibold fs-12">Harga Sesuai Level</div>
+                            <div class="tx-mute fs-11">Diskon naik seiring level akun (Silver, Gold, Platinum) dari poin transaksi.</div>
                         </div>
                     </div>
                     <div class="col-sm-6">
@@ -87,7 +88,7 @@
                 <div class="card-ap r-card p-3 mb-3 bg-sky-l">
                     <h2 class="fw-semibold fs-13 mb-2">Aturan penting sebelum aktivasi</h2>
                     <ul class="fs-12 tx-mute mb-2 ps-3">
-                        <li>Pesanan melalui API dibayar dari saldo akun menggunakan harga reseller.</li>
+                        <li>Pesanan melalui API dibayar dari saldo akun dengan harga sesuai level akun.</li>
                         <li>Menonaktifkan reseller mencabut API key serta menutup akses API untuk pesanan baru.</li>
                         <li>Domain/website wajib diisi untuk integrasi API.</li>
                         <li>IP server bersifat opsional. Jika diisi, hanya alamat tersebut yang boleh mengakses API.</li>
@@ -99,7 +100,7 @@
                         <li>Domain/website wajib diisi untuk integrasi API.</li>
                         <li>IP server bersifat opsional. Jika diisi, hanya alamat tersebut yang boleh mengakses API.</li>
                         <li>Jaga API key secara rahasia. Membuat ulang key langsung mencabut key sebelumnya.</li>
-                        <li>Pesanan API memakai harga reseller dan dibayar dari saldo.</li>
+                        <li>Pesanan API memakai harga sesuai level akun dan dibayar dari saldo.</li>
                         <li>Atlantic Pedia dapat menolak atau menangguhkan akses bila ditemukan penyalahgunaan atau pelanggaran.</li>
                         <li>Penangguhan menghentikan pesanan API baru, tetapi tidak menghapus riwayat transaksi.</li>
                     </ul>
@@ -176,7 +177,7 @@
                         <span class="fw-semibold fs-13">Reseller Aktif</span>
                         <span class="pill bg-mint-l tx-mintt">Aktif</span>
                     </div>
-                    <div class="tx-mute fs-11">Menjadi reseller sejak {{ $user->reseller_since?->locale('id')->translatedFormat('d F Y') }} · Diskon {{ rtrim(rtrim(number_format($discountPercent, 0, ',', '.'), '0'), '.') }}% dari harga jual</div>
+                    <div class="tx-mute fs-11">Menjadi reseller sejak {{ $user->reseller_since?->locale('id')->translatedFormat('d F Y') }} · Level {{ $tier->label() }}, diskon {{ $discountLabel }} dari harga jual</div>
                 </div>
             </div>
             <div class="d-flex flex-wrap gap-2">

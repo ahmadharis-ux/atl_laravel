@@ -50,12 +50,12 @@ X-Transaction-PIN: YOUR_6_DIGIT_PIN
 ## Pricing
 
 - `selling_price` — harga jual publik.
-- `reseller_price` — yang dibayar reseller: memakai diskon global yang diatur admin di **Admin → Halaman & Pembayaran**, atau override harga khusus per produk. Env `RESELLER_DISCOUNT_PERCENT` hanya menjadi fallback bila admin belum menetapkan nilai. Harga tetap **tidak boleh di bawah `cost_price`**.
+- `reseller_price` — yang dibayar reseller: harga jual dipotong diskon **level akun** (Silver/Gold/Platinum) yang diatur admin di **Admin → Pengaturan Loyalitas**. Level naik otomatis dari akumulasi poin. Harga tetap **tidak boleh di bawah `cost_price`**. Diskon yang sama juga berlaku di checkout web.
 - `discount` — selisih nominal `selling_price - reseller_price`; margin kotor indikatif bila dijual dengan harga publik, bukan jaminan laba bersih.
 
 ## Alur pembayaran (saldo)
 
-Pesanan API **tidak** memakai QRIS/VA dan tidak menerapkan `reseller_price` di checkout web. Reseller wajib punya saldo dulu:
+Pesanan API **tidak** memakai QRIS/VA. Reseller wajib punya saldo dulu:
 
 1. Top up di aplikasi web: **Deposit → Top Up Saldo** (`/saldo/topup`).
 2. Pilih metode (QRIS/Midtrans atau transfer manual). Deposit berstatus `pending` dengan kode pembayaran.

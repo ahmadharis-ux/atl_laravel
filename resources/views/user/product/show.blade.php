@@ -64,7 +64,11 @@
                 <span class="fs-11 fw-bold text-uppercase tx-tealc" style="letter-spacing:.08em">Harga</span>
                 <div class="d-flex align-items-baseline gap-2">
                     <span class="tx-tealc fw-bold fs-4">Rp</span>
-                    <span class="num fw-bold fs-3">{{ number_format($product->selling_price, 0, ',', '.') }}</span>
+                    @php($price = $product->priceFor(auth()->user()))
+                    <span class="num fw-bold fs-3">{{ number_format($price, 0, ',', '.') }}</span>
+                    @if ($price < $product->selling_price)
+                        <span class="num tx-mute fs-12 text-decoration-line-through">{{ number_format($product->selling_price, 0, ',', '.') }}</span>
+                    @endif
                 </div>
                 <div class="d-flex align-items-center gap-2">
                     <span class="pill bg-glass tx-mint">Stok {{ $product->unlimited_stock ? '∞' : number_format($product->stock, 0, ',', '.') }}</span>

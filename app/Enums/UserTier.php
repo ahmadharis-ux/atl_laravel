@@ -48,6 +48,20 @@ enum UserTier: string
         };
     }
 
+    /**
+     * Diskon harga (persen dari harga jual) untuk tier ini, diatur admin di Pengaturan Loyalitas.
+     */
+    public function discountPercent(): float
+    {
+        try {
+            $percent = (float) LoyaltySetting::current()->getAttribute($this->value.'_discount_percent');
+        } catch (Throwable) {
+            $percent = 0.0;
+        }
+
+        return min(max($percent, 0.0), 100.0);
+    }
+
     public function label(): string
     {
         return match ($this) {

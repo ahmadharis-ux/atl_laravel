@@ -6,6 +6,7 @@ use App\Jobs\SendDigiflazzTransaction;
 use App\Jobs\SendResellerWebhook;
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\LoyaltySetting;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
@@ -29,6 +30,9 @@ class ResellerApiTest extends TestCase
         parent::setUp();
 
         $this->withHeader('X-Transaction-PIN', UserFactory::DEFAULT_PIN);
+
+        // Reseller baru berada di tier Silver; beri diskon 5% agar harga API terukur.
+        LoyaltySetting::current()->update(['silver_discount_percent' => 5]);
     }
 
     /**
@@ -175,7 +179,6 @@ class ResellerApiTest extends TestCase
 
     public function test_product_list_and_detail_match_the_documented_contract(): void
     {
-        config(['reseller.discount_percent' => 5]);
         [, $plain] = $this->reseller();
         $product = $this->product([
             'brand_id' => null,

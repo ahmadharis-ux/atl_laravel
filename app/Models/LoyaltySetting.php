@@ -17,11 +17,17 @@ class LoyaltySetting extends Model
     protected $fillable = [
         'gold_points',
         'platinum_points',
+        'silver_discount_percent',
+        'gold_discount_percent',
+        'platinum_discount_percent',
     ];
 
     protected $casts = [
         'gold_points' => 'integer',
         'platinum_points' => 'integer',
+        'silver_discount_percent' => 'float',
+        'gold_discount_percent' => 'float',
+        'platinum_discount_percent' => 'float',
     ];
 
     public static function current(): self

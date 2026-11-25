@@ -22,7 +22,7 @@
 
     <div>
         <h1 class="fw-bold fs-4 m-0">Pengaturan Loyalitas</h1>
-        <p class="tx-mute fs-12 m-0">Threshold lifetime poin untuk tier Silver, Gold, dan Platinum.</p>
+        <p class="tx-mute fs-12 m-0">Threshold lifetime poin dan diskon harga untuk tier Silver, Gold, dan Platinum.</p>
     </div>
 
     <div class="row g-3">
@@ -40,6 +40,16 @@
                             <div class="col-sm-6">
                                 <x-ui.input type="number" name="platinum_points" label="Platinum (poin)" :value="$setting->platinum_points" min="1" hint="Poin minimal untuk mencapai tier Platinum." />
                             </div>
+                        </div>
+
+                        <h2 class="fw-bold fs-5 m-0 mt-4 mb-1">Diskon Harga per Tier</h2>
+                        <p class="fs-12 tx-mute mb-3">Persen potongan dari harga jual, berlaku di checkout web dan API reseller. Harga tidak pernah di bawah harga modal.</p>
+                        <div class="row g-3">
+                            @foreach ($tiers as $tier)
+                                <div class="col-sm-4">
+                                    <x-ui.input type="number" name="{{ $tier->value }}_discount_percent" label="{{ $tier->label() }} (%)" :value="old($tier->value.'_discount_percent', $setting->{$tier->value.'_discount_percent'})" min="0" max="100" step="0.01" />
+                                </div>
+                            @endforeach
                         </div>
                         <div class="d-flex justify-content-end mt-2">
                             <button type="submit" class="btn-navy">
@@ -80,7 +90,7 @@
                                 @else
                                     ≥ {{ number_format($setting->platinum_points, 0, ',', '.') }} poin
                                 @endif
-                                <span class="d-block fw-semibold">Multiplier reward {{ $tier->rewardMultiplierLabel() }}</span>
+                                <span class="d-block fw-semibold">Multiplier reward {{ $tier->rewardMultiplierLabel() }} · Diskon harga {{ rtrim(rtrim(number_format($tier->discountPercent(), 2, ',', '.'), '0'), ',') }}%</span>
                             </span>
                         </li>
                     @endforeach

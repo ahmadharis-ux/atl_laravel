@@ -5,8 +5,9 @@
 @section('content')
 @php
     $qrisSelected = $selectedMethod === \App\Enums\PaymentMethod::Qris->value;
-    $total = $product->selling_price + ($qrisSelected ? $qrisFee : 0);
-    $sisaSaldo = $balance - $product->selling_price;
+    $tierDiscount = (int) $product->selling_price - $price;
+    $total = $price + ($qrisSelected ? $qrisFee : 0);
+    $sisaSaldo = $balance - $price;
     $saldoCukup = $sisaSaldo >= 0;
 @endphp
 
@@ -146,6 +147,12 @@
                             <span class="text-white">Harga produk</span>
                             <span class="num fw-semibold">Rp {{ number_format($product->selling_price, 0, ',', '.') }}</span>
                         </li>
+                        @if ($tierDiscount > 0)
+                            <li class="d-flex align-items-center justify-content-between">
+                                <span class="text-white">Diskon tier {{ $rewardTier->label() }}</span>
+                                <span class="num fw-semibold tx-mint">−Rp {{ number_format($tierDiscount, 0, ',', '.') }}</span>
+                            </li>
+                        @endif
                         <li @class(['d-flex align-items-center justify-content-between' => true, 'd-none' => ! $qrisSelected]) data-fee-row data-method="qris">
                             <span class="text-white">Biaya admin QRIS (0,7%)</span>
                             <span class="num fw-semibold">Rp {{ number_format($qrisFee, 0, ',', '.') }}</span>
@@ -155,7 +162,7 @@
                             <span
                                 class="num fw-bold tx-tealc"
                                 data-checkout-total
-                                data-base-amount="{{ $product->selling_price }}"
+                                data-base-amount="{{ $price }}"
                                 data-qris-fee="{{ $qrisFee }}"
                             >Rp {{ number_format($total, 0, ',', '.') }}</span>
                         </li>

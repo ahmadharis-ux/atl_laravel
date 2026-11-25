@@ -85,7 +85,7 @@ class LookupController extends Controller
             'text' => $row->name,
             'url' => $this->resultUrl($type, $row),
             'hint' => $type === 'products'
-                ? 'Rp '.number_format((int) $row->selling_price, 0, ',', '.')
+                ? 'Rp '.number_format($row->priceFor(request()->user()), 0, ',', '.')
                 : null,
         ];
     }

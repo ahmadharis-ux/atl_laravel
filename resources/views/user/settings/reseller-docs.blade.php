@@ -8,7 +8,7 @@
         <a href="{{ route('settings.reseller') }}" class="ap-icon-btn" data-tip="Kembali"><span class="ms ms-md">arrow_back</span></a>
         <div>
             <h1 class="fw-bold fs-4 m-0">Dokumentasi API Reseller</h1>
-            <p class="tx-mute fs-12 m-0">Cara mengambil produk, cek harga reseller, dan membuat pesanan lewat API.</p>
+            <p class="tx-mute fs-12 m-0">Cara mengambil produk, cek harga sesuai level akun, dan membuat pesanan lewat API.</p>
         </div>
     </div>
 
@@ -36,7 +36,7 @@
         </p>
         <ul class="fs-12 mb-0 ps-3">
             <li>Produk prabayar yang sudah didukung fulfillment dapat dilihat lewat <code>GET /products</code>.</li>
-            <li>Diskon reseller dihitung hingga {{ number_format($discountPercent, fmod($discountPercent, 1) === 0.0 ? 0 : 1, ',', '.') }}% dari harga publik; harga tidak pernah di bawah modal, jadi diskon aktual bisa lebih kecil.</li>
+            <li>Harga mengikuti level akun (Silver/Gold/Platinum). Level <span class="fw-semibold">{{ $tier->label() }}</span> saat ini mendapat diskon hingga {{ rtrim(rtrim(number_format($discountPercent, 2, ',', '.'), '0'), ',') }}% dari harga publik; harga tidak pernah di bawah modal, jadi diskon aktual bisa lebih kecil.</li>
             <li>Pesanan dibayar dengan <span class="fw-semibold">saldo akun</span> (tanpa transfer manual).</li>
             <li>Pesanan API saat ini mendukung produk prabayar dengan fulfillment Digiflazz.</li>
             <li>Format respons JSON; kirim <code>Accept: application/json</code> agar error juga berupa JSON.</li>
@@ -113,7 +113,7 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span
                     <tr>
                         <td><span class="pill bg-mint-l tx-mintt">GET</span></td>
                         <td><code>/products</code></td>
-                        <td>Daftar produk aktif + harga reseller.</td>
+                        <td>Daftar produk aktif + harga sesuai level akun.</td>
                     </tr>
                     <tr>
                         <td><span class="pill bg-mint-l tx-mintt">GET</span></td>
@@ -183,6 +183,7 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span
     "is_reseller": true,
     "reseller_since": "2026-10-15T10:15:00+07:00",
     "balance": 150000,
+    "tier": "gold",
     "discount_percent": 5,
     "api_key_hint": "...a1b2"
   }
@@ -268,7 +269,7 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span
   "meta": { "current_page": 1, "per_page": 20, "last_page": 3, "total": 54 }
 }</pre>
         <p class="fs-12 mb-0">
-            <span class="fw-semibold">reseller_price</span> adalah yang kamu bayar;
+            <span class="fw-semibold">reseller_price</span> adalah yang kamu bayar sesuai level akunmu;
             <span class="fw-semibold">selling_price</span> adalah harga jual publik;
             <span class="fw-semibold">discount</span> adalah selisih nominal dalam Rupiah, bukan persentase atau jaminan laba bersih.
         </p>
@@ -288,7 +289,7 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span
                     <tr><td><code>brand</code>, <code>category</code></td><td>string atau null</td><td>Nama relasi; null bila relasi tidak tersedia.</td></tr>
                     <tr><td><code>payment_type</code></td><td>string</td><td><code>prabayar</code>; produk pascabayar belum didukung.</td></tr>
                     <tr><td><code>region</code></td><td>string atau null</td><td>Wilayah produk; null berarti produk umum/tidak ditentukan.</td></tr>
-                    <tr><td><code>selling_price</code>, <code>reseller_price</code>, <code>discount</code></td><td>integer</td><td>Nominal Rupiah. Harga reseller yang didebit; discount adalah selisih harga, bukan persentase.</td></tr>
+                    <tr><td><code>selling_price</code>, <code>reseller_price</code>, <code>discount</code></td><td>integer</td><td>Nominal Rupiah. <code>reseller_price</code> = harga sesuai level akun yang didebit; discount adalah selisih harga, bukan persentase.</td></tr>
                     <tr><td><code>stock</code></td><td>integer atau null</td><td>Jumlah stok; null jika <code>unlimited_stock</code> true.</td></tr>
                     <tr><td><code>unlimited_stock</code>, <code>requires_zone</code></td><td>boolean</td><td>Status stok tanpa batas dan apakah pesanan memerlukan <code>zone</code>.</td></tr>
                     <tr><td><code>target_label</code></td><td>string</td><td>Label tujuan untuk membantu form integrasi.</td></tr>

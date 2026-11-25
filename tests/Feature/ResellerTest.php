@@ -45,7 +45,7 @@ class ResellerTest extends TestCase
             ->assertSee('Menjadi Reseller')
             ->assertSee('Kirim Permohonan Reseller')
             ->assertSee('Aturan penting sebelum aktivasi')
-            ->assertSee('Pesanan melalui API dibayar dari saldo akun menggunakan harga reseller.')
+            ->assertSee('Pesanan melalui API dibayar dari saldo akun dengan harga sesuai level akun.')
             ->assertSee('Menonaktifkan reseller mencabut API key serta menutup akses API untuk pesanan baru.')
             ->assertSee('Akses API & API Key', false)
             ->assertSee(route('settings.reseller.docs'));

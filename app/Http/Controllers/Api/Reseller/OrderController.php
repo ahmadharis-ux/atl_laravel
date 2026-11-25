@@ -73,7 +73,7 @@ class OrderController extends Controller
      * Buat pesanan baru dari reseller.
      *
      * Pembayaran selalu lewat saldo akun dengan harga khusus reseller
-     * (Product::reseller_price). Stok dikunci & saldo didebit dalam satu
+     * (Product::priceFor, sesuai tier akun). Stok dikunci & saldo didebit dalam satu
      * transaksi DB — kegagalan (stok habis / saldo kurang) melempar
      * ValidationException sehingga otomatis di-rollback & dibalas 422.
      */
@@ -168,7 +168,7 @@ class OrderController extends Controller
 
         OrderTarget::ensureOperatorMatches($product, (string) $validated['target']);
 
-        $amount = (int) $product->reseller_price;
+        $amount = $product->priceFor($request->user());
 
         if (isset($validated['limit_price']) && $amount > (int) $validated['limit_price']) {
             throw ValidationException::withMessages([
@@ -207,7 +207,7 @@ class OrderController extends Controller
                 }
 
                 $item->increment('sold_count');
-                $orderAmount = (int) $item->reseller_price;
+                $orderAmount = $item->priceFor($account);
 
                 if (isset($validated['limit_price']) && $orderAmount > (int) $validated['limit_price']) {
                     throw ValidationException::withMessages([

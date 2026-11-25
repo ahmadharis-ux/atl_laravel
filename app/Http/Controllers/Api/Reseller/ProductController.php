@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Reseller;
 use App\Enums\ProductPaymentType;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
+use App\Models\User;
 use App\Support\OrderTarget;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -47,7 +48,7 @@ class ProductController extends Controller
             ->withQueryString();
 
         return response()->json([
-            'data' => collect($products->items())->map(fn (Product $product): array => $this->transform($product)),
+            'data' => collect($products->items())->map(fn (Product $product): array => $this->transform($product, $request->user())),
             'meta' => [
                 'current_page' => $products->currentPage(),
                 'per_page' => $products->perPage(),
@@ -60,7 +61,7 @@ class ProductController extends Controller
     /**
      * Detail satu produk aktif.
      */
-    public function show(Product $product): JsonResponse
+    public function show(Request $request, Product $product): JsonResponse
     {
         abort_unless(
             $product->status && $product->supportsResellerApiOrder(),
@@ -71,7 +72,7 @@ class ProductController extends Controller
         $product->load(['brand:id,name,slug', 'category:id,name,slug']);
 
         return response()->json([
-            'data' => $this->transform($product),
+            'data' => $this->transform($product, $request->user()),
         ]);
     }
 
@@ -132,7 +133,7 @@ class ProductController extends Controller
                 'type' => $product->payment_type->value,
                 'provider' => $product->brand?->name,
                 'brand_status' => true,
-                'price' => (int) $product->reseller_price,
+                'price' => $product->priceFor($request->user()),
                 'note' => $product->description,
                 'status' => $product->unlimited_stock || $product->stock > 0 ? 'available' : 'empty',
                 'img_url' => $product->brand?->logoUrl(),
@@ -143,14 +144,14 @@ class ProductController extends Controller
     }
 
     /**
-     * Bentuk JSON produk: harga publik + harga reseller + besaran diskon.
+     * Bentuk JSON produk: harga publik + harga sesuai tier akun + besaran diskon.
      *
      * @return array<string, mixed>
      */
-    private function transform(Product $product): array
+    private function transform(Product $product, User $user): array
     {
         $sellingPrice = (int) $product->selling_price;
-        $resellerPrice = (int) $product->reseller_price;
+        $resellerPrice = $product->priceFor($user);
 
         return [
             'id' => $product->getKey(),
