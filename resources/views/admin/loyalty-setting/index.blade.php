@@ -43,7 +43,7 @@
                         </div>
 
                         <h2 class="fw-bold fs-5 m-0 mt-4 mb-1">Diskon Harga per Tier</h2>
-                        <p class="fs-12 tx-mute mb-3">Persen potongan dari harga jual, berlaku di checkout web dan API reseller. Harga tidak pernah di bawah harga modal.</p>
+                        <p class="fs-12 tx-mute mb-3">Persen potongan dari harga jual, berlaku di checkout web dan API. Harga tidak pernah di bawah harga modal.</p>
                         <div class="row g-3">
                             @foreach ($tiers as $tier)
                                 <div class="col-sm-4">

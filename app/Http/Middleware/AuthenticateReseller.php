@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Autentikasi API reseller memakai API key via header
+ * Autentikasi API memakai API key via header
  * `X-API-Key: ap_...` atau `Authorization: Bearer ap_...`.
  *
  * Key yang masuk di-hash dulu lalu dicocokkan dengan kolom
@@ -43,7 +43,7 @@ class AuthenticateReseller
 
         if ($user === null) {
             return response()->json([
-                'message' => 'API key tidak valid atau akun kamu bukan reseller aktif.',
+                'message' => 'API key tidak valid atau akun kamu belum punya akses API aktif.',
             ], 401);
         }
 
@@ -51,7 +51,7 @@ class AuthenticateReseller
 
         if ($allowedIps !== [] && ! in_array($request->ip(), $allowedIps, true)) {
             return response()->json([
-                'message' => 'Alamat IP server ini tidak diizinkan untuk API reseller.',
+                'message' => 'Alamat IP server ini tidak diizinkan untuk akses API akun ini.',
             ], 403);
         }
 

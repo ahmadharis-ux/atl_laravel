@@ -31,7 +31,7 @@
                     <span class="fs-12 tx-mute">PIN 6 digit sudah terpasang di akunmu.</span>
                 </div>
                 <p class="fs-12 tx-mute mb-0">
-                    PIN dipakai saat membayar dengan saldo dan saat membuat pesanan lewat API reseller.
+                    PIN dipakai saat membayar dengan saldo dan saat membuat pesanan lewat API.
                     Untuk mengubah PIN, kami akan mengirim kode OTP ke email terdaftar.
                 </p>
                 <div>

@@ -24,7 +24,7 @@
                             {{ $order->order_number }} &middot; {{ $order->target }}@if ($order->target_zone) ({{ $order->target_zone }})@endif
                         </div>
                         @if ($order->source === 'api')
-                            <span class="pill bg-gold tx-gold fs-11 mt-1 align-self-start">Pesanan API reseller</span>
+                            <span class="pill bg-gold tx-gold fs-11 mt-1 align-self-start">Pesanan API</span>
                         @endif
                         <div class="fs-11 tx-skyd">{{ $order->created_at->format('d M Y, H:i') }}</div>
                     </div>

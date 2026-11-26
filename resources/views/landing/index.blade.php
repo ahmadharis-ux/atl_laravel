@@ -129,10 +129,10 @@
                     <p class="landing-section-desc mt-3">{{ $settings->about_body }}</p>
 
                     <ul class="landing-benefits">
-                        <li><span class="ms">check_circle</span>Harga bersaing untuk pengguna maupun reseller.</li>
+                        <li><span class="ms">check_circle</span>Harga makin hemat seiring naiknya level akun.</li>
                         <li><span class="ms">check_circle</span>Pembayaran fleksibel: QRIS, transfer bank, dan e-wallet.</li>
                         <li><span class="ms">check_circle</span>Riwayat transaksi rapi lengkap dengan invoice.</li>
-                        <li><span class="ms">check_circle</span>API reseller untuk integrasi otomatis.</li>
+                        <li><span class="ms">check_circle</span>Akses API untuk integrasi otomatis.</li>
                     </ul>
 
                     <div class="d-flex flex-wrap gap-2 mt-4">
@@ -153,7 +153,7 @@
                         <div class="row g-3">
                             <div class="col-6"><div class="landing-mini"><span class="ms">payments</span><b>Deposit cepat</b><small>QRIS &amp; transfer</small></div></div>
                             <div class="col-6"><div class="landing-mini"><span class="ms">receipt_long</span><b>Invoice otomatis</b><small>Siap diunduh</small></div></div>
-                            <div class="col-6"><div class="landing-mini"><span class="ms">api</span><b>API reseller</b><small>Integrasi toko</small></div></div>
+                            <div class="col-6"><div class="landing-mini"><span class="ms">api</span><b>Akses API</b><small>Integrasi toko</small></div></div>
                             <div class="col-6"><div class="landing-mini"><span class="ms">notifications</span><b>Notifikasi</b><small>Status real-time</small></div></div>
                         </div>
                     </div>

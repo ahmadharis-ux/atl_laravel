@@ -34,7 +34,7 @@
                         <div class="d-flex gap-2 mt-2">
                             <span class="pill {{ \App\Support\Roles::tone($role ?? \App\Support\Roles::USER) }}">{{ $user->roleLabel() }}</span>
                             @if ($isReseller)
-                                <span class="pill bg-mint-l tx-mintt">Reseller</span>
+                                <span class="pill bg-mint-l tx-mintt">Akses API</span>
                             @endif
                         </div>
                     </div>
@@ -51,7 +51,7 @@
 
     @if ($isReseller)
         <div class="row g-3 row-cols-1 row-cols-md-2">
-            <div class="col"><x-ui.stat-card label="Status reseller" value="{{ str($user->reseller_status ?? 'active')->headline() }}" icon="storefront" tone="bg-mint-l tx-mintt" /></div>
+            <div class="col"><x-ui.stat-card label="Status akses API" value="{{ str($user->reseller_status ?? 'active')->headline() }}" icon="storefront" tone="bg-mint-l tx-mintt" /></div>
             <div class="col"><x-ui.stat-card label="Transaksi" value="{{ number_format($user->orders()->count(), 0, ',', '.') }}" icon="receipt_long" tone="bg-gold tx-gold" /></div>
         </div>
     @endif
@@ -68,7 +68,7 @@
         ]"
     >
         @forelse ($orders as $order)
-            @php($source = match ($order->source) { 'api' => 'API reseller', default => ucfirst((string) $order->source) })
+            @php($source = match ($order->source) { 'api' => 'API', default => ucfirst((string) $order->source) })
             <tr>
                 <td><div class="fw-semibold">{{ $order->order_number }}</div><div class="tx-mute fs-11">{{ $order->product?->name ?? 'Produk tidak tersedia' }}</div></td>
                 <td><span class="pill bg-sky-l tx-navy fs-11">{{ $source }}</span></td>

@@ -31,7 +31,7 @@ class ResellerController extends Controller
     }
 
     /**
-     * Dokumentasi API reseller (cara akses produk, API key, & transaksi).
+     * Dokumentasi API (cara akses produk, API key, & transaksi).
      */
     public function docs(Request $request): View
     {
@@ -44,22 +44,22 @@ class ResellerController extends Controller
     }
 
     /**
-     * Kirim permohonan reseller untuk ditinjau admin.
+     * Kirim permohonan akses API untuk ditinjau admin.
      */
     public function activate(Request $request): RedirectResponse
     {
         $user = $request->user();
 
         if ($user->is_reseller) {
-            return back()->with('status', 'Akun kamu sudah aktif sebagai reseller.');
+            return back()->with('status', 'Akses API kamu sudah aktif.');
         }
 
         if ($user->reseller_status === 'pending') {
-            return back()->with('status', 'Permohonan reseller kamu sedang menunggu peninjauan admin.');
+            return back()->with('status', 'Permohonan akses API kamu sedang menunggu peninjauan admin.');
         }
 
         if ($user->reseller_status === 'suspended') {
-            return back()->with('error', 'Keanggotaan reseller sedang ditangguhkan. Hubungi admin untuk informasi lebih lanjut.');
+            return back()->with('error', 'Akses API sedang ditangguhkan. Hubungi admin untuk informasi lebih lanjut.');
         }
 
         $validated = $request->validate([
@@ -74,7 +74,7 @@ class ResellerController extends Controller
             'contact_channel.required' => 'Pilih kanal kontak.',
             'contact_channel.in' => 'Kanal kontak yang dipilih tidak valid.',
             'contact.required' => 'Username, nomor, atau tautan kontak wajib diisi.',
-            'accept_terms.accepted' => 'Kamu harus menyetujui ketentuan reseller sebelum mengirim permohonan.',
+            'accept_terms.accepted' => 'Kamu harus menyetujui ketentuan akses API sebelum mengirim permohonan.',
             'allowed_ips.max' => 'IP server maksimal 20 alamat.',
         ]);
 
@@ -103,7 +103,7 @@ class ResellerController extends Controller
 
             if ($account->reseller_status === 'suspended') {
                 throw ValidationException::withMessages([
-                    'reseller' => 'Keanggotaan reseller sedang ditangguhkan. Hubungi admin untuk informasi lebih lanjut.',
+                    'reseller' => 'Akses API sedang ditangguhkan. Hubungi admin untuk informasi lebih lanjut.',
                 ]);
             }
 
@@ -127,7 +127,7 @@ class ResellerController extends Controller
             $account->resellerStatusHistories()->create([
                 'from_status' => $fromStatus,
                 'to_status' => 'pending',
-                'reason' => 'Permohonan reseller baru.',
+                'reason' => 'Permohonan akses API baru.',
                 'terms_version' => $account->reseller_terms_version,
                 'terms_accepted_at' => $account->reseller_terms_accepted_at,
             ]);
@@ -138,8 +138,8 @@ class ResellerController extends Controller
         return back()->with(
             'status',
             $submitted
-                ? 'Permohonan reseller terkirim. Akses API akan aktif setelah ditinjau admin.'
-                : 'Permohonan reseller kamu sedang menunggu peninjauan admin.'
+                ? 'Permohonan akses API terkirim. Akses API akan aktif setelah ditinjau admin.'
+                : 'Permohonan akses API kamu sedang menunggu peninjauan admin.'
         );
     }
 
@@ -151,7 +151,7 @@ class ResellerController extends Controller
         $user = $request->user();
 
         if (! $user->is_reseller) {
-            return back()->with('error', 'Keanggotaan reseller harus disetujui admin sebelum membuat API key.');
+            return back()->with('error', 'Akses API harus disetujui admin sebelum membuat API key.');
         }
 
         $key = DB::transaction(function () use ($user): array {
@@ -159,7 +159,7 @@ class ResellerController extends Controller
 
             if (! $account->is_reseller || (! in_array($account->reseller_status, [null, 'active'], true))) {
                 throw ValidationException::withMessages([
-                    'reseller' => 'Keanggotaan reseller tidak lagi aktif. Muat ulang halaman.',
+                    'reseller' => 'Akses API tidak lagi aktif. Muat ulang halaman.',
                 ]);
             }
 
@@ -182,7 +182,7 @@ class ResellerController extends Controller
         $user = $request->user();
 
         if (! $user->is_reseller || ! in_array($user->reseller_status, [null, 'active'], true)) {
-            return back()->with('error', 'Pengaturan webhook hanya tersedia untuk reseller aktif.');
+            return back()->with('error', 'Pengaturan webhook hanya tersedia untuk akses API yang aktif.');
         }
 
         $validated = $request->validate([
@@ -204,7 +204,7 @@ class ResellerController extends Controller
 
             if (! $account->is_reseller || ! in_array($account->reseller_status, [null, 'active'], true)) {
                 throw ValidationException::withMessages([
-                    'reseller' => 'Keanggotaan reseller tidak lagi aktif. Muat ulang halaman.',
+                    'reseller' => 'Akses API tidak lagi aktif. Muat ulang halaman.',
                 ]);
             }
 
@@ -226,7 +226,7 @@ class ResellerController extends Controller
         $user = $request->user();
 
         if (! $user->is_reseller || ! in_array($user->reseller_status, [null, 'active'], true)) {
-            return back()->with('error', 'Secret webhook hanya tersedia untuk reseller aktif.');
+            return back()->with('error', 'Secret webhook hanya tersedia untuk akses API yang aktif.');
         }
 
         $secret = DB::transaction(function () use ($user): array {
@@ -234,7 +234,7 @@ class ResellerController extends Controller
 
             if (! $account->is_reseller || ! in_array($account->reseller_status, [null, 'active'], true)) {
                 throw ValidationException::withMessages([
-                    'reseller' => 'Keanggotaan reseller tidak lagi aktif. Muat ulang halaman.',
+                    'reseller' => 'Akses API tidak lagi aktif. Muat ulang halaman.',
                 ]);
             }
 
@@ -260,7 +260,7 @@ class ResellerController extends Controller
         $user = $request->user();
 
         if (! $user->is_reseller) {
-            return back()->with('error', 'Akun kamu bukan reseller aktif.');
+            return back()->with('error', 'Akses API kamu belum aktif.');
         }
 
         DB::transaction(function () use ($user): void {
@@ -268,7 +268,7 @@ class ResellerController extends Controller
 
             if (! $account->is_reseller || (! in_array($account->reseller_status, [null, 'active'], true))) {
                 throw ValidationException::withMessages([
-                    'reseller' => 'Keanggotaan reseller tidak lagi aktif. Muat ulang halaman.',
+                    'reseller' => 'Akses API tidak lagi aktif. Muat ulang halaman.',
                 ]);
             }
 
@@ -282,7 +282,7 @@ class ResellerController extends Controller
             $account->resellerStatusHistories()->create([
                 'from_status' => $fromStatus,
                 'to_status' => 'inactive',
-                'reason' => 'Keanggotaan dinonaktifkan oleh reseller.',
+                'reason' => 'Akses API dinonaktifkan oleh pengguna.',
                 'terms_version' => $account->reseller_terms_version,
                 'terms_accepted_at' => $account->reseller_terms_accepted_at,
             ]);
@@ -290,7 +290,7 @@ class ResellerController extends Controller
 
         return back()->with(
             'status',
-            'Keanggotaan reseller dinonaktifkan & API key dicabut. Kamu bisa mengaktifkan kembali kapan saja.'
+            'Akses API dinonaktifkan & API key dicabut. Kamu bisa mengaktifkan kembali kapan saja.'
         );
     }
 }

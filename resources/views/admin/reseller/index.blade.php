@@ -1,15 +1,15 @@
 @extends('layouts.admin')
 
-@section('title', 'Laporan Reseller - Admin Atlantic Pedia')
-@section('page-title', 'Laporan Reseller')
+@section('title', 'Laporan Akses API - Admin Atlantic Pedia')
+@section('page-title', 'Laporan Akses API')
 
 @section('content')
 <div class="d-flex flex-column gap-4" data-ajax data-ajax-url="{{ $listRoute }}" data-persist-key="admin-reseller">
 
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div>
-            <h1 class="fw-bold fs-4 m-0">Laporan Reseller</h1>
-            <p class="tx-mute fs-12 m-0">Tinjau pengajuan, kelola akses reseller, dan pantau penggunaan API terakhir.</p>
+            <h1 class="fw-bold fs-4 m-0">Laporan Akses API</h1>
+            <p class="tx-mute fs-12 m-0">Tinjau pengajuan, kelola akses API, dan pantau penggunaan API terakhir.</p>
         </div>
     </div>
 
@@ -29,18 +29,18 @@
 
     <div class="row g-3 row-cols-1 row-cols-sm-2 row-cols-xl-4 m-0">
         <div class="col"><x-ui.stat-card label="Total Pengajuan" value="{{ number_format($stats['totalResellers'], 0, ',', '.') }}" icon="groups" tone="bg-sky-l tx-navy" /></div>
-        <div class="col"><x-ui.stat-card label="Reseller Aktif" value="{{ number_format($stats['activeResellers'], 0, ',', '.') }}" icon="storefront" tone="bg-mint-l tx-mintt" /></div>
+        <div class="col"><x-ui.stat-card label="Akses API Aktif" value="{{ number_format($stats['activeResellers'], 0, ',', '.') }}" icon="storefront" tone="bg-mint-l tx-mintt" /></div>
         <div class="col"><x-ui.stat-card label="Transaksi via API" value="{{ number_format($stats['apiOrders'], 0, ',', '.') }}" icon="api" tone="bg-tealc-m tx-tealt" /></div>
         <div class="col"><x-ui.stat-card label="Nominal via API" value="Rp {{ number_format($stats['apiAmount'], 0, ',', '.') }}" icon="payments" tone="bg-gold tx-gold" /></div>
     </div>
 
     <x-ui.data-table
         id="tblReseller"
-        title="Daftar Reseller"
+        title="Daftar Pengguna API"
         :server="true"
         :action="$listRoute"
         :search-value="request('q')"
-        search-placeholder="Cari nama atau email reseller..."
+        search-placeholder="Cari nama atau email pengguna API..."
         :filters="[
             ['name' => 'status', 'label' => 'Semua Status', 'options' => ['pending' => 'Menunggu review', 'active' => 'Aktif', 'suspended' => 'Ditangguhkan', 'rejected' => 'Ditolak', 'inactive' => 'Tidak aktif'], 'value' => request('status')],
         ]"

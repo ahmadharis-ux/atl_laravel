@@ -60,7 +60,7 @@ class AdminFeatureSettingTest extends TestCase
             ->get(route('admin.features.index'))
             ->assertOk()
             ->assertSee('Halaman & Pembayaran')
-            ->assertSee('Reseller')
+            ->assertSee('Akses API')
             ->assertSee('Ticket')
             ->assertSee('Merchandise');
     }

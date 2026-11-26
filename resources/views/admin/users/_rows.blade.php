@@ -40,7 +40,7 @@
             <div class="d-flex flex-wrap gap-1">
                 <span class="pill {{ \App\Support\Roles::tone($role ?? \App\Support\Roles::USER) }}">{{ $user->roleLabel() }}</span>
                 @if ($user->reseller_since !== null || $user->is_reseller)
-                    <span class="pill bg-sky-l tx-navy">Reseller</span>
+                    <span class="pill bg-sky-l tx-navy">Akses API</span>
                 @endif
             </div>
         </td>

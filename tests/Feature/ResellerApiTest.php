@@ -99,7 +99,7 @@ class ResellerApiTest extends TestCase
         $this->withHeaders(['X-API-Key' => 'ap_INVALIDKEY'])
             ->getJson('/api/v1/reseller/profile')
             ->assertUnauthorized()
-            ->assertJsonPath('message', 'API key tidak valid atau akun kamu bukan reseller aktif.');
+            ->assertJsonPath('message', 'API key tidak valid atau akun kamu belum punya akses API aktif.');
     }
 
     public function test_non_reseller_users_key_is_rejected(): void

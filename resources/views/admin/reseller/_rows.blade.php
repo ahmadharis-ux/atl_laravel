@@ -61,7 +61,7 @@
             @can('resellers.update')
                 @if (in_array($status, ['pending', 'active', 'suspended'], true))
                     <x-ui.actions :actions="[[
-                        'label' => 'Kelola status reseller',
+                        'label' => 'Kelola akses API',
                         'icon' => 'manage_accounts',
                         'tone' => 'tx-navy',
                         'modal' => 'modalResellerStatus-'.$item->getKey(),
@@ -69,7 +69,7 @@
 
                     <x-ui.modal
                         :id="'modalResellerStatus-'.$item->getKey()"
-                        :title="'Kelola reseller · '.$item->name"
+                        :title="'Kelola akses API · '.$item->name"
                         size="sm"
                     >
                         <div class="d-flex flex-column gap-3">
@@ -86,7 +86,7 @@
                                                     </span>
                                                     <span class="tx-mute fs-11">{{ $history->created_at->locale('id')->translatedFormat('d M Y, H:i') }}</span>
                                                 </div>
-                                                <div class="tx-mute fs-11">{{ $history->actor?->name ?? 'Reseller' }}</div>
+                                                <div class="tx-mute fs-11">{{ $history->actor?->name ?? 'Pengguna' }}</div>
                                                 @if ($history->reason)
                                                     <div class="fs-11 mt-1">{{ $history->reason }}</div>
                                                 @endif
@@ -108,11 +108,11 @@
                                 <form method="POST" action="{{ route('admin.resellers.status.update', $item) }}" class="d-flex flex-column gap-2">
                                     @csrf
                                     <input type="hidden" name="action" value="approve">
-                                    <p class="fs-12 mb-0">Setujui permohonan ini? Reseller dapat membuat API key dari halaman pengaturannya.</p>
+                                    <p class="fs-12 mb-0">Setujui permohonan ini? Pengguna dapat membuat API key dari halaman pengaturannya.</p>
                                     <button type="submit" class="btn-ap btn-mint justify-content-center">Setujui Permohonan</button>
                                 </form>
                                 <form method="POST" action="{{ route('admin.resellers.status.update', $item) }}" class="d-flex flex-column gap-2"
-                                      data-confirm="Tolak permohonan reseller ini?" data-confirm-title="Tolak Permohonan" data-confirm-danger>
+                                      data-confirm="Tolak permohonan akses API ini?" data-confirm-title="Tolak Permohonan" data-confirm-danger>
                                     @csrf
                                     <input type="hidden" name="action" value="reject">
                                     <x-ui.input name="reason" :id="'reject-reason-'.$item->getKey()" label="Alasan penolakan *" maxlength="1000" required />
@@ -120,18 +120,18 @@
                                 </form>
                             @elseif ($status === 'active')
                                 <form method="POST" action="{{ route('admin.resellers.status.update', $item) }}" class="d-flex flex-column gap-2"
-                                      data-confirm="Tangguhkan reseller ini? API key akan dicabut dan pesanan API baru akan dihentikan."
-                                      data-confirm-title="Tangguhkan Reseller" data-confirm-ok="Tangguhkan" data-confirm-danger>
+                                      data-confirm="Tangguhkan akses API ini? API key akan dicabut dan pesanan API baru akan dihentikan."
+                                      data-confirm-title="Tangguhkan Akses API" data-confirm-ok="Tangguhkan" data-confirm-danger>
                                     @csrf
                                     <input type="hidden" name="action" value="suspend">
                                     <x-ui.input name="reason" :id="'suspend-reason-'.$item->getKey()" label="Alasan penangguhan *" maxlength="1000" required />
-                                    <button type="submit" class="btn-soft tx-err justify-content-center">Tangguhkan Reseller</button>
+                                    <button type="submit" class="btn-soft tx-err justify-content-center">Tangguhkan Akses API</button>
                                 </form>
                             @elseif ($status === 'suspended')
                                 <form method="POST" action="{{ route('admin.resellers.status.update', $item) }}" class="d-flex flex-column gap-2">
                                     @csrf
                                     <input type="hidden" name="action" value="reactivate">
-                                    <p class="fs-12 mb-0">Aktifkan kembali toko dan akses reseller? API key lama sudah dicabut; reseller perlu membuat key baru.</p>
+                                    <p class="fs-12 mb-0">Aktifkan kembali akses API? API key lama sudah dicabut; pengguna perlu membuat key baru.</p>
                                     <button type="submit" class="btn-ap btn-mint justify-content-center">Aktifkan Kembali</button>
                                 </form>
                             @endif
@@ -144,8 +144,8 @@
 @empty
     <tr>
         <td colspan="11">
-            <x-ui.empty-state icon="storefront" title="Belum ada pengajuan reseller"
-                description="Permohonan reseller akan muncul di sini untuk ditinjau." />
+            <x-ui.empty-state icon="storefront" title="Belum ada pengajuan akses API"
+                description="Permohonan akses API akan muncul di sini untuk ditinjau." />
         </td>
     </tr>
 @endforelse

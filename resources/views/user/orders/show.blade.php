@@ -35,7 +35,7 @@
                 <p class="tx-mute fs-12 m-0">{{ $order->order_number }}</p>
                 <button type="button" class="ap-icon-btn" data-copy="{{ $order->order_number }}" data-copy-label="ID Pesanan" data-tip="Salin ID Pesanan"><span class="ms ms-sm">content_copy</span></button>
                 @if ($order->source === 'api')
-                    <span class="pill bg-gold tx-gold fs-11">API reseller</span>
+                    <span class="pill bg-gold tx-gold fs-11">API</span>
                 @endif
             </div>
         </div>

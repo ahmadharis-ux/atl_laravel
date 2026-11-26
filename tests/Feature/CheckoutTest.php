@@ -404,7 +404,7 @@ class CheckoutTest extends TestCase
             ->get(route('orders.index'))
             ->assertOk()
             ->assertSee($mine->order_number)
-            ->assertSee('Pesanan API reseller')
+            ->assertSee('Pesanan API')
             ->assertDontSee($other->order_number);
     }
 

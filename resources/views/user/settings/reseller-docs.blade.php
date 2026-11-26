@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
-@section('title', 'Dokumentasi API Reseller - Atlantic Pedia Tab')
+@section('title', 'Dokumentasi Akses API - Atlantic Pedia Tab')
 
 @section('content')
 <div class="d-flex flex-column gap-4">
     <div class="d-flex align-items-center gap-2">
         <a href="{{ route('settings.reseller') }}" class="ap-icon-btn" data-tip="Kembali"><span class="ms ms-md">arrow_back</span></a>
         <div>
-            <h1 class="fw-bold fs-4 m-0">Dokumentasi API Reseller</h1>
+            <h1 class="fw-bold fs-4 m-0">Dokumentasi Akses API</h1>
             <p class="tx-mute fs-12 m-0">Cara mengambil produk, cek harga sesuai level akun, dan membuat pesanan lewat API.</p>
         </div>
     </div>
@@ -18,7 +18,7 @@
             <li><a href="#doc-autentikasi">Autentikasi</a></li>
             <li><a href="#doc-endpoint">Base URL dan Daftar Endpoint</a></li>
             <li><a href="#doc-profil">1. Profil dan Cek Saldo</a></li>
-            <li><a href="#doc-produk">2. Ambil Daftar Produk dan Harga Reseller</a></li>
+            <li><a href="#doc-produk">2. Ambil Daftar Produk dan Harga</a></li>
             <li><a href="#doc-pesanan">3. Buat Pesanan (Bayar dari Saldo)</a></li>
             <li><a href="#doc-status">4. Pantau Status Pesanan</a></li>
             <li><a href="#doc-h2h">Kompatibilitas H2H Lama</a></li>
@@ -29,8 +29,8 @@
 
     <x-ui.card id="doc-ringkasan" title="Ringkasan">
         <p class="fs-13 mb-2">
-            API reseller memungkinkan kamu mengambil daftar produk beserta
-            <span class="fw-semibold">harga khusus reseller</span>,
+            API memungkinkan kamu mengambil daftar produk beserta
+            <span class="fw-semibold">harga sesuai level akun</span>,
             membuat pesanan dari saldo akun, dan memantau status transaksi —
             semua dari aplikasi, kasir, atau bot kamu sendiri.
         </p>
@@ -62,18 +62,18 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi" data-
 Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span class="ms ms-sm">content_copy</span> Salin Contoh</button>
         </div>
         <p class="fs-12 mb-0">
-            Belum punya API key? Ajukan keanggotaan reseller dan tunggu persetujuan admin di
-            <a href="{{ route('settings.reseller') }}">halaman Reseller</a> —
+            Belum punya API key? Ajukan akses API dan tunggu persetujuan admin di
+            <a href="{{ route('settings.reseller') }}">halaman Akses API</a> —
             key hanya ditampilkan satu kali saat dibuat.
             API key bersifat rahasia; jangan bagikan ke pihak lain.
         </p>
         <p class="fs-12 mb-0 mt-2">
             Jika allowlist IP diatur, request API hanya diterima dari IP server yang terdaftar.
-            Keanggotaan yang ditangguhkan akan kehilangan akses API untuk pesanan baru.
+            Akses API yang ditangguhkan tidak dapat membuat pesanan baru.
         </p>
         <p class="fs-12 mb-0 mt-2">
             Klien H2H lama dapat memakai endpoint kompatibilitas di bawah dengan field <code>api_key</code> pada body.
-            Ganti API key lama dengan key reseller baru dari halaman pengaturan; key lama tidak dapat digunakan.
+            Ganti API key lama dengan key baru dari halaman pengaturan; key lama tidak dapat digunakan.
         </p>
         <p class="fs-12 mb-0 mt-2">
             Setiap <code>POST /orders</code> dan <code>POST /transaksi/create</code> juga wajib mengirim header
@@ -158,7 +158,7 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span
     <x-ui.card id="doc-profil" title="1. Profil dan Cek Saldo">
         <p class="fs-12 mb-2">
             Dua endpoint untuk cek status akun:
-            <code>/profile</code> (identitas, status keanggotaan, &amp; diskon berlaku) dan
+            <code>/profile</code> (identitas, level akun, &amp; diskon berlaku) dan
             <code>/balance</code> (saldo terkini + 10 mutasi wallet terakhir).
         </p>
 
@@ -178,7 +178,7 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span
         </div>
         <pre class="ap-log-pre mb-3">{
   "data": {
-    "name": "Budi Reseller",
+    "name": "Budi Store",
     "email": "budi@example.test",
     "is_reseller": true,
     "reseller_since": "2026-10-15T10:15:00+07:00",
@@ -220,7 +220,7 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span
 }</pre>
     </x-ui.card>
 
-    <x-ui.card id="doc-produk" title="2. Ambil Daftar Produk dan Harga Reseller">
+    <x-ui.card id="doc-produk" title="2. Ambil Daftar Produk dan Harga">
         <p class="fs-12 mb-2">
             Daftar hanya berisi produk aktif prabayar dengan fulfillment Digiflazz dan diurutkan berdasarkan nama.
             Filter tersedia melalui query: <code>q</code> (nama/kode, maksimal 100 karakter),
@@ -436,9 +436,9 @@ Authorization: Bearer ap_XXXXXXXX..." data-copy-label="Header Autentikasi"><span
     <x-ui.card id="doc-h2h" title="Kompatibilitas H2H Lama">
         <p class="fs-12">
             Endpoint ini mempertahankan field dan bentuk respons transaksi utama untuk integrasi H2H lama.
-            Gunakan API key reseller baru sebagai <code>api_key</code> form-urlencoded; request GET untuk membuat transaksi
+            Gunakan API key baru sebagai <code>api_key</code> form-urlencoded; request GET untuk membuat transaksi
             tidak didukung. Header <code>X-Transaction-PIN</code> wajib untuk membuat transaksi. Produk pascabayar dan provider
-            selain Digiflazz belum tersedia pada API reseller.
+            selain Digiflazz belum tersedia pada API.
         </p>
         <pre class="ap-log-pre mb-2">POST {{ url('/transaksi/create') }}
 X-Transaction-PIN: YOUR_6_DIGIT_PIN
@@ -473,7 +473,7 @@ limit_price=7000</pre>
 
     <x-ui.card id="doc-webhook" title="Webhook Status Pesanan">
         <p class="fs-12">
-            Atur URL dan buat secret webhook dari halaman Reseller. Notifikasi dikirim untuk pesanan API yang sukses,
+            Atur URL dan buat secret webhook dari halaman Akses API. Notifikasi dikirim untuk pesanan API yang sukses,
             gagal, atau kedaluwarsa. Payload dikirim sebagai JSON; validasi tanda tangan menggunakan HMAC-SHA256 atas
             body mentah dan secret webhook.
         </p>
@@ -507,7 +507,7 @@ limit_price=7000</pre>
                 <tbody>
                     <tr>
                         <td class="text-center"><span class="pill bg-errc-l tx-err">401</span></td>
-                        <td>API key tidak ditemukan/tidak valid, atau akun bukan reseller aktif. Cek header <code>X-API-Key</code> atau buat ulang key.</td>
+                        <td>API key tidak ditemukan/tidak valid, atau akun belum punya akses API aktif. Cek header <code>X-API-Key</code> atau buat ulang key.</td>
                     </tr>
                     <tr>
                         <td class="text-center"><span class="pill bg-errc-l tx-err">403</span></td>

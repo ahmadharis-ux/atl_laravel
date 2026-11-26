@@ -74,7 +74,7 @@ class AdminResellerReportTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.resellers.index'))
             ->assertOk()
-            ->assertSee('Laporan Reseller')
+            ->assertSee('Laporan Akses API')
             ->assertSee('aktif@reseller.test')
             ->assertSee('nonaktif@reseller.test')
             ->assertDontSee('biasa@user.test');
@@ -90,7 +90,7 @@ class AdminResellerReportTest extends TestCase
             ->get(route('admin.resellers.index'))
             ->assertOk()
             ->assertSee('Total Pengajuan')
-            ->assertSee('Reseller Aktif')
+            ->assertSee('Akses API Aktif')
             ->assertSee('Transaksi via API')
             ->assertSee('Nominal via API');
     }
@@ -135,7 +135,7 @@ class AdminResellerReportTest extends TestCase
             ->assertJsonStructure(['rows', 'footer']);
 
         $this->assertStringContainsString($reseller->email, (string) $response->json('rows'));
-        $this->assertStringContainsString('reseller', (string) $response->json('footer'));
+        $this->assertStringContainsString('pengajuan', (string) $response->json('footer'));
     }
 
     public function test_admin_approval_activates_pending_reseller_without_exposing_an_api_key(): void

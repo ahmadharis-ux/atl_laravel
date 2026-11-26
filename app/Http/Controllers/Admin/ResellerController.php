@@ -74,7 +74,7 @@ class ResellerController extends Controller
                 'max:1000',
             ],
         ], [
-            'reason.required' => 'Alasan wajib diisi untuk menolak atau menangguhkan reseller.',
+            'reason.required' => 'Alasan wajib diisi untuk menolak atau menangguhkan akses API.',
             'reason.not_regex' => 'Alasan tidak boleh hanya berisi spasi.',
             'reason.max' => 'Alasan maksimal 1000 karakter.',
         ]);
@@ -92,7 +92,7 @@ class ResellerController extends Controller
 
             if ($fromStatus !== $requiredStatus) {
                 throw ValidationException::withMessages([
-                    'status' => 'Status reseller sudah berubah. Muat ulang halaman sebelum mencoba lagi.',
+                    'status' => 'Status akses API sudah berubah. Muat ulang halaman sebelum mencoba lagi.',
                 ]);
             }
 
@@ -122,6 +122,6 @@ class ResellerController extends Controller
             ]);
         });
 
-        return back()->with('status', 'Status reseller berhasil diperbarui.');
+        return back()->with('status', 'Status akses API berhasil diperbarui.');
     }
 }

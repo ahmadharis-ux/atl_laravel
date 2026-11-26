@@ -15,7 +15,7 @@ use Illuminate\Validation\ValidationException;
 class ProductController extends Controller
 {
     /**
-     * Daftar produk aktif beserta harga khusus reseller.
+     * Daftar produk aktif beserta harga sesuai level akun.
      *
      * Filter opsional: q (nama/kode), brand_id, category_id,
      * payment_type (prabayar|pascabayar).
@@ -66,7 +66,7 @@ class ProductController extends Controller
         abort_unless(
             $product->status && $product->supportsResellerApiOrder(),
             404,
-            'Produk tidak ditemukan atau belum didukung untuk pesanan API reseller.'
+            'Produk tidak ditemukan atau belum didukung untuk pesanan API.'
         );
 
         $product->load(['brand:id,name,slug', 'category:id,name,slug']);
@@ -99,7 +99,7 @@ class ProductController extends Controller
         if ($validated['type'] !== ProductPaymentType::Prabayar->value) {
             return response()->json([
                 'status' => false,
-                'message' => 'Produk pascabayar belum didukung pada API reseller.',
+                'message' => 'Produk pascabayar belum didukung pada API.',
                 'code' => 503,
             ], 503);
         }

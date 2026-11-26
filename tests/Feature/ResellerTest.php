@@ -42,11 +42,11 @@ class ResellerTest extends TestCase
         $this->actingAs($user)
             ->get(route('settings.reseller'))
             ->assertOk()
-            ->assertSee('Menjadi Reseller')
-            ->assertSee('Kirim Permohonan Reseller')
+            ->assertSee('Ajukan Akses API')
+            ->assertSee('Kirim Permohonan Akses API')
             ->assertSee('Aturan penting sebelum aktivasi')
             ->assertSee('Pesanan melalui API dibayar dari saldo akun dengan harga sesuai level akun.')
-            ->assertSee('Menonaktifkan reseller mencabut API key serta menutup akses API untuk pesanan baru.')
+            ->assertSee('Menonaktifkan akses API mencabut API key serta menutup akses API untuk pesanan baru.')
             ->assertSee('Akses API & API Key', false)
             ->assertSee(route('settings.reseller.docs'));
     }
@@ -63,7 +63,7 @@ class ResellerTest extends TestCase
                 'accept_terms' => '1',
             ])
             ->assertRedirect()
-            ->assertSessionHas('status', 'Permohonan reseller terkirim. Akses API akan aktif setelah ditinjau admin.');
+            ->assertSessionHas('status', 'Permohonan akses API terkirim. Akses API akan aktif setelah ditinjau admin.');
 
         $user->refresh();
 
@@ -88,7 +88,7 @@ class ResellerTest extends TestCase
             ->get(route('settings.reseller'))
             ->assertSee('Permohonan Sedang Ditinjau')
             ->assertSee('Akses API akan tersedia setelah admin menyetujui permohonan.')
-            ->assertDontSee('Kirim Permohonan Reseller')
+            ->assertDontSee('Kirim Permohonan Akses API')
             ->assertDontSee('API Key');
     }
 
@@ -103,7 +103,7 @@ class ResellerTest extends TestCase
             ->get(route('settings.reseller'))
             ->assertSee('Permohonan Belum Disetujui')
             ->assertSee('Mohon lengkapi data website.')
-            ->assertSee('Kirim Permohonan Reseller');
+            ->assertSee('Kirim Permohonan Akses API');
     }
 
     public function test_suspended_reseller_sees_the_reason_and_cannot_apply_again(): void
@@ -115,9 +115,9 @@ class ResellerTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('settings.reseller'))
-            ->assertSee('Keanggotaan Ditangguhkan')
+            ->assertSee('Akses API Ditangguhkan')
             ->assertSee('Verifikasi tambahan diperlukan.')
-            ->assertDontSee('Kirim Permohonan Reseller');
+            ->assertDontSee('Kirim Permohonan Akses API');
 
         $this->actingAs($user)
             ->post(route('settings.reseller.activate'), [
@@ -260,7 +260,7 @@ class ResellerTest extends TestCase
         $this->actingAs($user)
             ->get(route('settings.reseller.docs'))
             ->assertOk()
-            ->assertSee('Dokumentasi API Reseller')
+            ->assertSee('Dokumentasi Akses API')
             ->assertSee(url('/api/v1/reseller/products'), false)
             ->assertSee('X-API-Key')
             ->assertSee('reseller_price')

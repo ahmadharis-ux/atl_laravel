@@ -44,7 +44,7 @@ class FeatureComingSoonTest extends TestCase
         $this->actingAs($this->user())
             ->get(route('settings.reseller'))
             ->assertOk()
-            ->assertSee('Reseller segera hadir');
+            ->assertSee('Akses API segera hadir');
     }
 
     public function test_enabled_features_render_normal_pages(): void
@@ -65,7 +65,7 @@ class FeatureComingSoonTest extends TestCase
         $this->actingAs($user)
             ->get(route('settings.reseller'))
             ->assertOk()
-            ->assertDontSee('Reseller segera hadir');
+            ->assertDontSee('Akses API segera hadir');
     }
 
     public function test_ajax_requests_to_disabled_features_receive_json_503(): void

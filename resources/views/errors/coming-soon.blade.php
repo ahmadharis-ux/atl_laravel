@@ -2,7 +2,7 @@
 
 @php
     $labels = [
-        'reseller' => 'Reseller',
+        'reseller' => 'Akses API',
         'ticket' => 'Bantuan & Tiket',
         'merchandise' => 'Merchandise',
     ];

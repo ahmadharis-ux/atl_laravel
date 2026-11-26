@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Reseller - Atlantic Pedia Tab')
+@section('title', 'Akses API - Atlantic Pedia Tab')
 
 @section('content')
 @php($discountLabel = rtrim(rtrim(number_format($discountPercent, 2, ',', '.'), '0'), ',').'%')
@@ -8,8 +8,8 @@
     <div class="d-flex align-items-center gap-2">
         <a href="{{ route('settings.index') }}" class="ap-icon-btn" data-tip="Kembali"><span class="ms ms-md">arrow_back</span></a>
         <div>
-            <h1 class="fw-bold fs-4 m-0">Reseller</h1>
-            <p class="tx-mute fs-12 m-0">Jual ulang produk Atlantic Pedia dengan harga khusus reseller.</p>
+            <h1 class="fw-bold fs-4 m-0">Akses API</h1>
+            <p class="tx-mute fs-12 m-0">Pesan produk Atlantic Pedia otomatis dari website atau aplikasimu.</p>
         </div>
     </div>
 
@@ -45,7 +45,7 @@
                 <p class="fs-11 tx-mute mt-2 mb-0">Dikirim {{ $user->reseller_terms_accepted_at?->locale('id')->translatedFormat('d M Y, H:i') }} · Ketentuan versi {{ $user->reseller_terms_version }}</p>
             </x-ui.card>
         @elseif ($user->reseller_status === 'suspended')
-            <x-ui.card title="Keanggotaan Ditangguhkan">
+            <x-ui.card title="Akses API Ditangguhkan">
                 <p class="fs-12 mb-1">Akses API dinonaktifkan sementara. Riwayat transaksi tetap tersimpan.</p>
                 @if ($user->reseller_status_reason)
                     <p class="fs-12 tx-err mb-0"><span class="fw-semibold">Alasan:</span> {{ $user->reseller_status_reason }}</p>
@@ -61,9 +61,9 @@
         @endif
 
         @if (! in_array($user->reseller_status, ['pending', 'suspended'], true))
-            <x-ui.card title="Menjadi Reseller">
+            <x-ui.card title="Ajukan Akses API">
                 <p class="fs-13 mb-3">
-                    Ajukan keanggotaan reseller untuk memesan produk Atlantic Pedia lewat API.
+                    Ajukan akses API untuk memesan produk Atlantic Pedia secara otomatis dari website atau aplikasimu.
                     Harga mengikuti level akunmu: saat ini <span class="fw-semibold">{{ $tier->label() }}</span>
                     dengan diskon <span class="fw-semibold">{{ $discountLabel }}</span> dari harga jual.
                 </p>
@@ -89,12 +89,12 @@
                     <h2 class="fw-semibold fs-13 mb-2">Aturan penting sebelum aktivasi</h2>
                     <ul class="fs-12 tx-mute mb-2 ps-3">
                         <li>Pesanan melalui API dibayar dari saldo akun dengan harga sesuai level akun.</li>
-                        <li>Menonaktifkan reseller mencabut API key serta menutup akses API untuk pesanan baru.</li>
+                        <li>Menonaktifkan akses API mencabut API key serta menutup akses API untuk pesanan baru.</li>
                         <li>Domain/website wajib diisi untuk integrasi API.</li>
                         <li>IP server bersifat opsional. Jika diisi, hanya alamat tersebut yang boleh mengakses API.</li>
                     </ul>
 
-                    <h2 class="fw-semibold fs-13 mb-2">Ketentuan Reseller · Versi {{ $termsVersion }}</h2>
+                    <h2 class="fw-semibold fs-13 mb-2">Ketentuan Akses API · Versi {{ $termsVersion }}</h2>
                     <ul class="fs-12 tx-mute mb-0 ps-3">
                         <li>Data usaha dan kontak harus benar serta dapat digunakan admin untuk menghubungi kamu.</li>
                         <li>Domain/website wajib diisi untuk integrasi API.</li>
@@ -154,7 +154,7 @@
 
                     <x-ui.check-card
                         name="accept_terms"
-                        label="Saya sudah membaca dan menyetujui Ketentuan Reseller versi {{ $termsVersion }}."
+                        label="Saya sudah membaca dan menyetujui Ketentuan Akses API versi {{ $termsVersion }}."
                         required
                         :checked="old('accept_terms')"
                     />
@@ -162,7 +162,7 @@
                     @error('reseller')<div class="err show">{{ $message }}</div>@enderror
 
                     <div class="d-flex flex-wrap gap-2">
-                        <button type="submit" class="btn-navy">Kirim Permohonan Reseller</button>
+                        <button type="submit" class="btn-navy">Kirim Permohonan Akses API</button>
                         <a href="{{ route('settings.reseller.docs') }}" class="btn-soft">Lihat Dokumentasi API</a>
                     </div>
                 </form>
@@ -174,10 +174,10 @@
                 <span class="ibox ibox-48 bg-mint-l tx-mintt"><span class="ms">storefront</span></span>
                 <div>
                     <div class="d-flex align-items-center gap-2">
-                        <span class="fw-semibold fs-13">Reseller Aktif</span>
+                        <span class="fw-semibold fs-13">Akses API Aktif</span>
                         <span class="pill bg-mint-l tx-mintt">Aktif</span>
                     </div>
-                    <div class="tx-mute fs-11">Menjadi reseller sejak {{ $user->reseller_since?->locale('id')->translatedFormat('d F Y') }} · Level {{ $tier->label() }}, diskon {{ $discountLabel }} dari harga jual</div>
+                    <div class="tx-mute fs-11">Akses API aktif sejak {{ $user->reseller_since?->locale('id')->translatedFormat('d F Y') }} · Level {{ $tier->label() }}, diskon {{ $discountLabel }} dari harga jual</div>
                 </div>
             </div>
             <div class="d-flex flex-wrap gap-2">
@@ -202,7 +202,7 @@
                                         <a href="#api-key">Buat API key</a>.
                                     @endif
                                 </li>
-                                <li class="mb-2">Ambil daftar produk dan harga reseller melalui <a href="{{ route('settings.reseller.docs') }}#doc-produk">dokumentasi produk API</a>.</li>
+                                <li class="mb-2">Ambil daftar produk dan harga sesuai level akun melalui <a href="{{ route('settings.reseller.docs') }}#doc-produk">dokumentasi produk API</a>.</li>
                                 <li class="mb-2">Pastikan saldo cukup sebelum mengirim pesanan API. <a href="{{ route('deposits.create') }}">Isi saldo</a>.</li>
                                 <li>Buat pesanan dan pantau statusnya melalui <a href="{{ route('settings.reseller.docs') }}#doc-pesanan">panduan pesanan API</a>.</li>
                             </ol>
@@ -251,8 +251,8 @@
                     </button>
                 </form>
                 <form method="POST" action="{{ route('settings.reseller.deactivate') }}"
-                      data-confirm="Nonaktifkan keanggotaan reseller? API key akan dicabut dan akses API langsung berhenti."
-                      data-confirm-title="Nonaktifkan Reseller" data-confirm-ok="Nonaktifkan" data-confirm-danger>
+                      data-confirm="Nonaktifkan akses API? API key akan dicabut dan akses API langsung berhenti."
+                      data-confirm-title="Nonaktifkan Akses API" data-confirm-ok="Nonaktifkan" data-confirm-danger>
                     @csrf
                     <button type="submit" class="btn-soft tx-err">
                         <span class="ms ms-sm">person_off</span> Nonaktifkan
@@ -318,8 +318,8 @@
 
         <x-ui.card title="Cara Pakai Singkat">
             <ol class="fs-12 mb-3 ps-3">
-                <li>Ambil daftar produk &amp; harga reseller lewat <code>GET {{ url('/api/v1/reseller/products') }}</code>.</li>
-                <li>Pastikan saldo kamu cukup untuk membayar pesanan (harga reseller).</li>
+                <li>Ambil daftar produk &amp; harga sesuai level akun lewat <code>GET {{ url('/api/v1/reseller/products') }}</code>.</li>
+                <li>Pastikan saldo kamu cukup untuk membayar pesanan (harga sesuai level akun).</li>
                 <li>Buat pesanan lewat <code>POST {{ url('/api/v1/reseller/orders') }}</code> dengan tujuan (target) produk.</li>
                 <li>Pantau status pesanan lewat <code>GET {{ url('/api/v1/reseller/orders') }}</code>.</li>
             </ol>

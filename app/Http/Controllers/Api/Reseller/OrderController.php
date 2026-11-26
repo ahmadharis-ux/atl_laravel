@@ -72,7 +72,7 @@ class OrderController extends Controller
     /**
      * Buat pesanan baru dari reseller.
      *
-     * Pembayaran selalu lewat saldo akun dengan harga khusus reseller
+     * Pembayaran selalu lewat saldo akun dengan harga sesuai level akun
      * (Product::priceFor, sesuai tier akun). Stok dikunci & saldo didebit dalam satu
      * transaksi DB — kegagalan (stok habis / saldo kurang) melempar
      * ValidationException sehingga otomatis di-rollback & dibalas 422.
@@ -132,7 +132,7 @@ class OrderController extends Controller
 
         if (! $product->supportsResellerApiOrder()) {
             throw ValidationException::withMessages([
-                'product_id' => 'Produk ini belum didukung untuk pesanan API reseller.',
+                'product_id' => 'Produk ini belum didukung untuk pesanan API.',
             ]);
         }
 
@@ -237,7 +237,7 @@ class OrderController extends Controller
 
                 WalletLedger::debit($account, $orderAmount, WalletTransactionType::Purchase, $order, 'Pembelian (reseller) '.$item->name, [], $pinResult);
 
-                TransactionLogger::info('order.created', 'Pesanan API reseller dibuat.', [
+                TransactionLogger::info('order.created', 'Pesanan API dibuat.', [
                     'order_number' => $order->order_number,
                     'amount' => $orderAmount,
                     'source' => 'api',
@@ -270,7 +270,7 @@ class OrderController extends Controller
 
             throw $e;
         } catch (Throwable $e) {
-            TransactionLogger::error('order.failed', 'Terjadi kesalahan saat memproses pesanan API reseller.', $e, [
+            TransactionLogger::error('order.failed', 'Terjadi kesalahan saat memproses pesanan API.', $e, [
                 'product_id' => $validated['product_id'],
                 'target' => $validated['target'],
                 'amount' => $amount,
